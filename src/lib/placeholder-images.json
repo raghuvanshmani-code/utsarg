@@ -1,3 +1,160 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-banner",
+      "description": "A group of students collaborating and smiling.",
+      "imageUrl": "https://images.unsplash.com/photo-1643321444939-ce662d82051e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHVkZW50cyUyMGV2ZW50fGVufDB8fHx8MTc1OTU3OTQxM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "students event"
+    },
+    {
+      "id": "music-club-logo",
+      "description": "Logo for the music club.",
+      "imageUrl": "https://images.unsplash.com/photo-1571498231303-005be085e2af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtdXNpYyUyMGluc3RydW1lbnR8ZW58MHx8fHwxNzU5NTA1MTgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "music instrument"
+    },
+    {
+      "id": "literary-club-logo",
+      "description": "Logo for the literary club.",
+      "imageUrl": "https://images.unsplash.com/photo-1515118058350-d72d92dd5140?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxib29rJTIwb3BlbnxlbnwwfHx8fDE3NTk1Nzk0MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "book open"
+    },
+    {
+      "id": "sports-club-logo",
+      "description": "Logo for the sports club.",
+      "imageUrl": "https://images.unsplash.com/photo-1705969508914-4458e58b5eac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzcG9ydHMlMjB0cm9waHl8ZW58MHx8fHwxNzU5NTE5OTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sports trophy"
+    },
+    {
+      "id": "art-club-logo",
+      "description": "Logo for the art club.",
+      "imageUrl": "https://images.unsplash.com/photo-1618513462042-29ac20aefe11?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwYWludCUyMHBhbGV0dGV8ZW58MHx8fHwxNzU5NTIyMzk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "paint palette"
+    },
+    {
+      "id": "tech-club-logo",
+      "description": "Logo for the tech club.",
+      "imageUrl": "https://images.unsplash.com/photo-1697952431907-8542919a16b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaXJjdWl0JTIwYm9hcmR8ZW58MHx8fHwxNzU5NTc1OTk5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "circuit board"
+    },
+    {
+      "id": "event-annual-fest",
+      "description": "Banner for the annual fest.",
+      "imageUrl": "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb25jZXJ0JTIwY3Jvd2R8ZW58MHx8fHwxNzU5NDY0MjY2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "concert crowd"
+    },
+    {
+      "id": "event-sports-day",
+      "description": "Banner for sports day.",
+      "imageUrl": "https://images.unsplash.com/photo-1502904550040-7534597429ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxydW5uaW5nJTIwdHJhY2t8ZW58MHx8fHwxNzU5NTY1NDg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "running track"
+    },
+    {
+      "id": "event-hackathon",
+      "description": "Banner for the hackathon.",
+      "imageUrl": "https://images.unsplash.com/photo-1595675024853-0f3ec9098ac7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxsYXB0b3AlMjBjb2RlfGVufDB8fHx8MTc1OTUwNjQyN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "laptop code"
+    },
+    {
+      "id": "blog-new-committee",
+      "description": "Thumbnail for a blog post about the new committee.",
+      "imageUrl": "https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0ZWFtJTIwbWVldGluZ3xlbnwwfHx8fDE3NTk1NjgzMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "team meeting"
+    },
+    {
+      "id": "blog-event-recap",
+      "description": "Thumbnail for a blog post about an event recap.",
+      "imageUrl": "https://images.unsplash.com/photo-1657208431551-cbf415b8ef26?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdGFnZSUyMGxpZ2h0c3xlbnwwfHx8fDE3NTk1Nzc1OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "stage lights"
+    },
+    {
+      "id": "gallery-1",
+      "description": "Students at a cultural event.",
+      "imageUrl": "https://images.unsplash.com/photo-1718908721930-31120bc1beb5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkYW5jZSUyMHBlcmZvcm1hbmNlfGVufDB8fHx8MTc1OTUwODgxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dance performance"
+    },
+    {
+      "id": "gallery-2",
+      "description": "Winning team at a sports competition.",
+      "imageUrl": "https://images.unsplash.com/photo-1758520144623-65998e96a7d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx0ZWFtJTIwY2VsZWJyYXRpb258ZW58MHx8fHwxNzU5NTE0NDc5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "team celebration"
+    },
+    {
+      "id": "gallery-3",
+      "description": "Artwork from the art club exhibition.",
+      "imageUrl": "https://images.unsplash.com/photo-1564399580075-5dfe19c205f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YXJ0JTIwZ2FsbGVyeXxlbnwwfHx8fDE3NTk1MjE2OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "art gallery"
+    },
+    {
+      "id": "gallery-4",
+      "description": "Students during a workshop.",
+      "imageUrl": "https://images.unsplash.com/photo-1545886082-e66c6b9e011a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50cyUyMHdvcmtzaG9wfGVufDB8fHx8MTc1OTU3OTQxM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "students workshop"
+    },
+    {
+      "id": "gallery-5",
+      "description": "A speaker at a literary event.",
+      "imageUrl": "https://images.unsplash.com/photo-1715610258704-e8f9f5710fe0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwdWJsaWMlMjBzcGVha2luZ3xlbnwwfHx8fDE3NTk1Nzk0MTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "public speaking"
+    },
+    {
+      "id": "gallery-6",
+      "description": "Tech club project demonstration.",
+      "imageUrl": "https://images.unsplash.com/photo-1723730741656-6333f4840ecf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxyb2JvdGljcyUyMHByb2plY3R8ZW58MHx8fHwxNzU5NTczNDIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "robotics project"
+    },
+    {
+      "id": "club-banner-music",
+      "description": "Banner for the music club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1603815878781-536e057a3e7c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtdXNpYyUyMHN0YWdlfGVufDB8fHx8MTc1OTUxNTI2M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "music stage"
+    },
+    {
+      "id": "club-banner-literary",
+      "description": "Banner for the literary club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxsaWJyYXJ5JTIwYm9va3N8ZW58MHx8fHwxNzU5NDU3Nzg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "library books"
+    },
+    {
+      "id": "club-banner-sports",
+      "description": "Banner for the sports club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1638573615178-6f2950746614?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdGFkaXVtJTIwbGlnaHRzfGVufDB8fHx8MTc1OTU1MDY3Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "stadium lights"
+    },
+    {
+      "id": "club-banner-art",
+      "description": "Banner for the art club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1705612206536-6578da92c06c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwYWludGluZ3MlMjBjYW52YXN8ZW58MHx8fHwxNzU5NTc5NDEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "paintings canvas"
+    },
+    {
+      "id": "club-banner-tech",
+      "description": "Banner for the tech club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1680992046626-418f7e910589?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzZXJ2ZXIlMjByb29tfGVufDB8fHx8MTc1OTQ3MDU4OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "server room"
+    },
+    {
+      "id": "contact-map",
+      "description": "Location of GSVM Medical College on a map.",
+      "imageUrl": "https://images.unsplash.com/photo-1581922819941-6ab31ab79afc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjaXR5JTIwbWFwfGVufDB8fHx8MTc1OTQ4MjkxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "city map"
+    },
+    {
+      "id": "about-banner",
+      "description": "A picture of the GSVM college campus.",
+      "imageUrl": "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb2xsZWdlJTIwY2FtcHVzfGVufDB8fHx8MTc1OTU1MjQ4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "college campus"
+    },
+    {
+      "id": "social-club-logo",
+      "description": "Logo for the social club.",
+      "imageUrl": "https://images.unsplash.com/photo-1623241461978-668ede250064?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxoZWxwaW5nJTIwaGFuZHN8ZW58MHx8fHwxNzU5NDg2NDYwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "helping hands"
+    },
+    {
+      "id": "club-banner-social",
+      "description": "Banner for the social club page.",
+      "imageUrl": "https://images.unsplash.com/photo-1749343272870-0d21d105e86b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjb21tdW5pdHklMjBnYXRoZXJpbmd8ZW58MHx8fHwxNzU5NTAzNzIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "community gathering"
+    }
+  ]
 }
