@@ -13,6 +13,7 @@ export function useCollection<T>(path: string) {
 
   useEffect(() => {
     if (!db) {
+      setLoading(false);
       return;
     }
 
@@ -30,7 +31,7 @@ export function useCollection<T>(path: string) {
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
-        setError(err);
+        setError(permissionError);
         setLoading(false);
       }
     );
@@ -40,5 +41,3 @@ export function useCollection<T>(path: string) {
 
   return { data, loading, error };
 }
-
-    

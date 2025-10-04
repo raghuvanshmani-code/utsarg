@@ -12,7 +12,10 @@ export function useDoc<T>(path: string) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!db) return;
+    if (!db) {
+      setLoading(false);
+      return;
+    }
 
     const docRef = doc(db, path);
     const unsubscribe = onSnapshot(
@@ -31,7 +34,7 @@ export function useDoc<T>(path: string) {
             operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
-        setError(err);
+        setError(permissionError);
         setLoading(false);
       }
     );
@@ -41,5 +44,3 @@ export function useDoc<T>(path: string) {
 
   return { data, loading, error };
 }
-
-    
