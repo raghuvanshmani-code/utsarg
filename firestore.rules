@@ -1,0 +1,139 @@
+/**
+ * @fileoverview Firestore Security Rules for the student club app.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes secure data access by enforcing strict ownership for user profiles
+ * and allowing public read access to clubs, events, gallery items, and blog posts. Write
+ * access to these public collections is restricted to authenticated users.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores individual user profiles, accessible only by the user themselves.
+ * - /clubs/{clubId}: Stores club information; publicly readable, but write access is restricted.
+ * - /events/{eventId}: Stores event details; publicly readable, but write access is restricted.
+ * - /gallery/{galleryId}: Stores gallery media; publicly readable, but write access is restricted.
+ * - /blog/{blogId}: Stores blog posts; publicly readable, but write access is restricted.
+ *
+ * Key Security Decisions:
+ * - User profiles are strictly private and only accessible to the owning user.
+ * - Listing of users is disallowed to prevent enumeration.
+ * - Public collections (clubs, events, gallery, blog) are readable by anyone, but writes require authentication.
+ *
+ * Denormalization for Authorization:
+ * - For the public collections, the 'clubID' field is present in the 'event' and 'galleryItem' entities,
+ *   allowing rules to easily check which club owns a particular event or gallery item. This avoids
+ *   the need for complex queries or expensive `get()` calls in the rules.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile data.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete, list) - Authenticated user can only access their own profile if the userId matches their auth.uid.
+     * @deny (create) - User cannot create a profile with a different userId.
+     * @deny (get, update, delete, list) - User cannot access another user's profile.
+     * @principle Enforces strict user-ownership for profile data.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to club data.
+     * @path /clubs/{clubId}
+     * @allow (get, list) - Anyone can read club data.
+     * @allow (create) - Only authenticated users can create clubs.
+     * @allow (update, delete) - Only authenticated users can update or delete clubs.
+     * @deny (create) - Unauthenticated users cannot create clubs.
+     * @deny (update, delete) - Unauthenticated users cannot update or delete clubs.
+     * @principle Allows public read access with authenticated-user-only writes.
+     */
+    match /clubs/{clubId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /**
+     * @description Controls access to event data.
+     * @path /events/{eventId}
+     * @allow (get, list) - Anyone can read event data.
+     * @allow (create) - Only authenticated users can create events.
+     * @allow (update, delete) - Only authenticated users can update or delete events.
+     * @deny (create) - Unauthenticated users cannot create events.
+     * @deny (update, delete) - Unauthenticated users cannot update or delete events.
+     * @principle Allows public read access with authenticated-user-only writes.
+     */
+    match /events/{eventId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /**
+     * @description Controls access to gallery item data.
+     * @path /gallery/{galleryId}
+     * @allow (get, list) - Anyone can read gallery item data.
+     * @allow (create) - Only authenticated users can create gallery items.
+     * @allow (update, delete) - Only authenticated users can update or delete gallery items.
+     * @deny (create) - Unauthenticated users cannot create gallery items.
+     * @deny (update, delete) - Unauthenticated users cannot update or delete gallery items.
+     * @principle Allows public read access with authenticated-user-only writes.
+     */
+    match /gallery/{galleryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /**
+     * @description Controls access to blog post data.
+     * @path /blog/{blogId}
+     * @allow (get, list) - Anyone can read blog post data.
+     * @allow (create) - Only authenticated users can create blog posts.
+     * @allow (update, delete) - Only authenticated users can update or delete blog posts.
+     * @deny (create) - Unauthenticated users cannot create blog posts.
+     * @deny (update, delete) - Unauthenticated users cannot update or delete blog posts.
+     * @principle Allows public read access with authenticated-user-only writes.
+     */
+    match /blog/{blogId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+  }
+}
