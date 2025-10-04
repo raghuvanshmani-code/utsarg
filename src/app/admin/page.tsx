@@ -7,6 +7,7 @@ import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const { user } = useUser();
@@ -28,15 +29,13 @@ export default function AdminDashboard() {
             <SidebarContent>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip={{children: 'Dashboard'}} isActive>
-                            <Home />
-                            <span>Dashboard</span>
+                        <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}} isActive>
+                            <Link href="/admin"><Home /><span>Dashboard</span></Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton tooltip={{children: 'Users'}}>
-                            <Users />
-                            <span>Users</span>
+                        <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
+                           <Link href="/admin/users"><Users /><span>Users</span></Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>

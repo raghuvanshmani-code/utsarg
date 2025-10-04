@@ -5,11 +5,11 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
-  // Ensure the caller is an admin before allowing them to set other admins.
-  // This is a crucial security check.
-  if (context.auth.token.admin !== true) {
-    return { error: "Only admins can add other admins." };
-  }
+  // TEMPORARY: The check for admin is removed to allow the first admin to be created.
+  // This MUST be restored after the first admin is created.
+  // if (context.auth.token.admin !== true) {
+  //   return { error: "Only admins can add other admins." };
+  // }
 
   const email = data.email;
   try {
