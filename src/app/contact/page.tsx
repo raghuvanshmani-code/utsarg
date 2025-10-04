@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/page-header';
 import { ContactForm } from '@/components/contact-form';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function ContactPage() {
   const mapImage = PlaceHolderImages.find(p => p.id === 'contact-map');
