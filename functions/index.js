@@ -4,13 +4,10 @@ const admin = require("firebase-admin");
 
 // Initialize the Admin SDK
 // The service account is automatically available in the Cloud Functions environment
-try {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
-} catch (e) {
-  console.log('Re-initializing admin');
+if (!admin.apps.length) {
+    admin.initializeApp();
 }
+
 
 /**
  * Sets the admin custom claim on a user account. Can only be called by an existing admin.
