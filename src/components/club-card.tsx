@@ -45,3 +45,5 @@ export function ClubCard({ club, className }: ClubCardProps) {
     </Link>
   );
 }
+
+    

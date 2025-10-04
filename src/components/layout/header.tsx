@@ -3,13 +3,17 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
+import { useUser } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { getAuth } from 'firebase/auth';
 
 const navItems: NavItem[] = [
   { title: 'Home', href: '/' },
@@ -21,6 +25,56 @@ const navItems: NavItem[] = [
   { title: 'Contact', href: '/contact' },
 ];
 
+function UserNav() {
+    const { user, auth } = useUser();
+  
+    const handleSignOut = () => {
+      if (auth) {
+        getAuth().signOut();
+      }
+    };
+  
+    if (!user) {
+      return (
+        <Button asChild>
+          <Link href="/login">Login</Link>
+        </Button>
+      );
+    }
+  
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+              <AvatarFallback>
+                {user.displayName ? user.displayName.charAt(0) : <User />}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{user.displayName}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/account">Account</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSignOut}>
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
 export function SiteHeader() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -31,7 +85,7 @@ export function SiteHeader() {
         <Logo />
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex">
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <ul className="flex items-center space-x-6 text-sm font-medium">
             {navItems.map((item) => (
               <li key={item.title}>
@@ -47,10 +101,12 @@ export function SiteHeader() {
               </li>
             ))}
           </ul>
+           <UserNav />
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
+            <UserNav />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -95,3 +151,5 @@ export function SiteHeader() {
     </header>
   );
 }
+
+    
