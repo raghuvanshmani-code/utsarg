@@ -23,6 +23,7 @@ const navItems: NavItem[] = [
   { title: 'Gallery', href: '/gallery' },
   { title: 'Blog', href: '/blog' },
   { title: 'Contact', href: '/contact' },
+  { title: 'Seed DB', href: '/seed-database' },
 ];
 
 function UserNav() {
