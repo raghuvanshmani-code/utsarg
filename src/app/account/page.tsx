@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { getAuth } from 'firebase/auth';
 import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, LayoutDashboard } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AccountPage() {
     const { user, loading } = useUser();
@@ -24,8 +25,13 @@ export default function AccountPage() {
     useEffect(() => {
         const checkAdmin = async () => {
             if(user) {
-                const idTokenResult = await user.getIdTokenResult();
-                setIsAdmin(!!idTokenResult.claims.admin);
+                try {
+                    const idTokenResult = await user.getIdTokenResult();
+                    setIsAdmin(!!idTokenResult.claims.admin);
+                } catch (error) {
+                    console.error("Error fetching ID token result:", error);
+                    setIsAdmin(false);
+                }
             }
         };
         checkAdmin();
@@ -69,9 +75,16 @@ export default function AccountPage() {
                         <CardTitle className="text-2xl">{user.displayName || 'User'}</CardTitle>
                         <CardDescription>{user.email || user.phoneNumber}</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center">
-                        {/* Add more account details here */}
-                        <Button onClick={handleSignOut} variant="destructive" className="mt-6">
+                    <CardContent className="flex flex-col items-center space-y-4">
+                        {isAdmin && (
+                            <Button asChild className="w-full">
+                                <Link href="/admin">
+                                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                                    Go to Admin Panel
+                                </Link>
+                            </Button>
+                        )}
+                        <Button onClick={handleSignOut} variant="destructive" className="w-full">
                             Sign Out
                         </Button>
                     </CardContent>

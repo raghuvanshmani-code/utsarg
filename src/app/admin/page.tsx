@@ -1,0 +1,100 @@
+'use client';
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/firebase";
+import { getAuth } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut } from "lucide-react";
+import { Logo } from "@/components/layout/logo";
+
+export default function AdminDashboard() {
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    getAuth().signOut();
+    router.push('/');
+  };
+
+  return (
+    <SidebarProvider>
+        <Sidebar>
+            <SidebarHeader>
+                <div className="flex items-center gap-2">
+                    <Logo />
+                </div>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Dashboard'}} isActive>
+                            <Home />
+                            <span>Dashboard</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Users'}}>
+                            <Users />
+                            <span>Users</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Clubs'}}>
+                            <BookOpen />
+                            <span>Clubs</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Events'}}>
+                            <Calendar />
+                            <span>Events</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Gallery'}}>
+                            <GalleryHorizontal />
+                            <span>Gallery</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{children: 'Blog'}}>
+                            <Newspaper />
+                            <span>Blog</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarContent>
+            <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2">
+                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
+                    <LogOut className="h-5 w-5" /> 
+                    <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
+                </Button>
+            </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+            <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
+                <SidebarTrigger className="md:hidden" />
+                <div className="flex-1">
+                    <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+                </div>
+                 {user && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.photoURL ?? ''} />
+                            <AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback>
+                        </Avatar>
+                        <span>{user.displayName}</span>
+                    </div>
+                 )}
+            </header>
+            <main className="flex-1 p-6">
+                <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-muted rounded-lg">
+                    <h2 className="text-2xl font-bold">Welcome, Admin!</h2>
+                    <p className="text-muted-foreground">Select a category from the sidebar to manage your content.</p>
+                </div>
+            </main>
+        </SidebarInset>
+    </SidebarProvider>
+  );
+}
