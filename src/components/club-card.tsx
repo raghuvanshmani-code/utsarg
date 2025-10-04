@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Club } from '@/lib/types';
@@ -16,8 +16,8 @@ export function ClubCard({ club, className }: ClubCardProps) {
   const logo = PlaceHolderImages.find((p) => p.id === club.logo);
 
   return (
-    <Link href={`/clubs/${club.slug}`} className="group block">
-        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1", className)}>
+    <Link href={`/clubs/${club.slug}`} className="group block h-full">
+        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center gap-4">
             {logo && (
                 <Image
@@ -33,12 +33,14 @@ export function ClubCard({ club, className }: ClubCardProps) {
                 <CardTitle className="font-headline">{club.name}</CardTitle>
             </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
             <CardDescription>{club.description}</CardDescription>
-            <Button variant="link" className="mt-4 p-0 h-auto text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                View More <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
             </CardContent>
+            <CardFooter>
+              <Button variant="link" className="p-0 h-auto text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  View More <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
         </Card>
     </Link>
   );
