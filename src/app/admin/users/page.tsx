@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useUser, useFirebaseApp } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2 } from "lucide-react";
+import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, Database } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -115,6 +115,11 @@ export default function UsersAdminPage() {
                 <SidebarMenuButton tooltip={{children: 'Blog'}}>
                     <Newspaper />
                     <span>Blog</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={{children: 'Database'}}>
+                    <Link href="/admin/database"><Database /><span>Database</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

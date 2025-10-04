@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut } from "lucide-react";
+import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 
@@ -60,6 +60,11 @@ export default function AdminDashboard() {
                         <SidebarMenuButton tooltip={{children: 'Blog'}}>
                             <Newspaper />
                             <span>Blog</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip={{children: 'Database'}}>
+                           <Link href="/admin/database"><Database /><span>Database</span></Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
