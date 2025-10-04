@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { PageHeader } from '@/components/page-header';
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck } from 'lucide-react';
 
 export default function AccountPage() {
     const { user, loading } = useUser();
@@ -36,7 +37,13 @@ export default function AccountPage() {
     };
 
     if (loading || !user) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="text-center">
+                    <p>Loading...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -45,6 +52,14 @@ export default function AccountPage() {
             <div className="container mx-auto px-4 py-12 md:py-16">
                 <Card className="mx-auto max-w-lg">
                     <CardHeader className="text-center">
+                        {isAdmin && (
+                            <div className="flex justify-center mb-4">
+                                <Badge variant="secondary" className="text-lg bg-green-700/20 text-green-400 border-green-500/50">
+                                    <ShieldCheck className="mr-2 h-5 w-5" />
+                                    Admin Access
+                                </Badge>
+                            </div>
+                        )}
                         <Avatar className="mx-auto h-24 w-24 mb-4">
                             <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
                             <AvatarFallback>
@@ -53,7 +68,6 @@ export default function AccountPage() {
                         </Avatar>
                         <CardTitle className="text-2xl">{user.displayName || 'User'}</CardTitle>
                         <CardDescription>{user.email || user.phoneNumber}</CardDescription>
-                        {isAdmin && <CardDescription className="text-primary font-bold">Admin</CardDescription>}
                     </CardHeader>
                     <CardContent className="flex flex-col items-center">
                         {/* Add more account details here */}
@@ -66,5 +80,3 @@ export default function AccountPage() {
         </div>
     );
 }
-
-    

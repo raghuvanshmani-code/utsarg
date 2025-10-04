@@ -22,10 +22,9 @@ export default function LoginPage() {
         }
     }, [user, loading, router]);
 
-    const auth = getAuth();
-
     const handleGoogleSignIn = async () => {
         setIsSubmitting(true);
+        const auth = getAuth();
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
@@ -61,10 +60,10 @@ export default function LoginPage() {
                             <Logo />
                         </div>
                         <h1 className="text-3xl font-bold font-headline text-primary">
-                            Welcome Back
+                            Welcome to UTSARG
                         </h1>
                         <p className="text-muted-foreground">
-                            Sign in to access your account and explore the UTSARG community.
+                            Sign in or create an account to join the community.
                         </p>
                     </div>
                     <div className="grid gap-6">
