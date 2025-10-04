@@ -1,5 +1,8 @@
 import type { Club, Event, Post, GalleryImage } from './types';
 
+// NOTE: This is sample data and does not come from a database.
+// In a real application, this data would be fetched from Firestore.
+
 export const clubs: Club[] = [
   {
     slug: 'music-club',
@@ -12,6 +15,7 @@ export const clubs: Club[] = [
       'Organized "Symphony"- the annual musical night',
       'Hosted workshops with renowned artists',
     ],
+    events: ['annual-fest-2024']
   },
   {
     slug: 'literary-club',
@@ -24,6 +28,7 @@ export const clubs: Club[] = [
       'National Debate Champions 2023',
       'Organized LitFest with celebrated authors',
     ],
+    events: ['poetry-slam-2024']
   },
   {
     slug: 'sports-club',
@@ -36,6 +41,7 @@ export const clubs: Club[] = [
       'Hosted the Annual Sports Day successfully',
       'Sent teams to over 10 national competitions',
     ],
+    events: ['sports-day-2024']
   },
   {
     slug: 'art-club',
@@ -60,6 +66,7 @@ export const clubs: Club[] = [
       'Developed the official college app',
       'Conducted 20+ workshops on new technologies',
     ],
+    events: ['hackathon-2024']
   },
     {
     slug: 'social-club',
@@ -85,6 +92,7 @@ export const events: Event[] = [
     location: 'College Auditorium',
     description: 'The most awaited event of the year! A 3-day extravaganza of music, dance, and culture. Featuring live performances, competitions, and celebrity guests.',
     bannerImage: 'event-annual-fest',
+    media: ['gallery-1', 'gallery-7']
   },
   {
     id: 'sports-day-2024',
@@ -95,6 +103,7 @@ export const events: Event[] = [
     location: 'College Sports Complex',
     description: 'A day of thrilling athletic competitions. Witness students compete in track and field, team sports, and more to win glory for their batches.',
     bannerImage: 'event-sports-day',
+    media: ['gallery-2', 'gallery-8']
   },
   {
     id: 'hackathon-2024',
@@ -105,6 +114,7 @@ export const events: Event[] = [
     location: 'Digital Library',
     description: 'A 24-hour coding marathon where teams build innovative solutions to real-world problems. Exciting prizes and internship opportunities to be won.',
     bannerImage: 'event-hackathon',
+    media: ['gallery-4', 'gallery-6']
   },
     {
     id: 'poetry-slam-2024',
@@ -115,11 +125,13 @@ export const events: Event[] = [
     location: 'Amphitheater',
     description: 'An evening of powerful spoken word performances. Come and share your poetry or just listen to the incredible talent of our students.',
     bannerImage: 'blog-event-recap',
+    media: ['gallery-5']
     },
 ];
 
 export const posts: Post[] = [
   {
+    id: 'post-1',
     slug: 'new-student-committee-elected',
     title: 'New Student Committee Elected for 2024-25',
     summary: 'The results are in! Meet the new faces of the UTSARG student committee who will be leading the charge for the upcoming academic year.',
@@ -130,6 +142,7 @@ export const posts: Post[] = [
     content: '<p>The votes have been tallied, and we are thrilled to announce the new UTSARG Student Committee for the academic year 2024-25. This dedicated group of students will be at the forefront of all student activities, working to make this year the most memorable one yet. The new committee is a diverse group, with representatives from various batches and a shared passion for enhancing student life on campus.</p><p>We extend our heartfelt congratulations to the newly elected members and thank all the candidates who participated. The handover ceremony will take place next week, and the new committee will officially begin their duties then. Stay tuned for their introductory messages and plans for the year!</p>',
   },
   {
+    id: 'post-2',
     slug: 'vibrations-2023-a-recap',
     title: 'Vibrations 2023: A Grand Success!',
     summary: 'Relive the best moments from our annual fest, Vibrations 2023. From the electrifying concerts to the stunning cultural performances, it was a week to remember.',
@@ -140,6 +153,7 @@ export const posts: Post[] = [
     content: '<p>Vibrations 2023 has concluded, and what a spectacular event it was! The campus was buzzing with energy for three straight days, with students showcasing their talents and enjoying the myriad of events. The battle of the bands was a major highlight, with fierce competition and incredible performances. The celebrity night featuring a surprise guest artist left everyone spellbound.</p><p>We thank the organizing committee, volunteers, and all participants for making this event a grand success. The memories we made will be cherished for a long time. Check out the gallery for photos from the event!</p>',
   },
     {
+    id: 'post-3',
     slug: 'tech-club-wins-hackathon',
     title: 'Tech Club Dominates at National Hackathon',
     summary: 'Our very own Tech Club has brought home the first prize from the prestigious Smart India Hackathon 2023, beating hundreds of teams from across the country.',
@@ -152,12 +166,12 @@ export const posts: Post[] = [
 ];
 
 export const galleryImages: GalleryImage[] = [
-    { id: '1', title: 'Cultural Night Performance', imageId: 'gallery-1' },
-    { id: '2', title: 'Championship Victory', imageId: 'gallery-2' },
-    { id: '3', title: 'Art Exhibition', imageId: 'gallery-3' },
-    { id: '4', title: 'Robotics Workshop', imageId: 'gallery-4' },
-    { id: '5', title: 'Poetry Slam', imageId: 'gallery-5' },
-    { id: '6', title: 'Project Demo', imageId: 'gallery-6' },
-    { id: '7', title: 'Annual Fest Crowd', imageId: 'event-annual-fest' },
-    { id: '8', title: 'Runners at the starting line', imageId: 'event-sports-day' },
+    { id: 'gallery-1', title: 'Cultural Night Performance', imageId: 'gallery-1', type: 'image', eventId: 'annual-fest-2024', clubId: 'music-club' },
+    { id: 'gallery-2', title: 'Championship Victory', imageId: 'gallery-2', type: 'image', eventId: 'sports-day-2024', clubId: 'sports-club' },
+    { id: 'gallery-3', title: 'Art Exhibition', imageId: 'gallery-3', type: 'image', clubId: 'art-club' },
+    { id: 'gallery-4', title: 'Robotics Workshop', imageId: 'gallery-4', type: 'image', eventId: 'hackathon-2024', clubId: 'tech-club'},
+    { id: 'gallery-5', title: 'Poetry Slam', imageId: 'gallery-5', type: 'image', eventId: 'poetry-slam-2024', clubId: 'literary-club' },
+    { id: 'gallery-6', title: 'Project Demo', imageId: 'gallery-6', type: 'image', clubId: 'tech-club'},
+    { id: 'gallery-7', title: 'Annual Fest Crowd', imageId: 'event-annual-fest', type: 'image', eventId: 'annual-fest-2024', clubId: 'music-club' },
+    { id: 'gallery-8', title: 'Runners at the starting line', imageId: 'event-sports-day', type: 'image', eventId: 'sports-day-2024', clubId: 'sports-club' },
 ];

@@ -11,6 +11,7 @@ export type Club = {
   description: string;
   achievements?: string[];
   bannerImage: string;
+  events?: string[];
 };
 
 export type Event = {
@@ -22,9 +23,11 @@ export type Event = {
   description: string;
   location: string;
   bannerImage: string;
+  media?: string[];
 };
 
 export type Post = {
+  id: string;
   slug: string;
   title: string;
   summary: string;
@@ -39,4 +42,7 @@ export type GalleryImage = {
   id: string;
   title: string;
   imageId: string;
+  type: 'image' | 'video';
+  clubId?: string;
+  eventId?: string;
 };

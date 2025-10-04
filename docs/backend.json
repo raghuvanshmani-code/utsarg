@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Authentication."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role.",
+          "enum": ["student", "admin", "club_leader"]
+        },
+        "joinedClubs": {
+          "type": "array",
+          "description": "An array of club IDs that the user has joined.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profilePicURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's profile picture."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user account was created."
+        }
+      },
+      "required": ["uid", "name", "email", "role", "createdAt"]
+    },
+    "club": {
+      "title": "Club",
+      "description": "Represents a student club.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the club."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the club."
+        },
+        "logoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the club's logo."
+        },
+        "events": {
+          "type": "array",
+          "description": "An array of event IDs organized by the club.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["name", "description", "logoURL"]
+    },
+    "event": {
+      "title": "Event",
+      "description": "Represents a club event.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the event."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time of the event."
+        },
+        "clubID": {
+          "type": "string",
+          "description": "The ID of the club organizing the event."
+        },
+        "bannerURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the event's banner image."
+        },
+        "mediaURLs": {
+          "type": "array",
+          "description": "An array of URLs for media associated with the event.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "required": ["title", "description", "date", "clubID", "bannerURL"]
+    },
+    "galleryItem": {
+      "title": "Gallery Item",
+      "description": "Represents a media item in the gallery.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title or caption for the media item."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of media.",
+          "enum": ["image", "video"]
+        },
+        "mediaURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the media."
+        },
+        "clubID": {
+          "type": "string",
+          "description": "Optional ID of the club associated with this media."
+        },
+        "eventID": {
+          "type": "string",
+          "description": "Optional ID of the event associated with this media."
+        }
+      },
+      "required": ["title", "type", "mediaURL"]
+    },
+    "blogPost": {
+      "title": "Blog Post",
+      "description": "Represents a blog or news post.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the blog post."
+        },
+        "content": {
+          "type": "string",
+          "description": "The HTML content of the blog post."
+        },
+        "imageURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional URL for the post's main image."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The publication date of the post."
+        }
+      },
+      "required": ["title", "content", "date"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "phone"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "Stores public profiles for all users."
+    },
+    "/clubs/{clubId}": {
+      "schema": { "$ref": "#/entities/club" },
+      "description": "Stores information about student clubs."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/event" },
+      "description": "Stores details about upcoming and past events."
+    },
+    "/gallery/{galleryId}": {
+      "schema": { "$ref": "#/entities/galleryItem" },
+      "description": "Collection of all media items for the gallery."
+    },
+    "/blog/{blogId}": {
+      "schema": { "$ref": "#/entities/blogPost" },
+      "description": "Stores blog posts and news articles."
+    }
+  }
+}
