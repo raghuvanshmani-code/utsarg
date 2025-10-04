@@ -1,10 +1,11 @@
 import type { Club, Event, Post, GalleryImage } from './types';
 
-// NOTE: This is sample data and does not come from a database.
-// In a real application, this data would be fetched from Firestore.
+// NOTE: This file is now deprecated. Data is being fetched from Firestore.
+// The data is kept here for reference during the transition.
 
 export const clubs: Club[] = [
   {
+    id: 'music-club',
     slug: 'music-club',
     name: 'Music Club',
     logo: 'music-club-logo',
@@ -18,6 +19,7 @@ export const clubs: Club[] = [
     events: ['annual-fest-2024']
   },
   {
+    id: 'literary-club',
     slug: 'literary-club',
     name: 'Literary Club',
     logo: 'literary-club-logo',
@@ -30,7 +32,8 @@ export const clubs: Club[] = [
     ],
     events: ['poetry-slam-2024']
   },
-  {
+  { 
+    id: 'sports-club',
     slug: 'sports-club',
     name: 'Sports Club',
     logo: 'sports-club-logo',
@@ -44,6 +47,7 @@ export const clubs: Club[] = [
     events: ['sports-day-2024']
   },
   {
+    id: 'art-club',
     slug: 'art-club',
     name: 'Art Club',
     logo: 'art-club-logo',
@@ -56,6 +60,7 @@ export const clubs: Club[] = [
     ],
   },
   {
+    id: 'tech-club',
     slug: 'tech-club',
     name: 'Tech Club',
     logo: 'tech-club-logo',
@@ -69,6 +74,7 @@ export const clubs: Club[] = [
     events: ['hackathon-2024']
   },
     {
+    id: 'social-club',
     slug: 'social-club',
     name: 'Social Service Club',
     logo: 'social-club-logo',
@@ -88,6 +94,7 @@ export const events: Event[] = [
     title: 'Vibrations 2024 - Annual Fest',
     date: '2024-10-20T18:00:00Z',
     club: 'Music Club',
+    clubId: 'music-club',
     clubSlug: 'music-club',
     location: 'College Auditorium',
     description: 'The most awaited event of the year! A 3-day extravaganza of music, dance, and culture. Featuring live performances, competitions, and celebrity guests.',
@@ -99,6 +106,7 @@ export const events: Event[] = [
     title: 'Annual Sports Day',
     date: '2024-11-15T09:00:00Z',
     club: 'Sports Club',
+    clubId: 'sports-club',
     clubSlug: 'sports-club',
     location: 'College Sports Complex',
     description: 'A day of thrilling athletic competitions. Witness students compete in track and field, team sports, and more to win glory for their batches.',
@@ -110,6 +118,7 @@ export const events: Event[] = [
     title: 'Innovate & Create Hackathon',
     date: '2024-11-30T10:00:00Z',
     club: 'Tech Club',
+    clubId: 'tech-club',
     clubSlug: 'tech-club',
     location: 'Digital Library',
     description: 'A 24-hour coding marathon where teams build innovative solutions to real-world problems. Exciting prizes and internship opportunities to be won.',
@@ -121,6 +130,7 @@ export const events: Event[] = [
     title: 'Poetry Slam Night',
     date: '2024-09-25T19:00:00Z',
     club: 'Literary Club',
+    clubId: 'literary-club',
     clubSlug: 'literary-club',
     location: 'Amphitheater',
     description: 'An evening of powerful spoken word performances. Come and share your poetry or just listen to the incredible talent of our students.',

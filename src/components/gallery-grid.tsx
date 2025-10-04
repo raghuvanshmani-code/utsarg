@@ -5,23 +5,30 @@ import Image from 'next/image';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { GalleryImage as GalleryImageType } from '@/lib/types';
+import { useCollection } from '@/firebase';
+import { Skeleton } from './ui/skeleton';
 
-interface GalleryGridProps {
-  images: GalleryImageType[];
-}
-
-export function GalleryGrid({ images }: GalleryGridProps) {
+export function GalleryGrid() {
+  const { data: images, loading } = useCollection<GalleryImageType>('gallery');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const getImageData = (imageId: string) => {
     return PlaceHolderImages.find(p => p.id === imageId);
   }
 
+  if (loading) {
+      return (
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+          </div>
+      )
+  }
+
   return (
     <>
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
         {images.map((image) => {
-          const imageData = getImageData(image.imageId);
+          const imageData = getImageData(image.mediaURL);
           return imageData ? (
             <div
               key={image.id}

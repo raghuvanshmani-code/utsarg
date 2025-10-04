@@ -1,10 +1,12 @@
+'use client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Tag, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import type { Event } from '@/lib/types';
+import type { Event, Club } from '@/lib/types';
 import { format } from 'date-fns';
+import { useDoc } from '@/firebase';
 
 interface EventCardProps {
   event: Event;
@@ -12,6 +14,7 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const banner = PlaceHolderImages.find((p) => p.id === event.bannerImage);
+  const { data: club } = useDoc<Club>(`clubs/${event.clubId}`);
 
   return (
     <Link href={`/events/${event.id}`} className="group block h-full">
@@ -36,10 +39,12 @@ export function EventCard({ event }: EventCardProps) {
               <Calendar className="h-4 w-4 mr-2" />
               <span>{format(new Date(event.date), 'MMM dd, yyyy')}</span>
             </div>
-            <div className="flex items-center">
-              <Tag className="h-4 w-4 mr-2" />
-              <span>{event.club}</span>
-            </div>
+            {club && (
+                <div className="flex items-center">
+                    <Tag className="h-4 w-4 mr-2" />
+                    <span>{club.name}</span>
+                </div>
+            )}
           </div>
         </CardContent>
         <CardFooter>
@@ -51,5 +56,3 @@ export function EventCard({ event }: EventCardProps) {
     </Link>
   );
 }
-
-    

@@ -16,7 +16,7 @@ export function ClubCard({ club, className }: ClubCardProps) {
   const logo = PlaceHolderImages.find((p) => p.id === club.logo);
 
   return (
-    <Link href={`/clubs/${club.slug}`} className="group block h-full">
+    <Link href={`/clubs/${club.id}`} className="group block h-full">
         <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center gap-4">
             {logo && (
@@ -45,5 +45,3 @@ export function ClubCard({ club, className }: ClubCardProps) {
     </Link>
   );
 }
-
-    

@@ -1,31 +1,48 @@
+'use client';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { CheckCircle, PartyPopper } from 'lucide-react';
 
-import { clubs, events } from '@/lib/data';
+import { useDoc, useCollection } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/event-card';
+import type { Club, Event } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export async function generateStaticParams() {
-  return clubs.map((club) => ({
-    slug: club.slug,
-  }));
-}
 
 export default function ClubDetailsPage({ params }: { params: { slug: string } }) {
-  const club = clubs.find((c) => c.slug === params.slug);
+  const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${params.slug}`);
+  const { data: clubEvents, loading: eventsLoading } = useCollection<Event>(`events`); // Simplified query
+
+  if (clubLoading || eventsLoading) {
+    return (
+        <div>
+            <Skeleton className="h-[40vh] w-full" />
+             <div className="container mx-auto px-4 py-12 md:py-16">
+                <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+                    <div className="lg:col-span-2 space-y-8">
+                        <Skeleton className="h-8 w-1/3" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <Skeleton className="h-48 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   if (!club) {
     notFound();
   }
-
-  const clubEvents = events.filter(e => e.clubSlug === club.slug);
+  
+  const filteredEvents = clubEvents.filter(e => e.clubId === club.id);
   const banner = PlaceHolderImages.find((p) => p.id === club.bannerImage);
 
   return (
     <div>
-      {/* Hero Section */}
       <section className="relative h-[40vh] w-full flex items-center justify-center text-center text-white">
         {banner && (
           <Image
@@ -45,7 +62,6 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
         </div>
       </section>
 
-      {/* Club Details */}
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           <div className="lg:col-span-2 space-y-8">
@@ -79,14 +95,14 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
           </div>
         </div>
         
-        {clubEvents.length > 0 && (
+        {filteredEvents.length > 0 && (
           <div className="mt-16">
             <h2 className="text-3xl font-bold text-center mb-8 font-headline">
               <PartyPopper className="h-8 w-8 inline-block mr-2 text-primary" />
               Upcoming Events
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {clubEvents.map(event => (
+              {filteredEvents.map(event => (
                 <EventCard key={event.id} event={event} />
               ))}
             </div>

@@ -1,20 +1,44 @@
+'use client';
 import Link from 'next/link';
-import { posts } from '@/lib/data';
+import { useCollection } from '@/firebase';
+import type { Post } from '@/lib/types';
 import { BlogCard } from '@/components/blog-card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '../ui/skeleton';
+
+function BlogCardSkeleton() {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[225px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+}
 
 export function LatestNews() {
-  const latestPosts = posts.slice(0, 3);
+  const { data: posts, loading } = useCollection<Post>('blog');
+  const latestPosts = posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
 
   return (
     <section className="py-12 md:py-16">
       <h2 className="text-3xl font-bold text-center mb-2 font-headline">Latest News</h2>
       <p className="text-center text-muted-foreground mb-8">Stay updated with the latest happenings and stories.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {latestPosts.map((post) => (
-          <BlogCard key={post.slug} post={post} />
-        ))}
-      </div>
+       {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <BlogCardSkeleton />
+                <BlogCardSkeleton />
+                <BlogCardSkeleton />
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {latestPosts.map((post) => (
+                <BlogCard key={post.id} post={post} />
+                ))}
+            </div>
+        )}
       <div className="text-center mt-12">
         <Button asChild size="lg" className="transform transition-transform hover:scale-105">
           <Link href="/blog">Read More Articles</Link>

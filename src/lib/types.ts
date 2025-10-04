@@ -5,7 +5,7 @@ export type NavItem = {
 };
 
 export type Club = {
-  slug: string;
+  id: string;
   name: string;
   logo: string;
   description: string;
@@ -18,8 +18,7 @@ export type Event = {
   id: string;
   title: string;
   date: string;
-  club: string;
-  clubSlug: string;
+  clubId: string;
   description: string;
   location: string;
   bannerImage: string;
@@ -28,7 +27,6 @@ export type Event = {
 
 export type Post = {
   id: string;
-  slug: string;
   title: string;
   summary: string;
   author: string;
@@ -41,7 +39,7 @@ export type Post = {
 export type GalleryImage = {
   id: string;
   title: string;
-  imageId: string;
+  mediaURL: string;
   type: 'image' | 'video';
   clubId?: string;
   eventId?: string;

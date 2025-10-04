@@ -4,16 +4,31 @@ import { useState } from 'react';
 import { Calendar as CalendarIcon, List } from 'lucide-react';
 import { format } from 'date-fns';
 
-import { events } from '@/lib/data';
+import { useCollection } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { EventCard } from '@/components/event-card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import type { Event } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ViewMode = 'calendar' | 'list';
 
+function EventCardSkeleton() {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[225px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+}
+
 export function EventsView() {
+  const { data: events, loading } = useCollection<Event>('events');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [date, setDate] = useState<Date | undefined>(new Date());
   
@@ -49,7 +64,15 @@ export function EventsView() {
         </div>
       </div>
 
-      {viewMode === 'list' && (
+      {loading && (
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <EventCardSkeleton />
+            <EventCardSkeleton />
+            <EventCardSkeleton />
+         </div>
+      )}
+
+      {!loading && viewMode === 'list' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((event) => (
             <EventCard key={event.id} event={event} />
@@ -57,7 +80,7 @@ export function EventsView() {
         </div>
       )}
 
-      {viewMode === 'calendar' && (
+      {!loading && viewMode === 'calendar' && (
         <Card>
             <CardContent className="p-2 md:p-6 flex justify-center">
                 <Calendar

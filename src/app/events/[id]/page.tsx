@@ -1,33 +1,49 @@
+'use client';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Calendar, MapPin, Tag, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 
-import { events, clubs } from '@/lib/data';
+import { useDoc } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import type { Event, Club } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export async function generateStaticParams() {
-  return events.map((event) => ({
-    id: event.id,
-  }));
-}
 
 export default function EventDetailsPage({ params }: { params: { id: string } }) {
-  const event = events.find((e) => e.id === params.id);
+  const { data: event, loading: eventLoading } = useDoc<Event>(`events/${params.id}`);
+  const { data: club, loading: clubLoading } = useDoc<Club>(event ? `clubs/${event.clubId}` : '');
+
+  if (eventLoading || (event && !club)) {
+    return (
+        <div>
+            <Skeleton className="h-[40vh] w-full" />
+             <div className="container mx-auto px-4 py-12 md:py-16">
+                <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+                    <div className="lg:col-span-2 space-y-4">
+                        <Skeleton className="h-8 w-1/3" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <Skeleton className="h-48 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   if (!event) {
     notFound();
   }
 
-  const club = clubs.find(c => c.slug === event.clubSlug);
   const banner = PlaceHolderImages.find((p) => p.id === event.bannerImage);
 
   return (
     <div>
-      {/* Hero Section */}
       <section className="relative h-[40vh] w-full flex items-center justify-center text-center text-white">
         {banner && (
           <Image
@@ -47,17 +63,14 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
         </div>
       </section>
 
-      {/* Event Details */}
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           
-          {/* Main Content */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold font-headline text-primary mb-4">About the Event</h2>
             <p className="text-muted-foreground text-lg">{event.description}</p>
           </div>
           
-          {/* Sidebar */}
           <div className="lg:col-span-1">
              <div className="bg-card p-6 rounded-lg shadow-sm space-y-6">
                 <Button size="lg" className="w-full text-lg transform transition-transform hover:scale-105">
@@ -84,10 +97,10 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                       <div>
                         <strong>Organized by:</strong> 
                         {club ? 
-                          <Link href={`/clubs/${club.slug}`} className="ml-1">
-                            <Badge variant="secondary" className="hover:bg-primary/20">{event.club}</Badge>
+                          <Link href={`/clubs/${club.id}`} className="ml-1">
+                            <Badge variant="secondary" className="hover:bg-primary/20">{club.name}</Badge>
                           </Link>
-                          : <span className="ml-1">{event.club}</span>
+                          : <span className="ml-1">{event.clubId}</span>
                         }
                       </div>
                     </li>
