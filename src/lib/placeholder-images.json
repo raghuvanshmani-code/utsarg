@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-banner",
-      "description": "A group of students collaborating and smiling.",
-      "imageUrl": "https://images.unsplash.com/photo-1643321444939-ce662d82051e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHVkZW50cyUyMGV2ZW50fGVufDB8fHx8MTc1OTU3OTQxM3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "students event"
+      "description": "A picture of the GSVM Medical College building.",
+      "imageUrl": "https://storage.googleapis.com/studiostack-asset-poc-2-public-assets/generated/8de2f6c5-cc86-4e89-b541-177b47e45214.png",
+      "imageHint": "college campus"
     },
     {
       "id": "music-club-logo",
