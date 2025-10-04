@@ -14,7 +14,7 @@ export function EventCard({ event }: EventCardProps) {
   const banner = PlaceHolderImages.find((p) => p.id === event.bannerImage);
 
   return (
-    <Link href={`/events/${event.id}`} className="group block">
+    <Link href={`/events/${event.id}`} className="group block h-full">
       <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
         {banner && (
           <div className="aspect-video relative overflow-hidden">

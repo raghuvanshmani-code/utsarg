@@ -14,7 +14,7 @@ export function BlogCard({ post }: BlogCardProps) {
   const thumbnail = PlaceHolderImages.find((p) => p.id === post.thumbnail);
 
   return (
-    <Link href={`/blog/${post.slug}`} className="group block">
+    <Link href={`/blog/${post.slug}`} className="group block h-full">
         <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
             {thumbnail && (
             <div className="aspect-video relative overflow-hidden">
