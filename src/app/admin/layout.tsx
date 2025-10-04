@@ -1,10 +1,10 @@
-
 'use client';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldX } from 'lucide-react';
 import { FirebaseClientProvider } from '@/firebase';
+import { AdminLoginForm } from '@/components/admin-login-form';
 
 export default function AdminLayout({
   children,
@@ -21,7 +21,7 @@ export default function AdminLayout({
       return;
     }
     if (!user) {
-      router.replace('/login');
+      setIsChecking(false);
       return;
     }
     
@@ -29,13 +29,10 @@ export default function AdminLayout({
       .then((idTokenResult) => {
         if (idTokenResult.claims.admin) {
           setIsAdmin(true);
-        } else {
-            router.replace('/account');
         }
         setIsChecking(false);
       })
       .catch(() => {
-        router.replace('/account');
         setIsChecking(false);
       });
   }, [user, loading, router]);
@@ -51,6 +48,14 @@ export default function AdminLayout({
     );
   }
   
+  if (!user) {
+    return (
+        <FirebaseClientProvider>
+            <AdminLoginForm />
+        </FirebaseClientProvider>
+    )
+  }
+
   if (!isAdmin) {
       return (
         <FirebaseClientProvider>
