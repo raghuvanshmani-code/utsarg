@@ -63,7 +63,7 @@ export default function LoginPage() {
                             Welcome to UTSARG
                         </h1>
                         <p className="text-muted-foreground">
-                            Sign in or create an account to join the community.
+                            Sign in to continue to the student hub.
                         </p>
                     </div>
                     <div className="grid gap-6">
