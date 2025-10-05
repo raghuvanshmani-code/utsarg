@@ -2,12 +2,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
-// Initialize the Admin SDK
-// The service account is automatically available in the Cloud Functions environment
-if (!admin.apps.length) {
-    admin.initializeApp();
-}
-
+admin.initializeApp();
 
 /**
  * Sets the admin custom claim on a user account. Can only be called by an existing admin.
@@ -34,26 +29,4 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
     }
     throw new functions.https.HttpsError('internal', 'An unexpected error occurred.');
   }
-});
-
-/**
- * **TEMPORARY FUNCTION**
- * This function automatically assigns the 'admin' role to the first user with a specific email.
- * This is used for initial setup and should be removed after the first admin is created.
- */
-exports.makeFirstAdmin = functions.auth.user().onCreate(async (user) => {
-    // THIS IS THE EMAIL THAT WILL BECOME THE FIRST ADMIN
-    const FIRST_ADMIN_EMAIL = "raghuvanshmani876@gmail.com";
-
-    if (user.email === FIRST_ADMIN_EMAIL) {
-        try {
-            await admin.auth().setCustomUserClaims(user.uid, { admin: true });
-            console.log(`Successfully made ${user.email} an admin.`);
-            return null;
-        } catch (error) {
-            console.error(`Error setting custom claim for ${user.email}:`, error);
-            return null;
-        }
-    }
-    return null;
 });
