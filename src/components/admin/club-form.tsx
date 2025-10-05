@@ -161,8 +161,20 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
                 </FormItem>
               )}
             />
-            <ImageUploadField form={form} fieldName="logo" label="Logo Image" />
-            <ImageUploadField form={form} fieldName="bannerImage" label="Banner Image" />
+            <FormField
+              control={form.control}
+              name="logo"
+              render={({ field }) => (
+                <ImageUploadField form={form} fieldName="logo" label="Logo Image" />
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="bannerImage"
+              render={({ field }) => (
+                <ImageUploadField form={form} fieldName="bannerImage" label="Banner Image" />
+              )}
+            />
             
             <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>

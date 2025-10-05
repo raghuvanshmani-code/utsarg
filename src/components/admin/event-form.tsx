@@ -244,7 +244,13 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
                 </FormItem>
               )}
             />
-             <ImageUploadField form={form} fieldName="bannerImage" label="Banner Image" />
+             <FormField
+              control={form.control}
+              name="bannerImage"
+              render={({ field }) => (
+                <ImageUploadField form={form} fieldName="bannerImage" label="Banner Image" />
+              )}
+            />
 
             <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>

@@ -148,7 +148,13 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
               )}
             />
             
-            <ImageUploadField form={form} fieldName="mediaURL" label="Image" />
+            <FormField
+              control={form.control}
+              name="mediaURL"
+              render={({ field }) => (
+                 <ImageUploadField form={form} fieldName="mediaURL" label="Image" />
+              )}
+            />
             
              <FormField
               control={form.control}
