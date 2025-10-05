@@ -18,6 +18,7 @@ const formSchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   logo: z.string().optional(),
   bannerImage: z.string().optional(),
+  achievements: z.array(z.string()).optional(),
 });
 
 interface ClubFormProps {
@@ -43,6 +44,7 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
           description: '',
           logo: '',
           bannerImage: '',
+          achievements: [],
         });
       }
     }
@@ -59,7 +61,7 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto pr-6">
             <FormField
               control={form.control}
               name="name"
@@ -114,7 +116,7 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
