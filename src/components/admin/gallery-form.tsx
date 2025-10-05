@@ -30,20 +30,19 @@ interface GalleryFormProps {
 export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting }: GalleryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: item ?? {
-      title: '',
-      mediaURL: '',
-      type: 'image',
-    },
   });
 
   useEffect(() => {
     if (isOpen) {
-      form.reset(item ?? {
-        title: '',
-        mediaURL: '',
-        type: 'image',
-      });
+      if (item) {
+        form.reset(item);
+      } else {
+        form.reset({
+          title: '',
+          mediaURL: '',
+          type: 'image',
+        });
+      }
     }
   }, [item, form, isOpen]);
 

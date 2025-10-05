@@ -168,5 +168,3 @@ export const galleryImages: GalleryImage[] = [
     { id: 'gallery-7', title: 'Annual Fest Crowd', mediaURL: 'https://storage.googleapis.com/studioprod-521a7.appspot.com/5cd84393-2550-4235-961f-a39396e9499d/resources/image_1724070425712.png', type: 'image', eventId: 'annual-fest-2024', clubId: 'music-club' },
     { id: 'gallery-8', title: 'Runners at the starting line', mediaURL: 'https://storage.googleapis.com/studioprod-521a7.appspot.com/5cd84393-2550-4235-961f-a39396e9499d/resources/image_1724070459586.png', type: 'image', eventId: 'sports-day-2024', clubId: 'sports-club' },
 ];
-
-    
