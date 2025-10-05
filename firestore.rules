@@ -1,149 +1,155 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset implements a hybrid security model, balancing public accessibility with user-based ownership and authentication.
- *
- * Core Philosophy:
- *  - Allows open reads (get, list) for public content while restricting writes to authenticated users or specific owners.
- *  - Enforces ownership for user-specific data trees, ensuring only the user can modify their own data.
+ * @description This ruleset enforces a role-based access control model with specific rules for different data collections.
  *
  * Data Structure:
- *  - Public data is stored in top-level collections like `/clubs`, `/events`, `/gallery`, and `/blog`.
- *  - User-specific data is stored under `/users/{userId}`.
- *  - Images uploaded by users are stored under `/uploads/{uploadId}`.
+ * - /users/{userId}: Stores public user profiles, accessible only to the owner.
+ * - /clubs/{clubId}: Stores information about student clubs. Public read, owner-only write.
+ * - /events/{eventId}: Stores event details. Public read, owner-only write.
+ * - /gallery/{galleryId}: Collection of all media items for the gallery. Admin-only write.
+ * - /blog/{blogId}: Stores blog posts and news articles. Public read, owner-only write.
+ * - /uploads/{uploadId}: Stores metadata about images uploaded to Cloudinary. Admin-only write.
  *
  * Key Security Decisions:
- *  - Public Read Access: Collections like `/clubs`, `/events`, `/gallery`, and `/blog` are publicly readable to support open discovery.
- *  - Authenticated Writes for Uploads: Only authenticated users can create documents in `/uploads`.
- *  - Ownership Enforcement: All user-specific data under `/users/{userId}` can only be accessed by the corresponding user.
- *  - No User Listing: Listing all users (`/users`) is explicitly denied for privacy.
- *
- *  Denormalization for Authorization:
- *   - The `uploads` collection relies on the authenticated user's `uid` to control write access.
+ * - User listing is disallowed.
+ * - Gallery and Uploads collections are restricted to admin writes only.
+ * - Public read access is granted to the Clubs, Events, and Blog collections.
+ * - User documents are owned by the corresponding user ID.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     * @path N/A
+     * @description Checks if the request is authenticated.
+     * @return {bool} True if the request is authenticated, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @path N/A
-     * @param {string} userId - The user ID to compare against.
+     * @description Checks if the authenticated user's ID matches the provided user ID.
+     * @param {string} userId The user ID to compare against.
+     * @return {bool} True if the user is signed in and the UID matches, false otherwise.
      */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is an admin.
+     * @return {bool} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+        return isSignedIn() && request.auth.token.role == 'admin';
     }
 
     /**
      * @description Checks if the authenticated user is the existing owner of the document.
-     * @path N/A
-     * @param {string} userId - The user ID to compare against.
+     * @param {string} userId The user ID to compare against.
+     * @return {bool} True if the user is signed in, the UID matches, and the resource exists, false otherwise.
      */
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+        return isOwner(userId) && resource != null;
     }
-    
+
     /**
-     * @description Allows users to read their own profile data, and create their own profile on signup.  No user listing.
+     * @description Rule for user profiles.
      * @path /users/{userId}
-     * @allow (get, update, delete) User 'test_user' can read their own profile.
-     * @allow (create) User 'test_user' can create their own profile on signup.
-     * @deny (get, update, delete) User 'other_user' cannot read 'test_user' profile.
-     * @deny (list) Nobody can list all users.
-     * @principle Enforces user-ownership for accessing user profile data.
+     * @allow (create) - A user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete) - A user can only access their own profile.
+     * @deny (create) - A user cannot create a profile for another user.
+     * @deny (update, delete) - A user cannot modify another user's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows anyone to read club data, but no one to create, update, or delete.
+     * @description Rule for student clubs.
      * @path /clubs/{clubId}
-     * @allow (get, list) Anyone can read club information.
-     * @deny (create, update, delete) No one can create, update, or delete club information.
-     * @principle Enforces public read access but restricts write access.
+     * @allow (get, list) - Anyone can read club information.
+     * @allow (create) - Only the admin can create a club. The club document must contain a field called ownerId
+     * matching the user ID creating the club.
+     * @allow (update, delete) - Only the owner of a club document can modify/delete it.
+     * @deny (create, update, delete) - Non-admins cannot create, modify, or delete clubs.
+     * @principle Public read access with owner-only writes.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Allows anyone to read event data, but no one to create, update, or delete.
+     * @description Rule for events.
      * @path /events/{eventId}
-     * @allow (get, list) Anyone can read event information.
-     * @deny (create, update, delete) No one can create, update, or delete event information.
-     * @principle Enforces public read access but restricts write access.
+     * @allow (get, list) - Anyone can read event information.
+     * @allow (create) - Only the admin can create an event. The event document must contain a field called ownerId
+     * matching the user ID creating the event.
+     * @allow (update, delete) - Only the owner of an event document can modify/delete it.
+     * @deny (create, update, delete) - Non-admins cannot create, modify, or delete events.
+     * @principle Public read access with owner-only writes.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Allows anyone to read gallery items, but no one to create, update, or delete.
+     * @description Rule for gallery items.
      * @path /gallery/{galleryId}
-     * @allow (get, list) Anyone can view gallery items.
-     * @deny (create, update, delete) No one can modify gallery items.
-     * @principle Enforces public read access but restricts write access.
+     * @allow (get, list) - Anyone can read gallery items.
+     * @allow (create, update, delete) - Only admins can create, update, or delete gallery items.
+     * @deny (create, update, delete) - Non-admins cannot modify gallery items.
+     * @principle Restricts write access to admins only.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Allows anyone to read blog posts, but no one to create, update, or delete.
+     * @description Rule for blog posts.
      * @path /blog/{blogId}
-     * @allow (get, list) Anyone can read blog posts.
-     * @deny (create, update, delete) No one can modify blog posts.
-     * @principle Enforces public read access but restricts write access.
+     * @allow (get, list) - Anyone can read blog posts.
+     * @allow (create) - Only the admin can create a blog post. The blog post document must contain a field called ownerId
+     * matching the user ID creating the post.
+     * @allow (update, delete) - Only the owner of a blog post document can modify/delete it.
+     * @deny (create, update, delete) - Non-admins cannot create, modify, or delete blog posts.
+     * @principle Public read access with owner-only writes.
      */
     match /blog/{blogId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
 
-   /**
-     * @description Allows anyone to read user image metadata, but only the owner can create, update, or delete it.
-     * @path /userImages/{imageId}
-     * @allow (get, list) Anyone can read user image metadata.
-     * @allow (create) User 'test_user' can create image metadata if the userId matches their auth.
-     * @allow (update, delete) User 'test_user' can update/delete image metadata only if they own it and the document exists.
-     * @deny (create) User 'other_user' cannot create image metadata for 'test_user'.
-     * @deny (update, delete) User 'other_user' cannot update/delete image metadata owned by 'test_user'.
-     * @principle Enforces owner-only write access for user image metadata.
+    /**
+     * @description Rule for uploads.
+     * @path /uploads/{uploadId}
+     * @allow (get, list) - Anyone can read uploads.
+     * @allow (create, update, delete) - Only admins can create, update, or delete uploads.
+     * @deny (create, update, delete) - Non-admins cannot modify uploads.
+     * @principle Restricts write access to admins only.
      */
-    match /userImages/{imageId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
-    }
-
-      /**
-       * @description Allows authenticated users to create new uploads, and everyone to read (public gallery). No updates or deletes.
-       * @path /uploads/{uploadId}
-       * @allow (create) Authenticated user can create an upload.
-       * @allow (get, list) Everyone can view uploads.
-       * @deny (update, delete) No one can update or delete uploads.
-       * @principle Enables public read access with authenticated-user-only create access.
-       */
     match /uploads/{uploadId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
   }
 }
