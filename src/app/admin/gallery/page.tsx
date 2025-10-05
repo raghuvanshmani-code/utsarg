@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -219,13 +219,19 @@ export default function GalleryAdminPage() {
                     {galleryItems.map((item) => (
                         <TableRow key={item.id}>
                             <TableCell>
-                                <Image
-                                  src={item.mediaURL}
-                                  alt={item.title}
-                                  width={64}
-                                  height={64}
-                                  className="rounded-md object-cover"
-                                />
+                                {item.mediaURL ? (
+                                    <Image
+                                    src={item.mediaURL}
+                                    alt={item.title}
+                                    width={64}
+                                    height={64}
+                                    className="rounded-md object-cover"
+                                    />
+                                ) : (
+                                    <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center">
+                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                )}
                             </TableCell>
                             <TableCell className="font-medium">{item.title}</TableCell>
                             <TableCell>{item.type}</TableCell>
