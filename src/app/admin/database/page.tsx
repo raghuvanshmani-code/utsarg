@@ -100,9 +100,8 @@ export default function DatabaseAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: 'Blog'}}>
-                    <Newspaper />
-                    <span>Blog</span>
+                <SidebarMenuButton asChild tooltip={{children: 'Blog'}}>
+                    <Link href="/admin/blog"><Newspaper /><span>Blog</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

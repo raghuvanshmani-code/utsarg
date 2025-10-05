@@ -100,7 +100,6 @@ export default function EventsAdminPage() {
           updateDoc(docRef, values).then(() => {
               toast({ title: "Success", description: "Event updated successfully." });
               setIsDialogOpen(false);
-              setSelectedEvent(null);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
                   path: docRef.path,
@@ -162,9 +161,8 @@ export default function EventsAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: 'Blog'}}>
-                    <Newspaper />
-                    <span>Blog</span>
+                <SidebarMenuButton asChild tooltip={{children: 'Blog'}}>
+                    <Link href="/admin/blog"><Newspaper /><span>Blog</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

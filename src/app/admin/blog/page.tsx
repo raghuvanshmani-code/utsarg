@@ -2,14 +2,14 @@
 'use client';
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import type { GalleryImage } from '@/lib/types';
+import type { Post } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,24 +30,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { GalleryForm } from '@/components/admin/gallery-form';
+import { BlogForm } from '@/components/admin/blog-form';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import Image from 'next/image';
+import { format } from 'date-fns';
 
-
-export default function GalleryAdminPage() {
+export default function BlogAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const { data: galleryItems, loading } = useCollection<GalleryImage>('gallery');
+  const { data: posts, loading } = useCollection<Post>('blog');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<GalleryImage | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<GalleryImage | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignOut = () => {
@@ -56,30 +55,30 @@ export default function GalleryAdminPage() {
   };
 
   const handleAddNew = () => {
-    setSelectedItem(null);
+    setSelectedPost(null);
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (item: GalleryImage) => {
-    setSelectedItem(item);
+  const handleEdit = (post: Post) => {
+    setSelectedPost(post);
     setIsDialogOpen(true);
   };
   
-  const handleDelete = (item: GalleryImage) => {
-    setItemToDelete(item);
+  const handleDelete = (post: Post) => {
+    setPostToDelete(post);
     setIsAlertOpen(true);
   };
 
   const confirmDelete = () => {
-    if (!itemToDelete || !db) return;
+    if (!postToDelete || !db) return;
     
     setIsSubmitting(true);
-    const docRef = doc(db, 'gallery', itemToDelete.id);
+    const docRef = doc(db, 'blog', postToDelete.id);
     
     deleteDoc(docRef).then(() => {
-        toast({ title: "Success", description: "Gallery item deleted successfully." });
+        toast({ title: "Success", description: "Post deleted successfully." });
         setIsAlertOpen(false);
-        setItemToDelete(null);
+        setPostToDelete(null);
     }).catch(serverError => {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
@@ -95,11 +94,11 @@ export default function GalleryAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
-      if (selectedItem) {
-          // Update existing item
-          const docRef = doc(db, 'gallery', selectedItem.id);
+      if (selectedPost) {
+          // Update existing post
+          const docRef = doc(db, 'blog', selectedPost.id);
           updateDoc(docRef, values).then(() => {
-              toast({ title: "Success", description: "Gallery item updated successfully." });
+              toast({ title: "Success", description: "Post updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
@@ -112,10 +111,10 @@ export default function GalleryAdminPage() {
               setIsSubmitting(false);
           });
       } else {
-          // Add new item
-          const collectionRef = collection(db, 'gallery');
+          // Add new post
+          const collectionRef = collection(db, 'blog');
           addDoc(collectionRef, values).then(() => {
-              toast({ title: "Success", description: "Gallery item added successfully." });
+              toast({ title: "Success", description: "Post added successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
@@ -129,6 +128,7 @@ export default function GalleryAdminPage() {
           });
       }
   };
+
 
   return (
     <SidebarProvider>
@@ -156,12 +156,12 @@ export default function GalleryAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive>
+                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}}>
                     <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Blog'}}>
+                <SidebarMenuButton asChild tooltip={{children: 'Blog'}} isActive>
                     <Link href="/admin/blog"><Newspaper /><span>Blog</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -183,9 +183,9 @@ export default function GalleryAdminPage() {
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1 flex justify-between items-center">
-            <h1 className="text-lg font-semibold">Gallery Management</h1>
+            <h1 className="text-lg font-semibold">Blog Management</h1>
              <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Post
             </Button>
           </div>
           {user && (
@@ -207,32 +207,18 @@ export default function GalleryAdminPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Image</TableHead>
                         <TableHead>Title</TableHead>
-                        <TableHead>Type</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {galleryItems.map((item) => (
-                        <TableRow key={item.id}>
-                            <TableCell>
-                                {item.mediaURL && (item.mediaURL.startsWith('http://') || item.mediaURL.startsWith('https://')) ? (
-                                    <Image
-                                    src={item.mediaURL}
-                                    alt={item.title}
-                                    width={64}
-                                    height={64}
-                                    className="rounded-md object-cover"
-                                    />
-                                ) : (
-                                    <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center">
-                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                    </div>
-                                )}
-                            </TableCell>
-                            <TableCell className="font-medium">{item.title}</TableCell>
-                            <TableCell>{item.type}</TableCell>
+                    {posts.map((post) => (
+                        <TableRow key={post.id}>
+                            <TableCell className="font-medium">{post.title}</TableCell>
+                            <TableCell>{post.author}</TableCell>
+                            <TableCell>{format(new Date(post.date), 'PPP')}</TableCell>
                             <TableCell className="text-right">
                                <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -243,10 +229,10 @@ export default function GalleryAdminPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEdit(item)}>
+                                    <DropdownMenuItem onClick={() => handleEdit(post)}>
                                         <Pencil className="mr-2 h-4 w-4" /> Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive">
+                                    <DropdownMenuItem onClick={() => handleDelete(post)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -260,11 +246,11 @@ export default function GalleryAdminPage() {
         </main>
       </SidebarInset>
 
-      <GalleryForm
+      <BlogForm
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleFormSubmit}
-        item={selectedItem}
+        post={selectedPost}
         isSubmitting={isSubmitting}
        />
 
@@ -273,8 +259,8 @@ export default function GalleryAdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this item
-              from the gallery.
+              This action cannot be undone. This will permanently delete this post
+              and remove its data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

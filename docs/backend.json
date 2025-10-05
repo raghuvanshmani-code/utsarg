@@ -175,25 +175,42 @@
           "type": "string",
           "description": "The title of the blog post."
         },
-        "content": {
+        "summary": {
           "type": "string",
-          "description": "The HTML content of the blog post."
+          "description": "A short summary of the blog post."
         },
-        "imageURL": {
+        "author": {
           "type": "string",
-          "format": "uri",
-          "description": "Optional URL for the post's main image."
+          "description": "The name of the post's author."
         },
         "date": {
           "type": "string",
           "format": "date-time",
           "description": "The publication date of the post."
+        },
+        "thumbnail": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the post's thumbnail image."
+        },
+        "bannerImage": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the post's main banner image."
+        },
+        "content": {
+          "type": "string",
+          "description": "The HTML content of the blog post."
         }
       },
       "required": [
         "title",
-        "content",
-        "date"
+        "summary",
+        "author",
+        "date",
+        "thumbnail",
+        "bannerImage",
+        "content"
       ]
     }
   },
