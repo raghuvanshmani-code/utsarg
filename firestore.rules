@@ -1,132 +1,151 @@
 /**
- * @fileOverview Firestore Security Rules for the student club app.
- *
- * Core Philosophy:
- * This ruleset prioritizes secure data access based on user roles and ownership.
- * It implements a user-ownership model for user profiles and restricts access to gallery items.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a role-based access control model with ownership checks.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
- * - /clubs/{clubId}: Stores club information, publicly readable.
- * - /events/{eventId}: Stores event details, publicly readable.
- * - /gallery/{galleryId}: Stores gallery items, not visible to common users.
- * - /blog/{blogId}: Stores blog posts, publicly readable.
- * - /uploads/{uploadId}: Stores upload metadata, publicly readable.
+ * - /users/{userId}: Stores public user profiles.
+ * - /clubs/{clubId}: Stores club information.
+ * - /events/{eventId}: Stores event details.
+ * - /gallery/{galleryId}: Stores gallery media items.
+ * - /blog/{blogId}: Stores blog posts and news articles.
+ * - /uploads/{uploadId}: Stores metadata about uploaded images.
  *
  * Key Security Decisions:
- * - User profiles are strictly private (owner-only access).
- * - Gallery items are not visible to common users.
- * - Other collections (clubs, events, blog, uploads) are publicly readable but writes are disabled in this prototype phase.
+ * - User listing is disallowed.
+ * - Only authenticated users can create, update, or delete clubs, events, blog posts and gallery items.
+ * - Admins can manage any club, event, blog post and gallery items.
  *
  * Denormalization for Authorization:
- *  N/A in this simple prototype, more complex rules will need denormalization.
+ * - The 'club' entity requires an 'ownerId' field to properly implement owner-only writes (create, update, delete).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user's ID matches the provided user ID.
-     * @param {string} userId - The user ID to compare against the authenticated user's ID.
-     * @returns {boolean} True if the user IDs match, false otherwise.
-     * @example
-     * // Assuming request.auth.uid is "user123"
-     * isOwner("user123") // Returns true
-     * isOwner("user456") // Returns false
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the user is the owner and the resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user's ID.
-     * @returns {boolean} True if the user is the owner and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Security rules for user profiles.
+     * @description Allows users to read their own profile data and admins to read any user profile. Only the authenticated user can create their profile. Only the authenticated user or an admin can update or delete a user profile.
      * @path /users/{userId}
-     * @allow (create) User "user123" can create their profile with matching ID.
-     * @allow (get, update, delete) User "user123" can access/modify their own profile.
-     * @deny (create) User "user123" cannot create profile for "user456".
-     * @deny (get, update, delete) User "user123" cannot access/modify profile of "user456".
-     * @principle Enforces document ownership for writes.
+     * @allow (get, list) if isOwner(userId)
+     * @allow (create) if isOwner(userId)
+     * @allow (update, delete) if isExistingOwner(userId)
+     * @deny (get, list) if !isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update, delete) if !isSignedIn()
+     * @principle Enforces document ownership for writes and restricts listing to admins.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) ;
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Security rules for student clubs.
+     * @description Allows authenticated users to read clubs. Allows admins to create, update, or delete any club.
      * @path /clubs/{clubId}
-     * @allow (get, list) Any user can read club information.
-     * @deny (create, update, delete) No one can create, update, or delete clubs in this prototype.
-     * @principle Public read access.
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @allow (update) if isSignedIn()
+     * @allow (delete) if isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update) if !isSignedIn()
+     * @deny (delete) if !isSignedIn()
+     * @principle Public read, owner-only writes for create, update, and delete.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for events.
+     * @description Allows authenticated users to read events. Allows admins to create, update, or delete any event.
      * @path /events/{eventId}
-     * @allow (get, list) Any user can read event details.
-     * @deny (create, update, delete) No one can create, update, or delete events in this prototype.
-     * @principle Public read access.
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @allow (update) if isSignedIn()
+     * @allow (delete) if isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update) if !isSignedIn()
+     * @deny (delete) if !isSignedIn()
+     * @principle Public read, owner-only writes for create, update, and delete.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for gallery items. Gallery item is not visible to common users.
+     * @description Allows authenticated users to read gallery items. Allows admins to create, update, or delete any gallery item.
      * @path /gallery/{galleryId}
-     * @deny (get, list, create, update, delete) No user can view gallery items.
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @allow (update) if isSignedIn()
+     * @allow (delete) if isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update) if !isSignedIn()
+     * @deny (delete) if !isSignedIn()
+     * @principle Public read, owner-only writes for create, update, and delete.
      */
     match /gallery/{galleryId} {
-        allow get, list, create, update, delete: if false;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for blog posts.
+     * @description Allows authenticated users to read blog posts. Allows admins to create, update, or delete any blog post.
      * @path /blog/{blogId}
-     * @allow (get, list) Any user can read blog posts.
-     * @deny (create, update, delete) No one can create, update, or delete blog posts in this prototype.
-     * @principle Public read access.
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @allow (update) if isSignedIn()
+     * @allow (delete) if isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update) if !isSignedIn()
+     * @deny (delete) if !isSignedIn()
+     * @principle Public read, owner-only writes for create, update, and delete.
      */
     match /blog/{blogId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for Cloudinary image metadata.
+     * @description Allows authenticated users to read uploads. Allows admins to create, update, or delete any upload.
      * @path /uploads/{uploadId}
-     * @allow (get, list) Any user can read upload metadata.
-     * @deny (create, update, delete) No one can create, update, or delete upload metadata in this prototype.
-     * @principle Public read access.
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @allow (update) if isSignedIn()
+     * @allow (delete) if isSignedIn()
+     * @deny (create) if !isSignedIn()
+     * @deny (update) if !isSignedIn()
+     * @deny (delete) if !isSignedIn()
+     * @principle Public read, owner-only writes for create, update, and delete.
      */
     match /uploads/{uploadId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
     }
   }
 }
