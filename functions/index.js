@@ -7,39 +7,25 @@ if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
-
 /**
- * Sets a custom claim on the first user to automatically grant admin privileges.
- * THIS IS A TEMPORARY FUNCTION and should be removed after the first admin is created.
- */
-exports.makeFirstAdmin = functions.auth.user().onCreate(async (user) => {
-  // Check if the new user is the designated first admin.
-  // REPLACE THIS EMAIL with the actual email of the first admin user.
-  if (user.email === 'raghuvanshmani876@gmail.com') {
-    try {
-      await admin.auth().setCustomUserClaims(user.uid, { admin: true });
-      console.log(`Successfully made ${user.email} an admin.`);
-      return { message: `Success! ${user.email} has been made an admin.` };
-    } catch (error) {
-      console.error('Error setting custom claim for first admin:', error);
-    }
-  }
-  return null; // Do nothing for other users.
-});
-
-
-/**
- * Sets the admin custom claim on a user account. Can only be called by an existing admin.
+ * Sets the admin custom claim on a user account. 
+ * Can be called by an existing admin to make another user an admin.
+ * Also allows the designated first admin to claim their role.
  */
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
-  // Check if the caller is an admin.
-  if (context.auth.token.admin !== true) {
-    throw new functions.https.HttpsError('permission-denied', 'Only admins can add other admins.');
-  }
-
   const email = data.email;
   if (typeof email !== 'string' || !email) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a valid "email" argument.');
+  }
+
+  // Check if the caller is the designated first admin and is claiming the role for themselves.
+  const isFirstAdminClaim = email === 'raghuvanshmani876@gmail.com' && context.auth.token.email === email;
+
+  // An existing admin can make anyone else an admin.
+  const isExistingAdmin = context.auth.token.admin === true;
+
+  if (!isExistingAdmin && !isFirstAdminClaim) {
+    throw new functions.https.HttpsError('permission-denied', 'You must be an admin to perform this action.');
   }
   
   try {
@@ -51,6 +37,6 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
     if (error.code === 'auth/user-not-found') {
         throw new functions.https.HttpsError('not-found', 'User with this email not found.');
     }
-    throw new functions.https.HttpsError('internal', 'An unexpected error occurred.');
+    throw new functions.https-HttpsError('internal', 'An unexpected error occurred.');
   }
 });

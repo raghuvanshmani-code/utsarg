@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -35,14 +34,32 @@ export default function MakeAdminPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      email: user?.email ?? "",
     },
   });
 
+   useEffect(() => {
+    if (user?.email) {
+      form.setValue("email", user.email);
+    }
+  }, [user, form]);
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firebaseApp) return;
+    if (!firebaseApp || !user) return;
     setIsSubmitting(true);
     
+    // Ensure the email matches the logged-in user's email for security
+    if(values.email !== user.email) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "You can only claim admin access for your own account.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     const functions = getFunctions(firebaseApp);
     const setAdminClaim = httpsCallable(functions, 'setAdminClaim');
 
@@ -54,7 +71,7 @@ export default function MakeAdminPage() {
       }
       toast({
         title: "Success!",
-        description: data.message,
+        description: "Admin privileges granted. Please sign out and sign back in to access the admin panel.",
       });
       form.reset();
       router.push('/account');
@@ -83,12 +100,12 @@ export default function MakeAdminPage() {
 
   return (
     <div>
-        <PageHeader title="Create First Admin" subtitle="Use this form to grant the first user administrative privileges."/>
+        <PageHeader title="Claim Admin Access" subtitle="Use this form to grant yourself initial administrative privileges."/>
         <main className="container mx-auto px-4 py-12 md:py-16">
           <Card className="max-w-xl mx-auto">
             <CardHeader>
-              <CardTitle className="flex items-center"><ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Make a User an Admin</CardTitle>
-              <CardDescription>Enter the email address of the user you want to grant admin privileges to. This is a one-time setup for the first admin.</CardDescription>
+              <CardTitle className="flex items-center"><ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Grant Admin Privileges</CardTitle>
+              <CardDescription>If you are the designated first administrator, confirm your email below to claim your role. Your email must be logged in.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -98,9 +115,9 @@ export default function MakeAdminPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="flex-grow w-full">
-                        <FormLabel>User's Email Address</FormLabel>
+                        <FormLabel>Your Email Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="user@example.com" {...field} />
+                          <Input placeholder="user@example.com" {...field} disabled />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -108,7 +125,7 @@ export default function MakeAdminPage() {
                   />
                   <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Make Admin
+                    Claim Admin Role
                   </Button>
                 </form>
               </Form>
