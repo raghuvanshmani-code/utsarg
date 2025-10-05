@@ -15,7 +15,7 @@ import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  mediaURL: z.string().min(1, { message: "Please upload a valid image." }),
+  mediaURL: z.string().optional(),
   type: z.enum(['image', 'video'], { required_error: "You need to select a media type."}),
 });
 
@@ -30,13 +30,8 @@ interface GalleryFormProps {
 export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting }: GalleryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      mediaURL: '',
-      type: 'image',
-    },
   });
-
+  
   useEffect(() => {
     if (isOpen) {
       if (item) {

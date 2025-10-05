@@ -81,8 +81,7 @@
       },
       "required": [
         "name",
-        "description",
-        "logoURL"
+        "description"
       ]
     },
     "event": {
@@ -125,8 +124,7 @@
         "title",
         "description",
         "date",
-        "clubID",
-        "bannerURL"
+        "clubID"
       ]
     },
     "galleryItem": {
@@ -162,8 +160,7 @@
       },
       "required": [
         "title",
-        "type",
-        "mediaURL"
+        "type"
       ]
     },
     "blogPost": {
@@ -208,8 +205,6 @@
         "summary",
         "author",
         "date",
-        "thumbnail",
-        "bannerImage",
         "content"
       ]
     },

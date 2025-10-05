@@ -22,8 +22,8 @@ const formSchema = z.object({
   summary: z.string().min(10, { message: "Summary must be at least 10 characters." }),
   author: z.string().min(2, { message: "Author name must be at least 2 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  thumbnail: z.string().min(1, { message: "Thumbnail image is required." }),
-  bannerImage: z.string().min(1, { message: "Banner image is required." }),
+  thumbnail: z.string().optional(),
+  bannerImage: z.string().optional(),
   content: z.string().min(20, { message: "Content must be at least 20 characters." }),
 });
 
@@ -38,15 +38,6 @@ interface BlogFormProps {
 export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }: BlogFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      summary: '',
-      author: '',
-      date: new Date().toISOString(),
-      thumbnail: '',
-      bannerImage: '',
-      content: '',
-    },
   });
 
   useEffect(() => {
@@ -66,6 +57,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }:
       }
     }
   }, [post, form, isOpen]);
+
 
   const dialogTitle = post ? 'Edit Post' : 'Add New Post';
   const dialogDescription = post ? 'Make changes to the post details here.' : 'Add a new post to the blog.';

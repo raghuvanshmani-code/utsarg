@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Calendar, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Post } from '@/lib/types';
 import { format } from 'date-fns';
 
@@ -11,19 +10,17 @@ interface BlogCardProps {
 }
 
 export function BlogCard({ post }: BlogCardProps) {
-  const thumbnail = PlaceHolderImages.find((p) => p.id === post.thumbnail);
-
+  
   return (
     <Link href={`/blog/${post.id}`} className="group block h-full">
         <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-            {thumbnail && (
+            {post.thumbnail && (
             <div className="aspect-video relative overflow-hidden">
                 <Image
-                src={thumbnail.imageUrl}
+                src={post.thumbnail}
                 alt={post.title}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
-                data-ai-hint={thumbnail.imageHint}
                 />
             </div>
             )}

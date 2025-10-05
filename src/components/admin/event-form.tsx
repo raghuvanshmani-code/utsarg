@@ -25,7 +25,7 @@ const formSchema = z.object({
   location: z.string().min(2, { message: "Location must be at least 2 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   clubId: z.string().min(1, { message: "Please select a club." }),
-  bannerImage: z.string().min(1, { message: "Banner image is required." }),
+  bannerImage: z.string().optional(),
 });
 
 interface EventFormProps {
@@ -41,14 +41,6 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      location: '',
-      date: new Date().toISOString(),
-      clubId: '',
-      bannerImage: '',
-    },
   });
 
   useEffect(() => {
@@ -67,6 +59,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
       }
     }
   }, [event, form, isOpen]);
+
 
   const dialogTitle = event ? 'Edit Event' : 'Add New Event';
   const dialogDescription = event ? 'Make changes to the event details here. Click save when you\'re done.' : 'Add a new event. Fill in the details and click save.';

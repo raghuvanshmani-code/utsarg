@@ -7,10 +7,10 @@ export type NavItem = {
 export type Club = {
   id: string;
   name: string;
-  logo: string;
+  logo?: string;
   description: string;
   achievements?: string[];
-  bannerImage: string;
+  bannerImage?: string;
   events?: string[];
 };
 
@@ -21,7 +21,7 @@ export type Event = {
   clubId: string;
   description: string;
   location: string;
-  bannerImage: string;
+  bannerImage?: string;
   media?: string[];
 };
 
@@ -31,15 +31,15 @@ export type Post = {
   summary: string;
   author: string;
   date: string;
-  thumbnail: string;
-  bannerImage: string;
+  thumbnail?: string;
+  bannerImage?: string;
   content: string;
 };
 
 export type GalleryImage = {
   id: string;
   title: string;
-  mediaURL: string;
+  mediaURL?: string;
   type: 'image' | 'video';
   clubId?: string;
   eventId?: string;

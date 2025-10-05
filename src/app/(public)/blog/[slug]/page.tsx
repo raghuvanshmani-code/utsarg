@@ -5,7 +5,6 @@ import { Calendar, User, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { useDoc } from '@/firebase';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Post } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,19 +37,16 @@ export default function PostDetailsPage({ params }: { params: { slug: string } }
     notFound();
   }
 
-  const banner = PlaceHolderImages.find((p) => p.id === post.bannerImage);
-
   return (
     <div>
       <section className="relative h-[40vh] w-full flex items-center justify-center text-center text-white">
-        {banner && (
+        {post.bannerImage && (
           <Image
-            src={banner.imageUrl}
+            src={post.bannerImage}
             alt={`${post.title} banner`}
             fill
             className="object-cover"
             priority
-            data-ai-hint={banner.imageHint}
           />
         )}
         <div className="absolute inset-0 bg-black/60" />
