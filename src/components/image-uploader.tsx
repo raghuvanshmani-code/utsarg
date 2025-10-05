@@ -1,12 +1,10 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { useStorage, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, XCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Card } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -17,28 +15,31 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUploaderProps) {
-  const storage = useStorage();
   const { user } = useUser();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+
+  // --- IMPORTANT: Cloudinary Details ---
+  const CLOUDINARY_CLOUD_NAME = 'dsot9i4o6';
+  const CLOUDINARY_UPLOAD_PRESET = 'Utsarg';
+  // ------------------------------------
 
   useEffect(() => {
     setPreview(currentImageUrl || null);
   }, [currentImageUrl]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !storage || !user) {
+    if (!file || !user) {
         toast({
             variant: "destructive",
             title: "Upload Failed",
-            description: "User not authenticated or storage service unavailable."
-        })
+            description: "User not authenticated or no file selected."
+        });
         return;
-    };
+    }
 
     if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file.');
@@ -47,7 +48,6 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
 
     setUploading(true);
     setError(null);
-    setProgress(0);
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -55,28 +55,42 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
     };
     reader.readAsDataURL(file);
 
-    // Path is now generic for admin uploads, not user-specific
-    const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', 'my_project_uploads');
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(progress);
-      },
-      (error) => {
-        console.error('Upload failed:', error);
-        setError('Upload failed. Please try again.');
-        setUploading(false);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          onUploadComplete(downloadURL);
-          setUploading(false);
+    try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData,
         });
-      }
-    );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error.message || 'Cloudinary upload failed.');
+        }
+
+        const data = await response.json();
+        const { secure_url } = data;
+        
+        onUploadComplete(secure_url);
+        toast({
+            title: 'Upload Successful!',
+            description: 'Image is ready to be saved.',
+        });
+
+    } catch (error: any) {
+        console.error("Upload process failed:", error);
+        setError(error.message || 'Upload failed. Please try again.');
+        toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: error.message || 'An unexpected error occurred.',
+        });
+    } finally {
+        setUploading(false);
+    }
   };
   
   const handleRemoveImage = () => {
@@ -102,6 +116,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
             size="icon"
             className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={handleRemoveImage}
+            disabled={uploading}
           >
             <XCircle className="h-4 w-4" />
           </Button>
@@ -114,16 +129,16 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
       )}
 
       {uploading && (
-        <div className="space-y-1">
-            <Progress value={progress} />
-            <p className="text-xs text-muted-foreground text-center">{Math.round(progress)}%</p>
+        <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Uploading...</span>
         </div>
       )}
       
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex justify-center">
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" disabled={uploading}>
           <label htmlFor="file-upload" className="cursor-pointer">
             <UploadCloud className="mr-2 h-4 w-4" />
             {preview ? 'Change Image' : 'Upload Image'}
