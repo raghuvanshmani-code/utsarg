@@ -1,5 +1,6 @@
+
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useStorage } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,11 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreview(currentImageUrl || null);
+  }, [currentImageUrl]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,10 +72,12 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
       setPreview(null);
       onUploadComplete('');
   }
+  
+  const isPreviewUrlValid = preview && (preview.startsWith('http://') || preview.startsWith('https://'));
 
   return (
     <Card className="p-4 space-y-4">
-      {preview ? (
+      {isPreviewUrlValid ? (
         <div className="relative group">
           <Image
             src={preview}
