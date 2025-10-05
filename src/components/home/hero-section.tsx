@@ -28,7 +28,7 @@ export function HeroSection() {
           Where Student Life Ascends.
         </p>
         <div className="mt-8 animate-fade-in-up animation-delay-600">
-          <Button asChild size="lg" className="transform transition-transform hover:scale-105 bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
+          <Button asChild size="lg" className="transform transition-transform hover:scale-105">
             <Link href="/clubs">Explore Our World</Link>
           </Button>
         </div>
@@ -36,5 +36,3 @@ export function HeroSection() {
     </section>
   );
 }
-
-    

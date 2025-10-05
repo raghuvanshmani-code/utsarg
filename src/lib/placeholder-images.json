@@ -3,8 +3,8 @@
     {
       "id": "hero-banner",
       "description": "A picture of the GSVM Medical College building.",
-      "imageUrl": "https://images.unsplash.com/photo-1622397314867-a4b5ff464b9d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx1bml2ZXJzaXR5JTIwY2FtcHVzfGVufDB8fHx8MTc2MDM3ODgwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "university campus"
+      "imageUrl": "https://storage.googleapis.com/studioprod-521a7.appspot.com/5cd84393-2550-4235-961f-a39396e9499d/resources/image.png",
+      "imageHint": "university building"
     },
     {
       "id": "music-club-logo",
