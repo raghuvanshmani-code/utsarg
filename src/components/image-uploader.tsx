@@ -73,7 +73,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
       onUploadComplete('');
   }
   
-  const isPreviewUrlValid = preview && (preview.startsWith('http://') || preview.startsWith('https://'));
+  const isPreviewUrlValid = preview && (preview.startsWith('http://') || preview.startsWith('https://') || preview.startsWith('data:image'));
 
   return (
     <Card className="p-4 space-y-4">
