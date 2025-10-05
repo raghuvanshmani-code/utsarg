@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { SiteHeader } from '@/components/layout/header';
 import { SiteFooter } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Inter } from 'next/font/google';
@@ -32,7 +31,6 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
             <div className="relative flex min-h-dvh flex-col">
-              <SiteHeader />
               <main className="flex-1">{children}</main>
               <SiteFooter />
             </div>
