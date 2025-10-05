@@ -5,7 +5,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirebaseApp } from "@/firebase";
@@ -81,7 +81,7 @@ export default function UsersAdminPage() {
             <Logo />
           </div>
         </SidebarHeader>
-        <SidebarContent className="mt-auto">
+        <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
@@ -124,12 +124,12 @@ export default function UsersAdminPage() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2">
+        <SidebarFooter className="mt-auto">
             <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                 <LogOut className="h-5 w-5" /> 
                 <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
             </Button>
-        </SidebarContent>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">

@@ -7,7 +7,7 @@ import { seedDatabase } from '@/lib/seed';
 import { Loader2, PartyPopper, Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import Link from 'next/link';
 import { Logo } from '@/components/layout/logo';
 import { getAuth } from 'firebase/auth';
@@ -66,7 +66,7 @@ export default function DatabaseAdminPage() {
             <Logo />
           </div>
         </SidebarHeader>
-        <SidebarContent className="mt-auto">
+        <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
@@ -109,12 +109,12 @@ export default function DatabaseAdminPage() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2">
+        <SidebarFooter className="mt-auto">
             <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                 <LogOut className="h-5 w-5" /> 
                 <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
             </Button>
-        </SidebarContent>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">

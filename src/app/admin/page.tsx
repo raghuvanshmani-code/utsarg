@@ -27,7 +27,7 @@ export default function AdminDashboard() {
                     <Logo />
                 </div>
             </SidebarHeader>
-            <SidebarContent className="mt-auto">
+            <SidebarContent>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}} isActive>
@@ -70,12 +70,12 @@ export default function AdminDashboard() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarContent>
-            <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2">
+            <SidebarFooter className="mt-auto">
                 <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                     <LogOut className="h-5 w-5" /> 
                     <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
                 </Button>
-            </SidebarContent>
+            </SidebarFooter>
         </Sidebar>
         <SidebarInset>
             <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
