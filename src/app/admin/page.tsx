@@ -27,7 +27,7 @@ export default function AdminDashboard() {
                     <Logo />
                 </div>
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="mt-auto">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}} isActive>

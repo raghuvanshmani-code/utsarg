@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,7 @@ export default function DatabaseAdminPage() {
             <Logo />
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="mt-auto">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
@@ -108,7 +109,7 @@ export default function DatabaseAdminPage() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2 mt-auto">
+        <SidebarContent className="!flex-row items-center justify-center p-2 group-data-[collapsible=icon]:gap-2">
             <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                 <LogOut className="h-5 w-5" /> 
                 <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
