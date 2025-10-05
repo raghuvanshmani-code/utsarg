@@ -66,50 +66,48 @@ export default function DatabaseAdminPage() {
             <Logo />
           </div>
         </SidebarHeader>
-        <SidebarContent className="flex flex-col">
-          <div className="mt-auto">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
-                  <Link href="/admin"><Home /><span>Dashboard</span></Link>
+        <SidebarContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
+                <Link href="/admin"><Home /><span>Dashboard</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
+                <Link href="/admin/users"><Users /><span>Users</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip={{children: 'Clubs'}}>
+                    <BookOpen />
+                    <span>Clubs</span>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
-                  <Link href="/admin/users"><Users /><span>Users</span></Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip={{children: 'Events'}}>
+                    <Calendar />
+                    <span>Events</span>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton tooltip={{children: 'Clubs'}}>
-                      <BookOpen />
-                      <span>Clubs</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton tooltip={{children: 'Events'}}>
-                      <Calendar />
-                      <span>Events</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton tooltip={{children: 'Gallery'}}>
-                      <GalleryHorizontal />
-                      <span>Gallery</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton tooltip={{children: 'Blog'}}>
-                      <Newspaper />
-                      <span>Blog</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip={{children: 'Database'}} isActive>
-                      <Link href="/admin/database"><Database /><span>Database</span></Link>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip={{children: 'Gallery'}}>
+                    <GalleryHorizontal />
+                    <span>Gallery</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton tooltip={{children: 'Blog'}}>
+                    <Newspaper />
+                    <span>Blog</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={{children: 'Database'}} isActive>
+                    <Link href="/admin/database"><Database /><span>Database</span></Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
             <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
