@@ -94,9 +94,8 @@ export default function UsersAdminPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: 'Clubs'}}>
-                    <BookOpen />
-                    <span>Clubs</span>
+                <SidebarMenuButton asChild tooltip={{children: 'Clubs'}}>
+                    <Link href="/admin/clubs"><BookOpen /><span>Clubs</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
