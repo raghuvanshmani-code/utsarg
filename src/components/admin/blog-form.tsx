@@ -150,7 +150,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }:
                   <FormLabel>Thumbnail Image</FormLabel>
                   <FormControl>
                     <ImageUploader 
-                        onUploadComplete={(url) => field.onChange(url)}
+                        onUploadComplete={field.onChange}
                         currentImageUrl={field.value}
                     />
                   </FormControl>
@@ -166,7 +166,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }:
                   <FormLabel>Banner Image</FormLabel>
                   <FormControl>
                     <ImageUploader
-                        onUploadComplete={(url) => field.onChange(url)}
+                        onUploadComplete={field.onChange}
                         currentImageUrl={field.value}
                     />
                   </FormControl>

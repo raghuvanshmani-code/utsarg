@@ -32,11 +32,13 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) {
+    if (!file) return;
+
+    if (!user) {
         toast({
             variant: "destructive",
             title: "Upload Failed",
-            description: "User not authenticated or no file selected."
+            description: "User not authenticated."
         });
         return;
     }
@@ -83,6 +85,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
     } catch (error: any) {
         console.error("Upload process failed:", error);
         setError(error.message || 'Upload failed. Please try again.');
+        setPreview(currentImageUrl || null); // Revert preview on failure
         toast({
             variant: 'destructive',
             title: 'Upload Failed',
@@ -98,7 +101,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
       onUploadComplete('');
   }
   
-  const isPreviewUrlValid = preview && (preview.startsWith('http://') || preview.startsWith('https://') || preview.startsWith('data:image'));
+  const isPreviewUrlValid = preview && (preview.startsWith('http') || preview.startsWith('data:image'));
 
   return (
     <Card className="p-4 space-y-4">

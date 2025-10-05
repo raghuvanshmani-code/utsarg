@@ -78,7 +78,7 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
                   <FormLabel>Image</FormLabel>
                    <FormControl>
                     <ImageUploader 
-                        onUploadComplete={(url) => field.onChange(url)}
+                        onUploadComplete={field.onChange}
                         currentImageUrl={field.value}
                     />
                   </FormControl>
