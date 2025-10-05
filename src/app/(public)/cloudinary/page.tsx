@@ -24,7 +24,7 @@ export default function CloudinaryUploadPage() {
 
     // --- IMPORTANT: REPLACE WITH YOUR CLOUDINARY DETAILS ---
     const CLOUDINARY_CLOUD_NAME = '<CLOUD_NAME>';
-    const CLOUDINARY_UPLOAD_PRESET = '<UPLOAD_PRESET>';
+    const CLOUDINARY_UPLOAD_PRESET = 'Utsarg';
     // ----------------------------------------------------
 
     if (!user && !userLoading) {
