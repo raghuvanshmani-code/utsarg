@@ -1,5 +1,5 @@
 'use client';
-import { collection, writeBatch, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc, getDocs } from 'firebase/firestore';
 import { clubs, events, posts, galleryImages } from './data';
 import { Firestore } from 'firebase/firestore';
 
@@ -45,5 +45,36 @@ export async function seedDatabase(db: Firestore) {
     } catch (error) {
         console.error('Error seeding database: ', error);
         return { success: false, message: `Error seeding database: ${error}` };
+    }
+}
+
+export async function clearDatabase(db: Firestore) {
+    if (!db) {
+        throw new Error("Firestore instance is not available.");
+    }
+
+    const collectionsToClear = ['clubs', 'events', 'blog', 'gallery'];
+    const batch = writeBatch(db);
+
+    try {
+        for (const collectionName of collectionsToClear) {
+            const collectionRef = collection(db, collectionName);
+            const snapshot = await getDocs(collectionRef);
+            if (snapshot.empty) {
+                console.log(`Collection '${collectionName}' is already empty.`);
+                continue;
+            }
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            console.log(`Prepared to delete ${snapshot.size} documents from '${collectionName}'.`);
+        }
+
+        await batch.commit();
+        console.log('Database cleared successfully!');
+        return { success: true, message: 'All specified collections have been cleared.' };
+    } catch (error) {
+        console.error('Error clearing database: ', error);
+        return { success: false, message: `Error clearing database: ${error}` };
     }
 }

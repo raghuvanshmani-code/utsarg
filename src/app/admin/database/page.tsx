@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useUser } from '@/firebase';
-import { seedDatabase } from '@/lib/seed';
-import { Loader2, PartyPopper, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from 'lucide-react';
+import { clearDatabase } from '@/lib/seed';
+import { Loader2, Trash2, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
@@ -13,16 +13,27 @@ import { Logo } from '@/components/layout/logo';
 import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 export default function DatabaseAdminPage() {
   const db = useFirestore();
   const { user } = useUser();
   const router = useRouter();
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const { toast } = useToast();
 
-  const handleSeed = async () => {
+  const handleClear = async () => {
     if (!db) {
         toast({
             variant: "destructive",
@@ -31,13 +42,13 @@ export default function DatabaseAdminPage() {
         });
         return;
     }
-    setIsSeeding(true);
+    setIsClearing(true);
     try {
-      const result = await seedDatabase(db);
+      const result = await clearDatabase(db);
       if (result.success) {
         toast({
             title: "Success!",
-            description: "Your database has been populated with sample data.",
+            description: "Your database has been cleared.",
         });
       } else {
         throw new Error(result.message);
@@ -45,11 +56,11 @@ export default function DatabaseAdminPage() {
     } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Seeding Failed",
+            title: "Clearing Failed",
             description: error.message || "An unknown error occurred.",
         });
     } finally {
-      setIsSeeding(false);
+      setIsClearing(false);
     }
   };
 
@@ -125,22 +136,40 @@ export default function DatabaseAdminPage() {
           )}
         </header>
         <main className="flex-1 p-6">
-          <Card className="max-w-xl">
+          <Card className="max-w-xl border-destructive">
               <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><PartyPopper className="text-primary"/> Populate Database</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle /> Clear Database</CardTitle>
                   <CardDescription>
-                      Click the button below to add sample clubs, events, blog posts, and gallery images to your Firestore database. 
-                      This will allow you to see the website with content. This action can be performed multiple times, but it will overwrite existing data with the same IDs.
+                      This is a destructive action. Clicking the button below will permanently delete all documents from the `clubs`, `events`, `blog`, and `gallery` collections in your Firestore database. This cannot be undone.
                   </CardDescription>
               </CardHeader>
               <CardContent>
-                  <Button onClick={handleSeed} disabled={isSeeding || !db} className="w-full" size="lg">
-                      {isSeeding ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Seeding...</>
-                      ) : (
-                          'Seed Sample Data'
-                      )}
-                  </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button variant="destructive" className="w-full" size="lg" disabled={isClearing || !db}>
+                            {isClearing ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Clearing...</>
+                            ) : (
+                                <><Trash2 className="mr-2 h-4 w-4" /> Clear All Content</>
+                            )}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete all content from your database. This action cannot be undone.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClear} disabled={isClearing}>
+                            {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Yes, delete everything
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
           </Card>
         </main>
