@@ -1,9 +1,8 @@
 'use client';
-import { useUser } from '@/firebase';
+import { useUser, FirebaseClientProvider } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getAuth } from 'firebase/auth';
 import { Toaster } from '@/components/ui/toaster';
 import { AdminLoginForm } from '@/components/admin-login-form';
 
@@ -49,9 +48,9 @@ export default function AdminLayout({
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       {children}
       <Toaster />
-    </>
+    </div>
   );
 }
