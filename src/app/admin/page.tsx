@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 
@@ -32,11 +32,6 @@ export default function AdminDashboard() {
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}} isActive>
                           <Link href="/admin"><Home /><span>Dashboard</span></Link>
-                      </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
-                         <Link href="/admin/users"><Users /><span>Users</span></Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -94,7 +89,7 @@ export default function AdminDashboard() {
             </header>
             <main className="flex-1 p-6">
                 <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-muted rounded-lg">
-                    <h2 className="text-2xl font-bold">Welcome, Admin!</h2>
+                    <h2 className="text-2xl font-bold">Welcome!</h2>
                     <p className="text-muted-foreground">Select a category from the sidebar to manage your content.</p>
                 </div>
             </main>

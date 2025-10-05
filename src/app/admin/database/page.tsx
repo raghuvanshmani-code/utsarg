@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useUser } from '@/firebase';
 import { seedDatabase } from '@/lib/seed';
-import { Loader2, PartyPopper, Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from 'lucide-react';
+import { Loader2, PartyPopper, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
@@ -71,11 +71,6 @@ export default function DatabaseAdminPage() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
                 <Link href="/admin"><Home /><span>Dashboard</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
-                <Link href="/admin/users"><Users /><span>Users</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

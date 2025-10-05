@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, Users, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -144,11 +144,6 @@ export default function ClubsAdminPage() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
                 <Link href="/admin"><Home /><span>Dashboard</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
-                <Link href="/admin/users"><Users /><span>Users</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

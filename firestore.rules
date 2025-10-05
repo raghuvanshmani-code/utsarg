@@ -1,158 +1,91 @@
 /**
- * @file Overview
- * This ruleset enforces a role-based access control model with an "admin" role
- * managed via custom claims. It allows authenticated users to read public
- * data and provides administrative access to specific collections.
+ * @file Firestore Security Rules
+ * @description This ruleset defines access control for the Cloud Firestore database.
+ *
+ * Core Philosophy:
+ * This ruleset allows all authenticated users to read and write data to the database.
  *
  * Data Structure:
- * - /users/{userId}: User profiles, accessible to the owner.
- * - /clubs/{clubId}: Information about student clubs, publicly readable.
- * - /events/{eventId}: Details about upcoming and past events, publicly readable.
- * - /gallery/{galleryId}: Collection of media items, publicly readable.
- * - /blog/{blogId}: Blog posts and news articles, publicly readable.
- * - /admin/**: Collections only accessible to admin users.
- * - /publicDocs/**: Publicly readable and writable by authenticated users.
- * - /meta/**:  Reserved for backend use, with client writes denied.
+ * - /users/{userId}: Stores user profile data.
+ * - /clubs/{clubId}: Stores club information.
+ * - /events/{eventId}: Stores event details.
+ * - /gallery/{galleryId}: Stores gallery media items.
+ * - /blog/{blogId}: Stores blog posts.
  *
  * Key Security Decisions:
- * - Admin Role: Access to /admin/** is strictly limited to users with the "admin" custom claim set to true.
- * - Public Read: /clubs, /events, /gallery, and /blog are publicly readable.
- * - User Ownership: /users/{userId} is secured using the ownership pattern; only the user can read/write their own profile.
- * - Deny All Other: All reads and writes are denied by default unless explicitly allowed by a rule.
- * - Meta Collection: Writes to the /meta collection are strictly forbidden from the client.
- *
- * Denormalization for Authorization:
- * - The 'admin' role is managed via Firebase Authentication custom claims, avoiding the need for Firestore lookups to determine admin status.
+ * - All read and write operations are allowed for authenticated users.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the user is the owner of the resource.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the user is an existing owner of the resource.
-     * Used for update/delete operations to prevent acting on non-existent resources.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Checks if the user is an admin based on custom claims.
-     */
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
-    }
-
-    /**
-     * @description Rules for user profiles.
+     * @description Allows authenticated users to read and write user data.
      * @path /users/{userId}
-     * @allow (get, update, delete) if request.auth.uid == userId
-     * @allow (create) if request.auth.uid == request.resource.data.uid
-     * @deny (get, update, delete) if request.auth.uid != userId
-     * @deny (create) if request.auth.uid != request.resource.data.uid
-     * @principle Enforces document ownership for user profiles.
+     * @allow (get, list) Authenticated user can read any user's data.
+     * @allow (create, update, delete) Authenticated user can modify any user's data.
+     * @deny (none) No restrictions for authenticated users.
+     * @principle Authenticated users can freely access user data.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for clubs. Publicly readable.
+     * @description Allows authenticated users to read and write club data.
      * @path /clubs/{clubId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete)
-     * @principle Publicly readable collection with no write access.
+     * @allow (get, list) Authenticated user can read any club's data.
+     * @allow (create, update, delete) Authenticated user can modify any club's data.
+     * @deny (none) No restrictions for authenticated users.
+     * @principle Authenticated users can freely access club data.
      */
     match /clubs/{clubId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for events. Publicly readable.
+     * @description Allows authenticated users to read and write event data.
      * @path /events/{eventId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete)
-     * @principle Publicly readable collection with no write access.
+     * @allow (get, list) Authenticated user can read any event's data.
+     * @allow (create, update, delete) Authenticated user can modify any event's data.
+     * @deny (none) No restrictions for authenticated users.
+     * @principle Authenticated users can freely access event data.
      */
     match /events/{eventId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for the gallery. Publicly readable.
+     * @description Allows authenticated users to read and write gallery item data.
      * @path /gallery/{galleryId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete)
-     * @principle Publicly readable collection with no write access.
+     * @allow (get, list) Authenticated user can read any gallery item's data.
+     * @allow (create, update, delete) Authenticated user can modify any gallery item's data.
+     * @deny (none) No restrictions for authenticated users.
+     * @principle Authenticated users can freely access gallery item data.
      */
     match /gallery/{galleryId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for blog posts. Publicly readable.
+     * @description Allows authenticated users to read and write blog post data.
      * @path /blog/{blogId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete)
-     * @principle Publicly readable collection with no write access.
+     * @allow (get, list) Authenticated user can read any blog post's data.
+     * @allow (create, update, delete) Authenticated user can modify any blog post's data.
+     * @deny (none) No restrictions for authenticated users.
+     * @principle Authenticated users can freely access blog post data.
      */
     match /blog/{blogId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Rules for the admin collection. Only accessible to admins.
-     * @path /admin/{document=**}
-     * @allow (read, write) if request.auth.token.admin == true
-     * @deny (read, write) if request.auth.token.admin != true
-     * @principle Role-based access control; only admins can access the admin collection.
-     */
-    match /admin/{document=**} {
-      allow get, list, create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Rules for public documents. Accessible to all authenticated users.
-     * @path /publicDocs/{document=**}
-     * @allow (read, write) if isSignedIn()
-     * @deny (read, write) if !isSignedIn()
-     * @principle Allows any authenticated user to read and write public documents.
-     */
-    match /publicDocs/{document=**} {
-      allow get, list, create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Rules for the meta collection. Only accessible from the backend.
-     * @path /meta/{document=**}
-     * @deny (read, write)
-     * @principle Restricts client-side access to the meta collection, intended for backend use only.
-     */
-    match /meta/{document=**} {
-      allow get, list: if false;
-      allow create, update, delete: if false;
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
