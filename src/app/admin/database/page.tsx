@@ -79,9 +79,8 @@ export default function DatabaseAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: 'Events'}}>
-                    <Calendar />
-                    <span>Events</span>
+                <SidebarMenuButton asChild tooltip={{children: 'Events'}}>
+                    <Link href="/admin/events"><Calendar /><span>Events</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

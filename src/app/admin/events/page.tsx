@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import type { Club } from '@/lib/types';
+import type { Event } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,23 +30,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ClubForm } from '@/components/admin/club-form';
+import { EventForm } from '@/components/admin/event-form';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { format } from 'date-fns';
 
-
-export default function ClubsAdminPage() {
+export default function EventsAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const { data: clubs, loading, error } = useCollection<Club>('clubs');
+  const { data: events, loading } = useCollection<Event>('events');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
-  const [clubToDelete, setClubToDelete] = useState<Club | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignOut = () => {
@@ -55,30 +55,30 @@ export default function ClubsAdminPage() {
   };
 
   const handleAddNew = () => {
-    setSelectedClub(null);
+    setSelectedEvent(null);
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (club: Club) => {
-    setSelectedClub(club);
+  const handleEdit = (event: Event) => {
+    setSelectedEvent(event);
     setIsDialogOpen(true);
   };
   
-  const handleDelete = (club: Club) => {
-    setClubToDelete(club);
+  const handleDelete = (event: Event) => {
+    setEventToDelete(event);
     setIsAlertOpen(true);
   };
 
   const confirmDelete = () => {
-    if (!clubToDelete || !db) return;
+    if (!eventToDelete || !db) return;
     
     setIsSubmitting(true);
-    const docRef = doc(db, 'clubs', clubToDelete.id);
+    const docRef = doc(db, 'events', eventToDelete.id);
     
     deleteDoc(docRef).then(() => {
-        toast({ title: "Success", description: "Club deleted successfully." });
+        toast({ title: "Success", description: "Event deleted successfully." });
         setIsAlertOpen(false);
-        setClubToDelete(null);
+        setEventToDelete(null);
     }).catch(serverError => {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
@@ -94,13 +94,13 @@ export default function ClubsAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
-      if (selectedClub) {
-          // Update existing club
-          const docRef = doc(db, 'clubs', selectedClub.id);
+      if (selectedEvent) {
+          // Update existing event
+          const docRef = doc(db, 'events', selectedEvent.id);
           updateDoc(docRef, values).then(() => {
-              toast({ title: "Success", description: "Club updated successfully." });
+              toast({ title: "Success", description: "Event updated successfully." });
               setIsDialogOpen(false);
-              setSelectedClub(null);
+              setSelectedEvent(null);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
                   path: docRef.path,
@@ -112,10 +112,10 @@ export default function ClubsAdminPage() {
               setIsSubmitting(false);
           });
       } else {
-          // Add new club
-          const collectionRef = collection(db, 'clubs');
+          // Add new event
+          const collectionRef = collection(db, 'events');
           addDoc(collectionRef, values).then(() => {
-              toast({ title: "Success", description: "Club added successfully." });
+              toast({ title: "Success", description: "Event added successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
@@ -147,12 +147,12 @@ export default function ClubsAdminPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Clubs'}} isActive>
+                <SidebarMenuButton asChild tooltip={{children: 'Clubs'}}>
                     <Link href="/admin/clubs"><BookOpen /><span>Clubs</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Events'}}>
+                <SidebarMenuButton asChild tooltip={{children: 'Events'}} isActive>
                     <Link href="/admin/events"><Calendar /><span>Events</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -186,9 +186,9 @@ export default function ClubsAdminPage() {
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1 flex justify-between items-center">
-            <h1 className="text-lg font-semibold">Clubs Management</h1>
+            <h1 className="text-lg font-semibold">Events Management</h1>
              <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Club
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Event
             </Button>
           </div>
           {user && (
@@ -210,16 +210,18 @@ export default function ClubsAdminPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {clubs.map((club) => (
-                        <TableRow key={club.id}>
-                            <TableCell className="font-medium">{club.name}</TableCell>
-                            <TableCell className="max-w-md truncate">{club.description}</TableCell>
+                    {events.map((event) => (
+                        <TableRow key={event.id}>
+                            <TableCell className="font-medium">{event.title}</TableCell>
+                            <TableCell>{format(new Date(event.date), 'PPP')}</TableCell>
+                            <TableCell>{event.location}</TableCell>
                             <TableCell className="text-right">
                                <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -230,10 +232,10 @@ export default function ClubsAdminPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEdit(club)}>
+                                    <DropdownMenuItem onClick={() => handleEdit(event)}>
                                         <Pencil className="mr-2 h-4 w-4" /> Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(club)} className="text-destructive">
+                                    <DropdownMenuItem onClick={() => handleDelete(event)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -247,11 +249,11 @@ export default function ClubsAdminPage() {
         </main>
       </SidebarInset>
 
-      <ClubForm
+      <EventForm
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleFormSubmit}
-        club={selectedClub}
+        event={selectedEvent}
         isSubmitting={isSubmitting}
        />
 
@@ -260,7 +262,7 @@ export default function ClubsAdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the club
+              This action cannot be undone. This will permanently delete the event
               and remove its data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
