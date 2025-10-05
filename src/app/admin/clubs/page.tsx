@@ -69,7 +69,7 @@ export default function ClubsAdminPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!clubToDelete || !db) return;
     
     setIsSubmitting(true);
@@ -90,29 +90,43 @@ export default function ClubsAdminPage() {
     });
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = (values: any) => {
       if (!db) return;
       setIsSubmitting(true);
       
-      try {
-        if (selectedClub) {
-            // Update existing club
-            const docRef = doc(db, 'clubs', selectedClub.id);
-            await updateDoc(docRef, values);
-            toast({ title: "Success", description: "Club updated successfully." });
-        } else {
-            // Add new club
-            const collectionRef = collection(db, 'clubs');
-            await addDoc(collectionRef, values);
-            toast({ title: "Success", description: "Club added successfully." });
-        }
-        setIsDialogOpen(false);
-        setSelectedClub(null);
-      } catch (error) {
-         toast({ variant: 'destructive', title: "Error", description: "An error occurred." });
-         console.error(error);
-      } finally {
-        setIsSubmitting(false);
+      if (selectedClub) {
+          // Update existing club
+          const docRef = doc(db, 'clubs', selectedClub.id);
+          updateDoc(docRef, values).then(() => {
+              toast({ title: "Success", description: "Club updated successfully." });
+              setIsDialogOpen(false);
+              setSelectedClub(null);
+          }).catch(serverError => {
+              const permissionError = new FirestorePermissionError({
+                  path: docRef.path,
+                  operation: 'update',
+                  requestResourceData: values,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          }).finally(() => {
+              setIsSubmitting(false);
+          });
+      } else {
+          // Add new club
+          const collectionRef = collection(db, 'clubs');
+          addDoc(collectionRef, values).then(() => {
+              toast({ title: "Success", description: "Club added successfully." });
+              setIsDialogOpen(false);
+          }).catch(serverError => {
+              const permissionError = new FirestorePermissionError({
+                  path: collectionRef.path,
+                  operation: 'create',
+                  requestResourceData: values,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          }).finally(() => {
+              setIsSubmitting(false);
+          });
       }
   };
 
