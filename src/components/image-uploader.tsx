@@ -2,13 +2,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { useStorage } from '@/firebase';
+import { useStorage, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Card } from './ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
@@ -17,6 +18,8 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUploaderProps) {
   const storage = useStorage();
+  const { user } = useUser();
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +31,14 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !storage) return;
+    if (!file || !storage || !user) {
+        toast({
+            variant: "destructive",
+            title: "Upload Failed",
+            description: "User not authenticated or storage service unavailable."
+        })
+        return;
+    };
 
     if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file.');
@@ -45,6 +55,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
     };
     reader.readAsDataURL(file);
 
+    // Path is now generic for admin uploads, not user-specific
     const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -116,7 +127,7 @@ export function ImageUploader({ onUploadComplete, currentImageUrl }: ImageUpload
           <label htmlFor="file-upload" className="cursor-pointer">
             <UploadCloud className="mr-2 h-4 w-4" />
             {preview ? 'Change Image' : 'Upload Image'}
-            <input id="file-upload" type="file" onChange={handleFileChange} disabled={uploading} className="sr-only" />
+            <input id="file-upload" type="file" onChange={handleFileChange} disabled={uploading} className="sr-only" accept="image/*" />
           </label>
         </Button>
       </div>
