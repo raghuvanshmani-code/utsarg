@@ -23,7 +23,7 @@ export default function CloudinaryUploadPage() {
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
     // --- IMPORTANT: REPLACE WITH YOUR CLOUDINARY DETAILS ---
-    const CLOUDINARY_CLOUD_NAME = '<CLOUD_NAME>';
+    const CLOUDINARY_CLOUD_NAME = 'dsot9i4o6';
     const CLOUDINARY_UPLOAD_PRESET = 'Utsarg';
     // ----------------------------------------------------
 
