@@ -1,11 +1,12 @@
+
 'use client';
-import { useUser, FirebaseClientProvider } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import { AdminLoginForm } from '@/components/admin-login-form';
-import { getAuth } from 'firebase/auth';
+import { FirebaseClientProvider } from '@/firebase';
 
 export default function AdminLayout({
   children,
@@ -19,35 +20,49 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (loading) {
-      return; // Wait for user state to be determined
+      // Still waiting for Firebase to determine auth state.
+      return; 
     }
     if (!user) {
-      setIsVerifying(false); // Not logged in, stop verification
+      // No user is logged in. Stop verification and show login form.
+      setIsVerifying(false);
       return;
     }
 
-    // Force a token refresh to get the latest custom claims.
+    // User is logged in, now check for admin claim.
+    // Force a token refresh (true) to get the latest custom claims.
     user.getIdTokenResult(true).then((idTokenResult) => {
       if (idTokenResult.claims.admin) {
         setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
       }
       setIsVerifying(false);
+    }).catch(() => {
+      // If token fails to refresh, treat as non-admin.
+      setIsAdmin(false);
+      setIsVerifying(false);
     });
-  }, [user, loading, router]);
 
+  }, [user, loading]);
 
   if (isVerifying || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-4">Loading & Verifying Access...</p>
+        <p className="ml-4">Verifying Administrative Access...</p>
       </div>
     );
   }
 
-  // If verification is done and user is not an admin, show login form.
-  if (!user || !isAdmin) {
-    return <AdminLoginForm />;
+  // If verification is done and user is not an admin, show a dedicated admin login form.
+  if (!isAdmin) {
+    return (
+      <FirebaseClientProvider>
+        <AdminLoginForm />
+        <Toaster />
+      </FirebaseClientProvider>
+    );
   }
   
   // If user is an admin, render the admin panel.

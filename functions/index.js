@@ -1,17 +1,18 @@
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
-// Initialize the Admin SDK only once
+// Initialize the Admin SDK only once at the top level.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
 /**
- * Sets the admin custom claim on a user account, but only if the first admin
- * has not yet been created. This is a one-time operation.
+ * A callable function that allows the first user to claim admin privileges.
+ * This is a one-time operation, secured by a document in Firestore.
  */
 exports.makeFirstAdmin = functions.https.onCall(async (data, context) => {
-  // Check if the user is authenticated.
+  // Ensure the user is authenticated.
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -20,41 +21,46 @@ exports.makeFirstAdmin = functions.https.onCall(async (data, context) => {
   }
 
   const firestore = admin.firestore();
-  const metaRef = firestore.doc("meta/admin");
+  const adminMetaRef = firestore.doc("meta/admin");
 
   try {
-    const metaDoc = await metaRef.get();
+    // Use a transaction to ensure atomic read/write.
+    const result = await firestore.runTransaction(async (transaction) => {
+      const adminMetaDoc = await transaction.get(adminMetaRef);
 
-    // If the meta doc already exists, it means an admin has been created.
-    if (metaDoc.exists) {
-      throw new functions.https.HttpsError(
-        "already-exists",
-        "An admin user has already been created."
-      );
-    }
+      if (adminMetaDoc.exists) {
+        // If the document exists, an admin has already been created.
+        throw new functions.https.HttpsError(
+          "already-exists",
+          "An admin user has already been created."
+        );
+      }
 
-    // Set the custom claim on the calling user.
-    const uid = context.auth.uid;
-    await admin.auth().setCustomUserClaims(uid, { admin: true });
+      // If we're here, no admin exists. Grant admin claims to the caller.
+      const uid = context.auth.uid;
+      await admin.auth().setCustomUserClaims(uid, { admin: true });
 
-    // Create the meta document to prevent this function from being run again.
-    await metaRef.set({
-      adminCreated: true,
-      firstAdminUid: uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Create the meta document to block future calls.
+      transaction.set(adminMetaRef, {
+        adminCreated: true,
+        firstAdminUid: uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return { message: "Success! You have been made an admin. Please sign out and sign back in for the changes to take effect." };
     });
 
-    return { message: "Success! You are now an admin." };
+    return result;
 
   } catch (error) {
-    // Re-throw specific errors or a generic one for other cases.
+    console.error("Error in makeFirstAdmin function:", error);
+    // Re-throw specific errors or a generic one for others.
     if (error.code === 'already-exists') {
       throw error;
     }
-    console.error("Error in makeFirstAdmin function:", error);
     throw new functions.https.HttpsError(
       "internal",
-      "An unexpected error occurred while trying to make you an admin."
+      error.message || "An unexpected error occurred."
     );
   }
 });

@@ -1,135 +1,158 @@
 /**
- * @file Firestore Security Rules
- * @version 2
- *
- * @description This ruleset enforces a security model with user-specific data and shared access to other resources.
+ * @file Overview
+ * This ruleset enforces a role-based access control model with an "admin" role
+ * managed via custom claims. It allows authenticated users to read public
+ * data and provides administrative access to specific collections.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
- * - /clubs/{clubId}: Stores club information, publicly readable but writeable only by admins.
- * - /events/{eventId}: Stores event details, publicly readable but writeable only by admins.
- * - /gallery/{galleryId}: Stores gallery items, publicly readable but writeable only by admins.
- * - /blog/{blogId}: Stores blog posts, publicly readable, writeable only by admins.
+ * - /users/{userId}: User profiles, accessible to the owner.
+ * - /clubs/{clubId}: Information about student clubs, publicly readable.
+ * - /events/{eventId}: Details about upcoming and past events, publicly readable.
+ * - /gallery/{galleryId}: Collection of media items, publicly readable.
+ * - /blog/{blogId}: Blog posts and news articles, publicly readable.
+ * - /admin/**: Collections only accessible to admin users.
+ * - /publicDocs/**: Publicly readable and writable by authenticated users.
+ * - /meta/**:  Reserved for backend use, with client writes denied.
  *
  * Key Security Decisions:
- * - User data is strictly controlled; users can only access their own profile information.
- * - Listing of users is not permitted to protect user privacy.
- * - Club, event, gallery and blog data are publicly readable, but write access is restricted to admins.
+ * - Admin Role: Access to /admin/** is strictly limited to users with the "admin" custom claim set to true.
+ * - Public Read: /clubs, /events, /gallery, and /blog are publicly readable.
+ * - User Ownership: /users/{userId} is secured using the ownership pattern; only the user can read/write their own profile.
+ * - Deny All Other: All reads and writes are denied by default unless explicitly allowed by a rule.
+ * - Meta Collection: Writes to the /meta collection are strictly forbidden from the client.
  *
- * Access Control Patterns:
- * - /users/{userId}: Ownership.
- * - /clubs/{clubId}: Public Read with Admin-Only Writes.
- * - /events/{eventId}: Public Read with Admin-Only Writes.
- * - /gallery/{galleryId}: Public Read with Admin-Only Writes.
- * - /blog/{blogId}: Public Read with Admin-Only Writes.
+ * Denormalization for Authorization:
+ * - The 'admin' role is managed via Firebase Authentication custom claims, avoiding the need for Firestore lookups to determine admin status.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profiles, allowing users to read and write their own data.
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of the resource.
+     * Used for update/delete operations to prevent acting on non-existent resources.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user is an admin based on custom claims.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    /**
+     * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (get, create, update, delete) if the user's ID matches the requested userId.
-     * @deny (get, create, update, delete) if the user's ID does not match the requested userId.
-     * @principle Enforces document ownership for writes.
+     * @allow (get, update, delete) if request.auth.uid == userId
+     * @allow (create) if request.auth.uid == request.resource.data.uid
+     * @deny (get, update, delete) if request.auth.uid != userId
+     * @deny (create) if request.auth.uid != request.resource.data.uid
+     * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId} {
-      // Helper function to check if the user is signed in and is the owner of the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      // Helper function to check if the user is signed in and is the existing owner of the document.
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
-
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages club data, allowing public read access, but restricting writes to admins.
+     * @description Rules for clubs. Publicly readable.
      * @path /clubs/{clubId}
-     * @allow (get, list) to all users.
-     * @allow (create, update, delete) to only authenticated admins.
-     * @deny (create, update, delete) to non-admins.
-     * @principle Restricts write access to administrators.
+     * @allow (get, list) if true
+     * @deny (create, update, delete)
+     * @principle Publicly readable collection with no write access.
      */
     match /clubs/{clubId} {
-        function isAdmin() {
-            return request.auth != null && request.auth.token.role == 'admin';
-        }
-
       allow get, list: if true;
-
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Manages event data, allowing public read access, but restricting writes to admins.
+     * @description Rules for events. Publicly readable.
      * @path /events/{eventId}
-     * @allow (get, list) to all users.
-     * @allow (create, update, delete) to only authenticated admins.
-     * @deny (create, update, delete) to non-admins.
-     * @principle Restricts write access to administrators.
+     * @allow (get, list) if true
+     * @deny (create, update, delete)
+     * @principle Publicly readable collection with no write access.
      */
     match /events/{eventId} {
-        function isAdmin() {
-            return request.auth != null && request.auth.token.role == 'admin';
-        }
-
       allow get, list: if true;
-
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Manages gallery data, allowing public read access, but restricting writes to admins.
+     * @description Rules for the gallery. Publicly readable.
      * @path /gallery/{galleryId}
-     * @allow (get, list) to all users.
-     * @allow (create, update, delete) to only authenticated admins.
-     * @deny (create, update, delete) to non-admins.
-     * @principle Restricts write access to administrators.
+     * @allow (get, list) if true
+     * @deny (create, update, delete)
+     * @principle Publicly readable collection with no write access.
      */
     match /gallery/{galleryId} {
-      function isAdmin() {
-          return request.auth != null && request.auth.token.role == 'admin';
-      }
-
       allow get, list: if true;
-
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Manages blog post data, allowing public read access, but restricting writes to admins.
+     * @description Rules for blog posts. Publicly readable.
      * @path /blog/{blogId}
-     * @allow (get, list) to all users.
-     * @allow (create, update, delete) to only authenticated admins.
-     * @deny (create, update, delete) to non-admins.
-     * @principle Restricts write access to administrators.
+     * @allow (get, list) if true
+     * @deny (create, update, delete)
+     * @principle Publicly readable collection with no write access.
      */
     match /blog/{blogId} {
-        function isAdmin() {
-            return request.auth != null && request.auth.token.role == 'admin';
-        }
-
       allow get, list: if true;
+      allow create, update, delete: if false;
+    }
 
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+    /**
+     * @description Rules for the admin collection. Only accessible to admins.
+     * @path /admin/{document=**}
+     * @allow (read, write) if request.auth.token.admin == true
+     * @deny (read, write) if request.auth.token.admin != true
+     * @principle Role-based access control; only admins can access the admin collection.
+     */
+    match /admin/{document=**} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for public documents. Accessible to all authenticated users.
+     * @path /publicDocs/{document=**}
+     * @allow (read, write) if isSignedIn()
+     * @deny (read, write) if !isSignedIn()
+     * @principle Allows any authenticated user to read and write public documents.
+     */
+    match /publicDocs/{document=**} {
+      allow get, list, create, update, delete: if isSignedIn();
+    }
+
+    /**
+     * @description Rules for the meta collection. Only accessible from the backend.
+     * @path /meta/{document=**}
+     * @deny (read, write)
+     * @principle Restricts client-side access to the meta collection, intended for backend use only.
+     */
+    match /meta/{document=**} {
+      allow get, list: if false;
+      allow create, update, delete: if false;
     }
   }
 }
