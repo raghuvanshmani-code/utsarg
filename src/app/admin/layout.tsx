@@ -5,12 +5,13 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
+import '../globals.css';
+import { cn } from '@/lib/utils';
+import { Inter } from 'next/font/google';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+
+function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
 
@@ -19,7 +20,6 @@ export default function AdminLayout({
       router.push('/login');
     }
   }, [user, loading, router]);
-
 
   if (loading || !user) {
     return (
@@ -30,10 +30,33 @@ export default function AdminLayout({
     );
   }
 
+  return <>{children}</>;
+}
+
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+
   return (
-    <div className="min-h-screen bg-background">
-      {children}
-      <Toaster />
-    </div>
+    <html lang="en" className="dark" suppressHydrationWarning>
+       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      </head>
+      <body className={cn('min-h-screen bg-background font-body antialiased', inter.variable)}>
+        <FirebaseClientProvider>
+            <div className="min-h-screen bg-background">
+              <AdminAuthGuard>
+                {children}
+              </AdminAuthGuard>
+              <Toaster />
+            </div>
+        </FirebaseClientProvider>
+      </body>
+    </html>
   );
 }
