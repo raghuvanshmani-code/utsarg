@@ -219,7 +219,7 @@ export default function GalleryAdminPage() {
                     {galleryItems.map((item) => (
                         <TableRow key={item.id}>
                             <TableCell>
-                                {item.mediaURL ? (
+                                {item.mediaURL && (item.mediaURL.startsWith('http://') || item.mediaURL.startsWith('https://')) ? (
                                     <Image
                                     src={item.mediaURL}
                                     alt={item.title}
