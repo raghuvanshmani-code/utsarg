@@ -1,149 +1,132 @@
 /**
- * @file Overview
- * This ruleset enforces a role-based access control model, with specific emphasis on admin privileges
- * for managing Cloudinary uploads. All other data is publicly readable, but only authenticated users
- * can create, update, or delete it. Data consistency between paths and document content is enforced
- * where applicable.
+ * @fileOverview Firestore Security Rules for the student club app.
  *
- * @data-structure
- * - /users/{userId}: Stores user profile information.
- * - /clubs/{clubId}: Stores club details.
- * - /events/{eventId}: Stores event information.
- * - /gallery/{galleryId}: Stores gallery items (images, videos).
- * - /blog/{blogId}: Stores blog posts.
- * - /uploads/{uploadId}: Stores metadata about Cloudinary uploads. Only admins can manage these.
+ * Core Philosophy:
+ * This ruleset prioritizes secure data access based on user roles and ownership.
+ * It implements a user-ownership model for user profiles and restricts access to gallery items.
  *
- * @key-security-decisions
- * - Users can only manage their own profiles.
- * - All data is publicly readable.
- * - Admin role is required to manage Cloudinary uploads.
- * - Data consistency is enforced for user profiles.
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
+ * - /clubs/{clubId}: Stores club information, publicly readable.
+ * - /events/{eventId}: Stores event details, publicly readable.
+ * - /gallery/{galleryId}: Stores gallery items, not visible to common users.
+ * - /blog/{blogId}: Stores blog posts, publicly readable.
+ * - /uploads/{uploadId}: Stores upload metadata, publicly readable.
+ *
+ * Key Security Decisions:
+ * - User profiles are strictly private (owner-only access).
+ * - Gallery items are not visible to common users.
+ * - Other collections (clubs, events, blog, uploads) are publicly readable but writes are disabled in this prototype phase.
+ *
+ * Denormalization for Authorization:
+ *  N/A in this simple prototype, more complex rules will need denormalization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles.
+     * @description Checks if the user is signed in.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided user ID.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @returns {boolean} True if the user IDs match, false otherwise.
+     * @example
+     * // Assuming request.auth.uid is "user123"
+     * isOwner("user123") // Returns true
+     * isOwner("user456") // Returns false
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner and the resource exists.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @returns {boolean} True if the user is the owner and the resource exists.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Security rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user123' can create /users/user123.
-     * @allow (update) - User with UID 'user123' can update /users/user123.
-     * @deny (create) - User with UID 'user456' cannot create /users/user123.
-     * @deny (update) - User with UID 'user456' cannot update /users/user123.
+     * @allow (create) User "user123" can create their profile with matching ID.
+     * @allow (get, update, delete) User "user123" can access/modify their own profile.
+     * @deny (create) User "user123" cannot create profile for "user456".
+     * @deny (get, update, delete) User "user123" cannot access/modify profile of "user456".
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) ;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to club information.
+     * @description Security rules for student clubs.
      * @path /clubs/{clubId}
-     * @allow (get) - Any user can read club data.
-     * @allow (list) - Any user can list clubs.
-     * @allow (create) - Authenticated users can create clubs.
-     * @allow (update) - Authenticated users can update clubs.
-     * @deny (delete) - Only club leaders can delete clubs (TODO: Implement club leader role).
-     * @principle Allows public read access, restricts writes to authenticated users.
+     * @allow (get, list) Any user can read club information.
+     * @deny (create, update, delete) No one can create, update, or delete clubs in this prototype.
+     * @principle Public read access.
      */
     match /clubs/{clubId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if false; // TODO: add club leader validation once roles are implemented
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to event information.
+     * @description Security rules for events.
      * @path /events/{eventId}
-     * @allow (get) - Any user can read event data.
-     * @allow (list) - Any user can list events.
-     * @allow (create) - Authenticated users can create events.
-     * @allow (update) - Authenticated users can update events.
-     * @deny (delete) - Authenticated users cannot delete events.
-     * @principle Allows public read access, restricts writes to authenticated users.
+     * @allow (get, list) Any user can read event details.
+     * @deny (create, update, delete) No one can create, update, or delete events in this prototype.
+     * @principle Public read access.
      */
     match /events/{eventId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to gallery items.
+     * @description Security rules for gallery items. Gallery item is not visible to common users.
      * @path /gallery/{galleryId}
-     * @allow (get) - Any user can read gallery items.
-     * @allow (list) - Any user can list gallery items.
-     * @allow (create) - Authenticated users can create gallery items.
-     * @allow (update) - Authenticated users can update gallery items.
-     * @deny (delete) - Authenticated users cannot delete gallery items.
-     * @principle Allows public read access, restricts writes to authenticated users.
+     * @deny (get, list, create, update, delete) No user can view gallery items.
      */
     match /gallery/{galleryId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+        allow get, list, create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to blog posts.
+     * @description Security rules for blog posts.
      * @path /blog/{blogId}
-     * @allow (get) - Any user can read blog posts.
-     * @allow (list) - Any user can list blog posts.
-     * @allow (create) - Authenticated users can create blog posts.
-     * @allow (update) - Authenticated users can update blog posts.
-     * @deny (delete) - Authenticated users cannot delete blog posts.
-     * @principle Allows public read access, restricts writes to authenticated users.
+     * @allow (get, list) Any user can read blog posts.
+     * @deny (create, update, delete) No one can create, update, or delete blog posts in this prototype.
+     * @principle Public read access.
      */
     match /blog/{blogId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to Cloudinary upload metadata.
+     * @description Security rules for Cloudinary image metadata.
      * @path /uploads/{uploadId}
-     * @allow (get) - Any user can read upload metadata.
-     * @allow (list) - Any user can list upload metadata.
-     * @allow (create) - Only admins can create upload metadata.
-     * @allow (update) - Only admins can update upload metadata.
-     * @deny (delete) - Only admins can delete upload metadata.
-     * @principle Restricts write access to admin users.
+     * @allow (get, list) Any user can read upload metadata.
+     * @deny (create, update, delete) No one can create, update, or delete upload metadata in this prototype.
+     * @principle Public read access.
      */
     match /uploads/{uploadId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
-  }
-
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
-  }
-
-  function isAdmin() {
-    return request.auth.token.role == 'admin';
   }
 }
