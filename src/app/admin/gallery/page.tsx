@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import type { Event } from '@/lib/types';
+import type { GalleryImage } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,23 +30,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { EventForm } from '@/components/admin/event-form';
+import { GalleryForm } from '@/components/admin/gallery-form';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { format } from 'date-fns';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-export default function EventsAdminPage() {
+
+export default function GalleryAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const { data: events, loading } = useCollection<Event>('events');
+  const { data: galleryItems, loading } = useCollection<GalleryImage>('gallery');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [selectedItem, setSelectedItem] = useState<GalleryImage | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<GalleryImage | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignOut = () => {
@@ -55,30 +57,30 @@ export default function EventsAdminPage() {
   };
 
   const handleAddNew = () => {
-    setSelectedEvent(null);
+    setSelectedItem(null);
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (event: Event) => {
-    setSelectedEvent(event);
+  const handleEdit = (item: GalleryImage) => {
+    setSelectedItem(item);
     setIsDialogOpen(true);
   };
   
-  const handleDelete = (event: Event) => {
-    setEventToDelete(event);
+  const handleDelete = (item: GalleryImage) => {
+    setItemToDelete(item);
     setIsAlertOpen(true);
   };
 
   const confirmDelete = () => {
-    if (!eventToDelete || !db) return;
+    if (!itemToDelete || !db) return;
     
     setIsSubmitting(true);
-    const docRef = doc(db, 'events', eventToDelete.id);
+    const docRef = doc(db, 'gallery', itemToDelete.id);
     
     deleteDoc(docRef).then(() => {
-        toast({ title: "Success", description: "Event deleted successfully." });
+        toast({ title: "Success", description: "Gallery item deleted successfully." });
         setIsAlertOpen(false);
-        setEventToDelete(null);
+        setItemToDelete(null);
     }).catch(serverError => {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
@@ -94,13 +96,13 @@ export default function EventsAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
-      if (selectedEvent) {
-          // Update existing event
-          const docRef = doc(db, 'events', selectedEvent.id);
+      if (selectedItem) {
+          // Update existing item
+          const docRef = doc(db, 'gallery', selectedItem.id);
           updateDoc(docRef, values).then(() => {
-              toast({ title: "Success", description: "Event updated successfully." });
+              toast({ title: "Success", description: "Gallery item updated successfully." });
               setIsDialogOpen(false);
-              setSelectedEvent(null);
+              setSelectedItem(null);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
                   path: docRef.path,
@@ -112,10 +114,10 @@ export default function EventsAdminPage() {
               setIsSubmitting(false);
           });
       } else {
-          // Add new event
-          const collectionRef = collection(db, 'events');
+          // Add new item
+          const collectionRef = collection(db, 'gallery');
           addDoc(collectionRef, values).then(() => {
-              toast({ title: "Success", description: "Event added successfully." });
+              toast({ title: "Success", description: "Gallery item added successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
@@ -130,6 +132,9 @@ export default function EventsAdminPage() {
       }
   };
 
+  const getImageData = (imageId: string) => {
+    return PlaceHolderImages.find(p => p.id === imageId);
+  }
 
   return (
     <SidebarProvider>
@@ -152,12 +157,12 @@ export default function EventsAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Events'}} isActive>
+                <SidebarMenuButton asChild tooltip={{children: 'Events'}}>
                     <Link href="/admin/events"><Calendar /><span>Events</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}}>
+                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive>
                     <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -185,9 +190,9 @@ export default function EventsAdminPage() {
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1 flex justify-between items-center">
-            <h1 className="text-lg font-semibold">Events Management</h1>
+            <h1 className="text-lg font-semibold">Gallery Management</h1>
              <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Event
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
             </Button>
           </div>
           {user && (
@@ -209,18 +214,30 @@ export default function EventsAdminPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead>Image</TableHead>
                         <TableHead>Title</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Location</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {events.map((event) => (
-                        <TableRow key={event.id}>
-                            <TableCell className="font-medium">{event.title}</TableCell>
-                            <TableCell>{format(new Date(event.date), 'PPP')}</TableCell>
-                            <TableCell>{event.location}</TableCell>
+                    {galleryItems.map((item) => {
+                      const imageData = getImageData(item.mediaURL);
+                      return (
+                        <TableRow key={item.id}>
+                            <TableCell>
+                              {imageData && (
+                                <Image
+                                  src={imageData.imageUrl}
+                                  alt={item.title}
+                                  width={64}
+                                  height={64}
+                                  className="rounded-md object-cover"
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{item.title}</TableCell>
+                            <TableCell>{item.type}</TableCell>
                             <TableCell className="text-right">
                                <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -231,28 +248,28 @@ export default function EventsAdminPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEdit(event)}>
+                                    <DropdownMenuItem onClick={() => handleEdit(item)}>
                                         <Pencil className="mr-2 h-4 w-4" /> Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(event)} className="text-destructive">
+                                    <DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )})}
                 </TableBody>
             </Table>
             )}
         </main>
       </SidebarInset>
 
-      <EventForm
+      <GalleryForm
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleFormSubmit}
-        event={selectedEvent}
+        item={selectedItem}
         isSubmitting={isSubmitting}
        />
 
@@ -261,8 +278,8 @@ export default function EventsAdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the event
-              and remove its data from our servers.
+              This action cannot be undone. This will permanently delete this item
+              from the gallery.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

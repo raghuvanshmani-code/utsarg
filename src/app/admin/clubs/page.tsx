@@ -157,9 +157,8 @@ export default function ClubsAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: 'Gallery'}}>
-                    <GalleryHorizontal />
-                    <span>Gallery</span>
+                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}}>
+                    <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
