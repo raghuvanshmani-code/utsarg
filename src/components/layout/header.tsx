@@ -22,6 +22,7 @@ const mainNavItems = [
     { title: 'Events', href: '/events' },
     { title: 'Gallery', href: '/gallery' },
     { title: 'Blog', href: '/blog' },
+    { title: 'Uploads', href: '/uploads' },
     { title: 'Contact', href: '/contact' },
 ];
 

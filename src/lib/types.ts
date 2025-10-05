@@ -15,7 +15,7 @@ export type Club = {
 };
 
 export type Event = {
-  id: string;
+  id:string;
   title: string;
   date: string;
   clubId: string;
@@ -43,4 +43,13 @@ export type GalleryImage = {
   type: 'image' | 'video';
   clubId?: string;
   eventId?: string;
+};
+
+export type UserImage = {
+  id: string;
+  userId: string;
+  downloadURL: string;
+  fileName: string;
+  fileSize: number;
+  uploadedAt: { seconds: number; nanoseconds: number; };
 };

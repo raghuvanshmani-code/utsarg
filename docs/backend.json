@@ -212,6 +212,42 @@
         "bannerImage",
         "content"
       ]
+    },
+    "userImage": {
+      "title": "User Image",
+      "description": "Represents an image uploaded by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who uploaded the image."
+        },
+        "downloadURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "The public download URL of the uploaded file from Firebase Storage."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The name of the uploaded file."
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "The size of the file in bytes."
+        },
+        "uploadedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the image was uploaded."
+        }
+      },
+      "required": [
+        "userId",
+        "downloadURL",
+        "fileName",
+        "fileSize",
+        "uploadedAt"
+      ]
     }
   },
   "auth": {
@@ -250,6 +286,12 @@
         "$ref": "#/entities/blogPost"
       },
       "description": "Stores blog posts and news articles."
+    },
+    "/userImages/{imageId}": {
+      "schema": {
+        "$ref": "#/entities/userImage"
+      },
+      "description": "Stores metadata about images uploaded by users."
     }
   }
 }
