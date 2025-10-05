@@ -1,77 +1,156 @@
+/**
+ * @fileOverview Firestore Security Rules for the application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model with an "admin" role that can manage clubs,
+ * and allows users to manage their own profiles.  Data shape is not strictly validated to allow for prototyping.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
+ * - /clubs/{clubId}: Stores club information, manageable by admins.
+ * - /events/{eventId}: Stores event details, publicly accessible.
+ * - /gallery/{galleryId}: Stores gallery media items, publicly accessible.
+ * - /blog/{blogId}: Stores blog posts, publicly accessible.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed.
+ * - Public read access is granted to the /events, /gallery, and /blog collections.
+ * - Admin role has full CRUD access to clubs.
+ *
+ * Denormalization for Authorization:
+ * - The 'role' field in the /users/{userId} document is used for authorization.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Checks if the user is signed in.
+     * @return {bool} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document.
+     * @param {string} userId - The user ID to compare against.
+     * @return {bool} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of the document (exists and is owned by the user).
+     * @param {string} userId - The user ID to compare against.
+     * @return {bool} True if the user is an existing owner, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'admin' role.
+     * @return {bool} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /**
+     * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) User with matching UID can create their own profile.
-     * @allow (get,update,delete) User with matching UID can read, update, or delete their profile.
-     * @deny (create) User cannot create a profile with a mismatched UID.
-     * @deny (list) User cannot list all user profiles.
-     * @deny (update,delete) User cannot update or delete another user's profile.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (create) User 'test_user' with id 'test_user' can create their own profile.
+     * @allow (get) User 'test_user' with id 'test_user' can read their own profile.
+     * @allow (update) User 'test_user' with id 'test_user' can update their own profile.
+     * @allow (delete) User 'test_user' with id 'test_user' can delete their own profile.
+     * @deny (create) User 'test_user' with id 'another_user' cannot create a profile for another user.
+     * @deny (get) User 'test_user' with id 'another_user' cannot read another user's profile.
+     * @deny (update) User 'test_user' with id 'another_user' cannot update another user's profile.
+     * @deny (delete) User 'test_user' with id 'another_user' cannot delete another user's profile.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && exists(resource);
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to club documents.
+     * @description Rules for student clubs.
      * @path /clubs/{clubId}
-     * @allow (get, list) Any user can read or list clubs.
-     * @deny (create, update, delete) No one can create, update, or delete clubs (explicitly denied).
-     * @principle Public read access with restricted write access.
+     * @allow (create) Admin can create a new club.
+     * @allow (get) Any user can read club information.
+     * @allow (update) Admin can update club information.
+     * @allow (delete) Admin can delete a club.
+     * @deny (create) Non-admin user cannot create a new club.
+     * @deny (update) Non-admin user cannot update club information.
+     * @deny (delete) Non-admin user cannot delete a club.
+     * @principle Grants admin full CRUD access to clubs and allows public read access.
      */
     match /clubs/{clubId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
 
     /**
-     * @description Controls access to event documents.
+     * @description Rules for upcoming and past events.
      * @path /events/{eventId}
-     * @allow (get, list) Any user can read or list events.
-     * @deny (create, update, delete) No one can create, update, or delete events (explicitly denied).
-     * @principle Public read access with restricted write access.
+     * @allow (get) Any user can read event details.
+     * @allow (list) Any user can list events.
+     * @deny (create) No one can create events through client side. Events are created using a backend process by admins.
+     * @deny (update) No one can update events through client side. Events are updated using a backend process by admins.
+     * @deny (delete) No one can delete events through client side. Events are deleted using a backend process by admins.
+     * @principle Allows public read access to event details, but restricts write access.
      */
     match /events/{eventId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Controls access to gallery item documents.
+     * @description Rules for media items in the gallery.
      * @path /gallery/{galleryId}
-     * @allow (get, list) Any user can read or list gallery items.
-     * @deny (create, update, delete) No one can create, update, or delete gallery items (explicitly denied).
-     * @principle Public read access with restricted write access.
+     * @allow (get) Any user can view gallery items.
+     * @allow (list) Any user can list gallery items.
+     * @deny (create) No one can create gallery items through client side. Gallery Items are created using a backend process by admins.
+     * @deny (update) No one can update gallery items through client side. Gallery Items are updated using a backend process by admins.
+     * @deny (delete) No one can delete gallery items through client side. Gallery Items are deleted using a backend process by admins.
+     * @principle Allows public read access to gallery items, but restricts write access.
      */
     match /gallery/{galleryId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Controls access to blog post documents.
+     * @description Rules for blog posts and news articles.
      * @path /blog/{blogId}
-     * @allow (get, list) Any user can read or list blog posts.
-     * @deny (create, update, delete) No one can create, update, or delete blog posts (explicitly denied).
-     * @principle Public read access with restricted write access.
+     * @allow (get) Any user can read blog posts.
+     * @allow (list) Any user can list blog posts.
+     * @deny (create) No one can create blog posts through client side. Blog posts are created using a backend process by admins.
+     * @deny (update) No one can update blog posts through client side.  Blog posts are updated using a backend process by admins.
+     * @deny (delete) No one can delete blog posts through client side. Blog posts are deleted using a backend process by admins.
+     * @principle Allows public read access to blog posts, but restricts write access.
      */
     match /blog/{blogId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
