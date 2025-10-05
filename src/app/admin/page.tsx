@@ -1,6 +1,6 @@
 
 'use client';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
@@ -27,7 +27,8 @@ export default function AdminDashboard() {
                     <Logo />
                 </div>
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="flex flex-col">
+              <div className="mt-auto">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}} isActive>
@@ -69,8 +70,9 @@ export default function AdminDashboard() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+              </div>
             </SidebarContent>
-            <SidebarFooter className="mt-auto">
+            <SidebarFooter>
                 <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                     <LogOut className="h-5 w-5" /> 
                     <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
