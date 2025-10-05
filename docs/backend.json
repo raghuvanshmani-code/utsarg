@@ -66,10 +66,15 @@
           "type": "string",
           "description": "A brief description of the club."
         },
-        "logoURL": {
+        "logo": {
           "type": "string",
           "format": "uri",
           "description": "URL of the club's logo."
+        },
+        "bannerImage": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the club's banner image."
         },
         "events": {
           "type": "array",
@@ -102,11 +107,11 @@
           "format": "date-time",
           "description": "The date and time of the event."
         },
-        "clubID": {
+        "clubId": {
           "type": "string",
           "description": "The ID of the club organizing the event."
         },
-        "bannerURL": {
+        "bannerImage": {
           "type": "string",
           "format": "uri",
           "description": "URL for the event's banner image."
@@ -124,7 +129,7 @@
         "title",
         "description",
         "date",
-        "clubID"
+        "clubId"
       ]
     },
     "galleryItem": {
@@ -149,7 +154,7 @@
           "format": "uri",
           "description": "The URL of the media."
         },
-        "clubID": {
+        "clubId": {
           "type": "string",
           "description": "Optional ID of the club associated with this media."
         },
@@ -208,39 +213,29 @@
         "content"
       ]
     },
-    "userImage": {
-      "title": "User Image",
-      "description": "Represents an image uploaded by a user.",
+    "cloudinaryImage": {
+      "title": "Cloudinary Image",
+      "description": "Metadata for an image uploaded to Cloudinary.",
       "type": "object",
       "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user who uploaded the image."
-        },
-        "downloadURL": {
+        "secure_url": {
           "type": "string",
           "format": "uri",
-          "description": "The public download URL of the uploaded file from Firebase Storage."
+          "description": "The secure HTTPS URL for the uploaded image on Cloudinary's CDN."
         },
-        "fileName": {
+        "public_id": {
           "type": "string",
-          "description": "The name of the uploaded file."
-        },
-        "fileSize": {
-          "type": "number",
-          "description": "The size of the file in bytes."
+          "description": "The unique identifier for the asset in Cloudinary."
         },
         "uploadedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "The timestamp when the image was uploaded."
+          "description": "The timestamp when the image was uploaded and metadata was saved."
         }
       },
       "required": [
-        "userId",
-        "downloadURL",
-        "fileName",
-        "fileSize",
+        "secure_url",
+        "public_id",
         "uploadedAt"
       ]
     }
@@ -282,11 +277,11 @@
       },
       "description": "Stores blog posts and news articles."
     },
-    "/userImages/{imageId}": {
+    "/uploads/{uploadId}": {
       "schema": {
-        "$ref": "#/entities/userImage"
+        "$ref": "#/entities/cloudinaryImage"
       },
-      "description": "Stores metadata about images uploaded by users."
+      "description": "Stores metadata about images uploaded to Cloudinary."
     }
   }
 }
