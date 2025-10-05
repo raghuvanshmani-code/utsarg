@@ -15,7 +15,7 @@ import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  mediaURL: z.string().url({ message: "Please upload a valid image." }).min(1, { message: "Image is required." }),
+  mediaURL: z.string().min(1, { message: "Please upload a valid image." }),
   type: z.enum(['image', 'video'], { required_error: "You need to select a media type."}),
 });
 

@@ -25,7 +25,7 @@ const formSchema = z.object({
   location: z.string().min(2, { message: "Location must be at least 2 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   clubId: z.string().min(1, { message: "Please select a club." }),
-  bannerImage: z.string().url({ message: "Please upload a valid banner." }).min(1, { message: "Banner image is required." }),
+  bannerImage: z.string().min(1, { message: "Banner image is required." }),
 });
 
 interface EventFormProps {

@@ -16,8 +16,8 @@ import { ImageUploader } from '../image-uploader';
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  logo: z.string().url({ message: "Please upload a valid logo." }).min(1, { message: "Logo is required." }),
-  bannerImage: z.string().url({ message: "Please upload a valid banner." }).min(1, { message: "Banner image is required." }),
+  logo: z.string().min(1, { message: "Logo is required." }),
+  bannerImage: z.string().min(1, { message: "Banner image is required." }),
 });
 
 interface ClubFormProps {
