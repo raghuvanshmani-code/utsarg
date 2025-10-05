@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { Toaster } from '@/components/ui/toaster';
+import { AdminLoginForm } from '@/components/admin-login-form';
 
 export default function AdminLayout({
   children,
@@ -13,14 +14,38 @@ export default function AdminLayout({
 }) {
   const { user, loading } = useUser();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    if (!user) {
+      setIsVerifying(false);
+      return;
+    }
+
+    user.getIdTokenResult(true).then((idTokenResult) => {
+      if (idTokenResult.claims.admin) {
+        setIsAdmin(true);
+      }
+      setIsVerifying(false);
+    });
+  }, [user, loading, router]);
+
+
+  if (isVerifying || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="ml-4">Loading & Verifying Access...</p>
       </div>
     );
+  }
+
+  if (!user || !isAdmin) {
+    return <AdminLoginForm />;
   }
 
   return (
