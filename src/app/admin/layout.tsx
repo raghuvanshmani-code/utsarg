@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import { AdminLoginForm } from '@/components/admin-login-form';
+import { getAuth } from 'firebase/auth';
 
 export default function AdminLayout({
   children,
@@ -18,13 +19,14 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (loading) {
-      return;
+      return; // Wait for user state to be determined
     }
     if (!user) {
-      setIsVerifying(false);
+      setIsVerifying(false); // Not logged in, stop verification
       return;
     }
 
+    // Force a token refresh to get the latest custom claims.
     user.getIdTokenResult(true).then((idTokenResult) => {
       if (idTokenResult.claims.admin) {
         setIsAdmin(true);
@@ -43,10 +45,12 @@ export default function AdminLayout({
     );
   }
 
+  // If verification is done and user is not an admin, show login form.
   if (!user || !isAdmin) {
     return <AdminLoginForm />;
   }
-
+  
+  // If user is an admin, render the admin panel.
   return (
     <div className="min-h-screen bg-background">
       {children}

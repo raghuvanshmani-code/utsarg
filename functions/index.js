@@ -1,4 +1,3 @@
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
@@ -8,35 +7,54 @@ if (admin.apps.length === 0) {
 }
 
 /**
- * Sets the admin custom claim on a user account. 
- * Can be called by an existing admin to make another user an admin.
- * Also allows the designated first admin to claim their role.
+ * Sets the admin custom claim on a user account, but only if the first admin
+ * has not yet been created. This is a one-time operation.
  */
-exports.setAdminClaim = functions.https.onCall(async (data, context) => {
-  const email = data.email;
-  if (typeof email !== 'string' || !email) {
-    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a valid "email" argument.');
+exports.makeFirstAdmin = functions.https.onCall(async (data, context) => {
+  // Check if the user is authenticated.
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "The function must be called while authenticated."
+    );
   }
 
-  // Check if the caller is the designated first admin and is claiming the role for themselves.
-  const isFirstAdminClaim = email === 'raghuvanshmani876@gmail.com' && context.auth.token.email === email;
+  const firestore = admin.firestore();
+  const metaRef = firestore.doc("meta/admin");
 
-  // An existing admin can make anyone else an admin.
-  const isExistingAdmin = context.auth.token.admin === true;
-
-  if (!isExistingAdmin && !isFirstAdminClaim) {
-    throw new functions.https.HttpsError('permission-denied', 'You must be an admin to perform this action.');
-  }
-  
   try {
-    const user = await admin.auth().getUserByEmail(email);
-    await admin.auth().setCustomUserClaims(user.uid, { admin: true });
-    return { message: `Success! ${email} has been made an admin.` };
-  } catch (error) {
-    console.error("Error setting admin claim:", error);
-    if (error.code === 'auth/user-not-found') {
-        throw new functions.https.HttpsError('not-found', 'User with this email not found.');
+    const metaDoc = await metaRef.get();
+
+    // If the meta doc already exists, it means an admin has been created.
+    if (metaDoc.exists) {
+      throw new functions.https.HttpsError(
+        "already-exists",
+        "An admin user has already been created."
+      );
     }
-    throw new functions.https-HttpsError('internal', 'An unexpected error occurred.');
+
+    // Set the custom claim on the calling user.
+    const uid = context.auth.uid;
+    await admin.auth().setCustomUserClaims(uid, { admin: true });
+
+    // Create the meta document to prevent this function from being run again.
+    await metaRef.set({
+      adminCreated: true,
+      firstAdminUid: uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { message: "Success! You are now an admin." };
+
+  } catch (error) {
+    // Re-throw specific errors or a generic one for other cases.
+    if (error.code === 'already-exists') {
+      throw error;
+    }
+    console.error("Error in makeFirstAdmin function:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "An unexpected error occurred while trying to make you an admin."
+    );
   }
 });
