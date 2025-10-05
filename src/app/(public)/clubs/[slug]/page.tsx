@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { CheckCircle, PartyPopper } from 'lucide-react';
 
 import { useDoc, useCollection } from '@/firebase';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/event-card';
 import type { Club, Event } from '@/lib/types';
@@ -39,19 +38,17 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
   }
   
   const filteredEvents = clubEvents.filter(e => e.clubId === club.id);
-  const banner = PlaceHolderImages.find((p) => p.id === club.bannerImage);
-
+  
   return (
     <div>
       <section className="relative h-[40vh] w-full flex items-center justify-center text-center text-white">
-        {banner && (
+        {club.bannerImage && (
           <Image
-            src={banner.imageUrl}
+            src={club.bannerImage}
             alt={`${club.name} banner`}
             fill
             className="object-cover"
             priority
-            data-ai-hint={banner.imageHint}
           />
         )}
         <div className="absolute inset-0 bg-black/60" />

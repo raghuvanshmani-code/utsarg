@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Club } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -13,20 +12,18 @@ interface ClubCardProps {
 }
 
 export function ClubCard({ club, className }: ClubCardProps) {
-  const logo = PlaceHolderImages.find((p) => p.id === club.logo);
 
   return (
     <Link href={`/clubs/${club.id}`} className="group block h-full">
         <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center gap-4">
-            {logo && (
+            {club.logo && (
                 <Image
-                src={logo.imageUrl}
+                src={club.logo}
                 alt={`${club.name} logo`}
                 width={64}
                 height={64}
                 className="rounded-lg object-cover"
-                data-ai-hint={logo.imageHint}
                 />
             )}
             <div className='w-full'>

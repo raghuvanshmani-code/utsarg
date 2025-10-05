@@ -11,14 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Club } from '@/lib/types';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  logo: z.string().min(1, { message: "Please select a logo." }),
-  bannerImage: z.string().min(1, { message: "Please select a banner image." }),
+  logo: z.string().url({ message: "Please upload a valid logo." }).min(1, { message: "Logo is required." }),
+  bannerImage: z.string().url({ message: "Please upload a valid banner." }).min(1, { message: "Banner image is required." }),
 });
 
 interface ClubFormProps {
@@ -28,9 +27,6 @@ interface ClubFormProps {
   club: Club | null;
   isSubmitting: boolean;
 }
-
-const clubLogos = PlaceHolderImages.filter(p => p.id.includes('-logo'));
-const clubBanners = PlaceHolderImages.filter(p => p.id.includes('club-banner'));
 
 export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }: ClubFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -44,19 +40,21 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
   });
 
   useEffect(() => {
-    if (club) {
-      form.reset(club);
-    } else {
-      form.reset({ name: '', description: '', logo: '', bannerImage: '' });
+    if (isOpen) {
+      if (club) {
+        form.reset(club);
+      } else {
+        form.reset({ name: '', description: '', logo: '', bannerImage: '' });
+      }
     }
-  }, [club, form]);
+  }, [club, form, isOpen]);
 
   const dialogTitle = club ? 'Edit Club' : 'Add New Club';
   const dialogDescription = club ? 'Make changes to the club details here. Click save when you\'re done.' : 'Add a new club to the list. Fill in the details and click save.';
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
@@ -91,20 +89,12 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Logo Image</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a logo image" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clubLogos.map(logo => (
-                        <SelectItem key={logo.id} value={logo.id}>
-                          {logo.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ImageUploader 
+                        onUploadComplete={(url) => field.onChange(url)}
+                        currentImageUrl={field.value}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -115,20 +105,12 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Banner Image</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a banner image" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clubBanners.map(banner => (
-                        <SelectItem key={banner.id} value={banner.id}>
-                          {banner.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ImageUploader
+                        onUploadComplete={(url) => field.onChange(url)}
+                        currentImageUrl={field.value}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

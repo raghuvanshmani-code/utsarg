@@ -11,13 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Event, Club } from '@/lib/types';
 import { useEffect } from 'react';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useCollection } from '@/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
+import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
@@ -25,7 +25,7 @@ const formSchema = z.object({
   location: z.string().min(2, { message: "Location must be at least 2 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   clubId: z.string().min(1, { message: "Please select a club." }),
-  bannerImage: z.string().min(1, { message: "Please select a banner image." }),
+  bannerImage: z.string().url({ message: "Please upload a valid banner." }).min(1, { message: "Banner image is required." }),
 });
 
 interface EventFormProps {
@@ -35,8 +35,6 @@ interface EventFormProps {
   event: Event | null;
   isSubmitting: boolean;
 }
-
-const eventBanners = PlaceHolderImages.filter(p => p.id.includes('event-'));
 
 export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting }: EventFormProps) {
   const { data: clubs, loading: clubsLoading } = useCollection<Club>('clubs');
@@ -54,17 +52,19 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
   });
 
   useEffect(() => {
-    if (event) {
-      form.reset(event);
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        location: '',
-        date: new Date().toISOString(),
-        clubId: '',
-        bannerImage: '',
-      });
+    if (isOpen) {
+      if (event) {
+        form.reset(event);
+      } else {
+        form.reset({
+          title: '',
+          description: '',
+          location: '',
+          date: new Date().toISOString(),
+          clubId: '',
+          bannerImage: '',
+        });
+      }
     }
   }, [event, form, isOpen]);
 
@@ -73,7 +73,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
@@ -181,20 +181,12 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Banner Image</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a banner image" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {eventBanners.map(banner => (
-                        <SelectItem key={banner.id} value={banner.id}>
-                          {banner.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ImageUploader 
+                        onUploadComplete={(url) => field.onChange(url)}
+                        currentImageUrl={field.value}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

@@ -5,7 +5,6 @@ import { Calendar, MapPin, Tag, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { useDoc } from '@/firebase';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -40,19 +39,16 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
     notFound();
   }
 
-  const banner = PlaceHolderImages.find((p) => p.id === event.bannerImage);
-
   return (
     <div>
       <section className="relative h-[40vh] w-full flex items-center justify-center text-center text-white">
-        {banner && (
+        {event.bannerImage && (
           <Image
-            src={banner.imageUrl}
+            src={event.bannerImage}
             alt={`${event.title} banner`}
             fill
             className="object-cover"
             priority
-            data-ai-hint={banner.imageHint}
           />
         )}
         <div className="absolute inset-0 bg-black/60" />

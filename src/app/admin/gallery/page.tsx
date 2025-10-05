@@ -35,7 +35,6 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 export default function GalleryAdminPage() {
@@ -132,10 +131,6 @@ export default function GalleryAdminPage() {
       }
   };
 
-  const getImageData = (imageId: string) => {
-    return PlaceHolderImages.find(p => p.id === imageId);
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>
@@ -221,20 +216,16 @@ export default function GalleryAdminPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {galleryItems.map((item) => {
-                      const imageData = getImageData(item.mediaURL);
-                      return (
+                    {galleryItems.map((item) => (
                         <TableRow key={item.id}>
                             <TableCell>
-                              {imageData && (
                                 <Image
-                                  src={imageData.imageUrl}
+                                  src={item.mediaURL}
                                   alt={item.title}
                                   width={64}
                                   height={64}
                                   className="rounded-md object-cover"
                                 />
-                              )}
                             </TableCell>
                             <TableCell className="font-medium">{item.title}</TableCell>
                             <TableCell>{item.type}</TableCell>
@@ -258,7 +249,7 @@ export default function GalleryAdminPage() {
                                 </DropdownMenu>
                             </TableCell>
                         </TableRow>
-                    )})}
+                    ))}
                 </TableBody>
             </Table>
             )}

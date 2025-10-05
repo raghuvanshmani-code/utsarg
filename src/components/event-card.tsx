@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Tag, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Event, Club } from '@/lib/types';
 import { format } from 'date-fns';
 import { useDoc } from '@/firebase';
@@ -13,20 +12,18 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const banner = PlaceHolderImages.find((p) => p.id === event.bannerImage);
   const { data: club } = useDoc<Club>(`clubs/${event.clubId}`);
 
   return (
     <Link href={`/events/${event.id}`} className="group block h-full">
       <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
-        {banner && (
+        {event.bannerImage && (
           <div className="aspect-video relative overflow-hidden">
             <Image
-              src={banner.imageUrl}
+              src={event.bannerImage}
               alt={event.title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
-              data-ai-hint={banner.imageHint}
             />
           </div>
         )}

@@ -10,13 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { GalleryImage } from '@/lib/types';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  mediaURL: z.string().min(1, { message: "Please select an image." }),
+  mediaURL: z.string().url({ message: "Please upload a valid image." }).min(1, { message: "Image is required." }),
   type: z.enum(['image', 'video'], { required_error: "You need to select a media type."}),
 });
 
@@ -27,8 +26,6 @@ interface GalleryFormProps {
   item: GalleryImage | null;
   isSubmitting: boolean;
 }
-
-const galleryImages = PlaceHolderImages.filter(p => p.id.startsWith('gallery-'));
 
 export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting }: GalleryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -41,14 +38,16 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
   });
 
   useEffect(() => {
-    if (item) {
-      form.reset(item);
-    } else {
-      form.reset({
-        title: '',
-        mediaURL: '',
-        type: 'image',
-      });
+    if (isOpen) {
+      if (item) {
+        form.reset(item);
+      } else {
+        form.reset({
+          title: '',
+          mediaURL: '',
+          type: 'image',
+        });
+      }
     }
   }, [item, form, isOpen]);
 
@@ -81,20 +80,12 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Image</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an image" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {galleryImages.map(image => (
-                        <SelectItem key={image.id} value={image.id}>
-                          {image.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <FormControl>
+                    <ImageUploader 
+                        onUploadComplete={(url) => field.onChange(url)}
+                        currentImageUrl={field.value}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -121,10 +112,10 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="video" />
+                          <RadioGroupItem value="video" disabled />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Video
+                        <FormLabel className="font-normal text-muted-foreground">
+                          Video (coming soon)
                         </FormLabel>
                       </FormItem>
                     </RadioGroup>
