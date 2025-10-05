@@ -41,6 +41,14 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      location: '',
+      date: new Date().toISOString(),
+      clubId: '',
+      bannerImage: '',
+    },
   });
 
   useEffect(() => {

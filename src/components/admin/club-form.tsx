@@ -31,6 +31,12 @@ interface ClubFormProps {
 export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }: ClubFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      logo: '',
+      bannerImage: '',
+    }
   });
 
   useEffect(() => {
@@ -38,7 +44,12 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting }:
       if (club) {
         form.reset(club);
       } else {
-        form.reset({ name: '', description: '', logo: '', bannerImage: '' });
+        form.reset({
+          name: '',
+          description: '',
+          logo: '',
+          bannerImage: '',
+        });
       }
     }
   }, [club, form, isOpen]);

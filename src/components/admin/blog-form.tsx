@@ -38,6 +38,15 @@ interface BlogFormProps {
 export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }: BlogFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      summary: '',
+      author: '',
+      date: new Date().toISOString(),
+      thumbnail: '',
+      bannerImage: '',
+      content: '',
+    },
   });
 
   useEffect(() => {
