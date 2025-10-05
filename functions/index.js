@@ -2,7 +2,31 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+// Initialize the Admin SDK only once
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+
+
+/**
+ * Sets a custom claim on the first user to automatically grant admin privileges.
+ * THIS IS A TEMPORARY FUNCTION and should be removed after the first admin is created.
+ */
+exports.makeFirstAdmin = functions.auth.user().onCreate(async (user) => {
+  // Check if the new user is the designated first admin.
+  // REPLACE THIS EMAIL with the actual email of the first admin user.
+  if (user.email === 'raghuvanshmani876@gmail.com') {
+    try {
+      await admin.auth().setCustomUserClaims(user.uid, { admin: true });
+      console.log(`Successfully made ${user.email} an admin.`);
+      return { message: `Success! ${user.email} has been made an admin.` };
+    } catch (error) {
+      console.error('Error setting custom claim for first admin:', error);
+    }
+  }
+  return null; // Do nothing for other users.
+});
+
 
 /**
  * Sets the admin custom claim on a user account. Can only be called by an existing admin.
@@ -24,7 +48,7 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
     return { message: `Success! ${email} has been made an admin.` };
   } catch (error) {
     console.error("Error setting admin claim:", error);
-    if ((error as any).code === 'auth/user-not-found') {
+    if (error.code === 'auth/user-not-found') {
         throw new functions.https.HttpsError('not-found', 'User with this email not found.');
     }
     throw new functions.https.HttpsError('internal', 'An unexpected error occurred.');
