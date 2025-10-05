@@ -30,21 +30,23 @@ interface GalleryFormProps {
 export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting }: GalleryFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: item ?? {
+      title: '',
+      mediaURL: '',
+      type: 'image',
+    },
   });
 
   useEffect(() => {
     if (isOpen) {
-      if (item) {
-        form.reset(item);
-      } else {
-        form.reset({
-          title: '',
-          mediaURL: '',
-          type: 'image',
-        });
-      }
+      form.reset(item ?? {
+        title: '',
+        mediaURL: '',
+        type: 'image',
+      });
     }
   }, [item, form, isOpen]);
+
 
   const dialogTitle = item ? 'Edit Gallery Item' : 'Add New Gallery Item';
   const dialogDescription = item ? 'Make changes to the item details here.' : 'Add a new item to the gallery.';
