@@ -15,7 +15,7 @@ export function ClubCard({ club, className }: ClubCardProps) {
 
   return (
     <Link href={`/clubs/${club.id}`} className="group block h-full">
-        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 flex flex-col", className)}>
+        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center gap-4">
             {club.logo && (
                 <Image
@@ -34,9 +34,9 @@ export function ClubCard({ club, className }: ClubCardProps) {
             <CardDescription>{club.description}</CardDescription>
             </CardContent>
             <CardFooter>
-              <Button variant="link" className="p-0 h-auto text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="text-sm text-accent font-semibold flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                   View More <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              </div>
             </CardFooter>
         </Card>
     </Link>

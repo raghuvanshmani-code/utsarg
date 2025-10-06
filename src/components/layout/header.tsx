@@ -35,7 +35,7 @@ function UserNav() {
   
     if (!user) {
       return (
-        <Button asChild>
+        <Button asChild variant="outline">
           <Link href="/login">Login</Link>
         </Button>
       );
@@ -88,8 +88,8 @@ export function SiteHeader() {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                            'transition-colors hover:text-primary',
-                            pathname === item.href ? 'text-primary' : 'text-muted-foreground'
+                            'transition-colors hover:text-accent',
+                            pathname === item.href ? 'text-accent font-semibold' : 'text-muted-foreground'
                         )}
                     >
                         {item.title}

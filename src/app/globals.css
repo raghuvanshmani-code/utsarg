@@ -20,13 +20,13 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 351 80% 55%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 351 70% 38%;
+    --ring: 351 70% 48%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -56,13 +56,13 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 351 80% 55%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 351 70% 38%;
+    --ring: 351 70% 48%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -92,7 +92,7 @@ body {
     --tw-prose-body: hsl(var(--card-foreground));
     --tw-prose-headings: hsl(var(--primary));
     --tw-prose-lead: hsl(var(--muted-foreground));
-    --tw-prose-links: hsl(var(--primary));
+    --tw-prose-links: hsl(var(--accent));
     --tw-prose-bold: hsl(var(--card-foreground));
     --tw-prose-counters: hsl(var(--muted-foreground));
     --tw-prose-bullets: hsl(var(--border));
@@ -108,7 +108,7 @@ body {
     --tw-prose-invert-body: hsl(var(--foreground));
     --tw-prose-invert-headings: hsl(var(--primary));
     --tw-prose-invert-lead: hsl(var(--muted-foreground));
-    --tw-prose-invert-links: hsl(var(--primary));
+    --tw-prose-invert-links: hsl(var(--accent));
     --tw-prose-invert-bold: hsl(var(--foreground));
     --tw-prose-invert-counters: hsl(var(--muted-foreground));
     --tw-prose-invert-bullets: hsl(var(--border));
@@ -122,4 +122,3 @@ body {
     --tw-prose-invert-th-borders: hsl(var(--border));
     --tw-prose-invert-td-borders: hsl(var(--border));
 }
-

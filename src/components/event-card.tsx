@@ -16,7 +16,7 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Link href={`/events/${event.id}`} className="group block h-full">
-      <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+      <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1">
         {event.bannerImage && (
           <div className="aspect-video relative overflow-hidden">
             <Image
@@ -45,7 +45,7 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         </CardContent>
         <CardFooter>
-            <span className="text-sm text-primary font-semibold flex items-center">
+            <span className="text-sm text-accent font-semibold flex items-center">
                 View Details <ArrowRight className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
             </span>
         </CardFooter>

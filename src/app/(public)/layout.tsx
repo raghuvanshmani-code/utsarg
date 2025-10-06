@@ -27,7 +27,7 @@ export default function RootLayout({
       <head />
       <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
         <FirebaseClientProvider>
-            <div className="relative flex min-h-dvh flex-col">
+            <div className="relative flex min-dvh flex-col">
               <SiteHeader />
               <main className="flex-1">{children}</main>
               <SiteFooter />

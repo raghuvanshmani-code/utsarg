@@ -18,34 +18,36 @@ export function FeaturedClubs() {
   const featuredClubs = clubs.slice(0, 6);
 
   return (
-    <section className="py-12 md:py-16">
-      <h2 className="text-3xl font-bold text-center mb-2">Featured Clubs</h2>
-      <p className="text-center text-muted-foreground mb-8">Discover a community that shares your passion.</p>
-      
-      {loading ? (
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ClubCardSkeleton />
-            <ClubCardSkeleton />
-            <ClubCardSkeleton />
-        </div>
-      ) : (
-        <Carousel 
-            opts={{ align: "start", loop: true }}
-            className="w-full"
-        >
-            <CarouselContent>
-            {featuredClubs.map((club) => (
-                <CarouselItem key={club.id} className="md:basis-1/2 lg:basis-1/3">
-                <div className="p-1">
-                    <ClubCard club={club} className="h-full" />
+    <section className="py-16 md:py-24 bg-card">
+        <div className="container mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-2">Featured Clubs</h2>
+            <p className="text-center text-muted-foreground mb-8">Discover a community that shares your passion.</p>
+            
+            {loading ? (
+                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <ClubCardSkeleton />
+                    <ClubCardSkeleton />
+                    <ClubCardSkeleton />
                 </div>
-                </CarouselItem>
-            ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:inline-flex" />
-            <CarouselNext className="hidden md:inline-flex" />
-        </Carousel>
-      )}
+            ) : (
+                <Carousel 
+                    opts={{ align: "start", loop: true }}
+                    className="w-full"
+                >
+                    <CarouselContent>
+                    {featuredClubs.map((club) => (
+                        <CarouselItem key={club.id} className="md:basis-1/2 lg:basis-1/3">
+                        <div className="p-1">
+                            <ClubCard club={club} className="h-full bg-background" />
+                        </div>
+                        </CarouselItem>
+                    ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden md:inline-flex" />
+                    <CarouselNext className="hidden md:inline-flex" />
+                </Carousel>
+            )}
+        </div>
     </section>
   );
 }
