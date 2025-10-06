@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -7,12 +8,15 @@ export function HeroSection() {
   return (
     <section 
       className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-center text-white bg-cover bg-center overflow-hidden"
-      style={{ backgroundImage: `url(${heroImage})` }}
     >
+      <div 
+        className="absolute inset-0 w-full h-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10 container mx-auto px-4">
         <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200 ease-in-out">
-            <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter leading-tight text-white">
+            <h1 className="text-6xl md:text-9xl font-extrabold tracking-tighter leading-tight text-white">
             UTSARG
             </h1>
         </div>
