@@ -53,8 +53,8 @@ export function SiteFooter() {
         </div>
         <div className="mt-8 border-t border-border pt-8 text-center space-y-2">
           <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UTSARG Student Committee. All rights reserved.</p>
-          <p className="text-xs text-muted-foreground/80 flex items-center justify-center gap-1">
-            Crafted with <Heart className="h-3 w-3 text-red-500" /> by a passionate developer
+          <p className="text-xs text-muted-foreground/80 flex items-center justify-center gap-1.5">
+            Crafted with <Heart className="h-3 w-3 text-red-500" /> by <a href="https://www.linkedin.com/in/raghuvanshmani" target="_blank" rel="noopener noreferrer" className="hover:text-accent underline">Raghuvansh Mani (S2)</a>
           </p>
         </div>
       </div>
