@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export function HeroSection() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-banner');
+  const heroImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759734096/GSVM-Medical-College-Kanpur-Banner_qoyhye.webp";
 
   return (
     <section 
       className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-center text-white bg-cover bg-center"
-      style={{ backgroundImage: heroImage ? `url(${heroImage.imageUrl})` : 'none' }}
+      style={{ backgroundImage: `url(${heroImage})` }}
     >
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10 container mx-auto px-4">

@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Logo } from '@/components/layout/logo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +32,7 @@ export default function LoginPage() {
     const { user, loading } = useUser();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const loginImage = PlaceHolderImages.find(p => p.id === 'about-banner');
+    const loginImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759734096/GSVM-Medical-College-Kanpur-Banner_qoyhye.webp";
 
     const signUpForm = useForm<z.infer<typeof signUpSchema>>({
         resolver: zodResolver(signUpSchema),
@@ -219,15 +218,12 @@ export default function LoginPage() {
                 </div>
             </div>
             <div className="hidden lg:block relative">
-                {loginImage && (
-                    <Image
-                        src={loginImage.imageUrl}
-                        alt="UTSARG college campus"
-                        fill
-                        className="object-cover"
-                        data-ai-hint={loginImage.imageHint}
-                    />
-                )}
+                <Image
+                    src={loginImage}
+                    alt="UTSARG college campus"
+                    fill
+                    className="object-cover"
+                />
                 <div className="absolute inset-0 bg-black/60" />
             </div>
         </div>
