@@ -224,7 +224,7 @@ export default function LoginPage() {
                     fill
                     className="object-cover"
                 />
-                <div className="absolute inset-0 bg-black/60" />
+                <div className="absolute inset-0 bg-black/40" />
             </div>
         </div>
     );
