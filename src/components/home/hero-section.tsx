@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export function HeroSection() {
-  const heroImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759734096/GSVM-Medical-College-Kanpur-Banner_qoyhye.webp";
+  const heroImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759764366/IMG_0698_ffnomp.jpg";
 
   return (
     <section 
