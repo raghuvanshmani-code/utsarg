@@ -46,7 +46,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!loading && user) {
-            router.push('/account');
+            router.push('/');
         }
     }, [user, loading, router]);
 
@@ -56,7 +56,7 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
-            router.push('/account');
+            router.push('/');
         } catch (error: any) {
             console.error("Error signing in with Google", error);
             if (error.code !== 'auth/popup-closed-by-user') {
@@ -77,7 +77,7 @@ export default function LoginPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
             await updateProfile(userCredential.user, { displayName: values.name });
-            router.push('/account');
+            router.push('/');
         } catch (error: any) {
             console.error("Error signing up", error);
             toast({
@@ -95,7 +95,7 @@ export default function LoginPage() {
         const auth = getAuth();
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            router.push('/account');
+            router.push('/');
         } catch (error: any) {
             console.error("Error signing in", error);
              toast({
