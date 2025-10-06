@@ -222,7 +222,7 @@ export default function LoginPage() {
                     src={loginImage}
                     alt="UTSARG college campus"
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-black/40" />
             </div>
