@@ -32,7 +32,7 @@ export default function LoginPage() {
     const { user, loading } = useUser();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const loginImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759764347/IMG_0365_jsy9xw.jpg";
+    const loginImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759768678/62387705-8e60-47c6-9b17-2fb7db181511_swpmpc.jpg";
 
     const signUpForm = useForm<z.infer<typeof signUpSchema>>({
         resolver: zodResolver(signUpSchema),
