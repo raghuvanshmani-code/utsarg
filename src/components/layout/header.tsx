@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -23,7 +24,6 @@ const mainNavItems = [
     { title: 'Gallery', href: '/gallery' },
     { title: 'Blog', href: '/blog' },
     { title: 'Contact', href: '/contact' },
-    { title: 'Cloudinary', href: '/cloudinary' },
 ];
 
 function UserNav() {
