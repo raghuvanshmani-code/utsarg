@@ -13,10 +13,10 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10 container mx-auto px-4">
         <p className="text-lg md:text-xl font-semibold text-neutral-300 mb-2">The Official Student Committee of GSVM Medical College</p>
-        <h1 className="text-5xl md:text-8xl font-extrabold font-headline tracking-tighter leading-tight text-primary">
+        <h1 className="text-5xl md:text-8xl font-extrabold font-headline tracking-tighter leading-tight text-white">
           UTSARG
         </h1>
-        <p className="mt-4 text-xl md:text-2xl max-w-3xl mx-auto text-white">
+        <p className="mt-4 text-xl md:text-2xl max-w-3xl mx-auto text-white/90">
           Where Student Life Ascends.
         </p>
         <div className="mt-8">
