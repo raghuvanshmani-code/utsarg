@@ -28,7 +28,7 @@ export function HeroSection() {
                 sequence={[
                     'UTSARG',
                     1000,
-                    'UNITE.TSARG',
+                    'UNITE.SARG',
                     1000,
                     'CREATE.SARG',
                     1000,
