@@ -27,7 +27,7 @@ export function ClubCard({ club, className }: ClubCardProps) {
                 />
             )}
             <div className='w-full'>
-                <CardTitle className="font-headline">{club.name}</CardTitle>
+                <CardTitle>{club.name}</CardTitle>
             </div>
             </CardHeader>
             <CardContent className="flex-grow">

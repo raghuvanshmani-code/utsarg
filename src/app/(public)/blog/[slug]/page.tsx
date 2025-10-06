@@ -55,7 +55,7 @@ export default function PostDetailsPage({ params }: { params: { slug: string } }
       <div className="container mx-auto px-4 py-12 md:py-16 -mt-24 relative">
         <div className="max-w-4xl mx-auto">
           <div className="bg-card rounded-lg shadow-lg p-6 md:p-10">
-            <h1 className="text-3xl md:text-4xl font-bold font-headline text-primary mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
               {post.title}
             </h1>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground mb-6">

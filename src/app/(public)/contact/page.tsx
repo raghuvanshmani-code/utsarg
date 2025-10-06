@@ -18,13 +18,13 @@ export default function ContactPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           
           <div className="bg-card p-8 rounded-lg shadow-sm">
-            <h2 className="text-2xl font-bold font-headline text-primary mb-6">Send us a Message</h2>
+            <h2 className="text-2xl font-bold text-primary mb-6">Send us a Message</h2>
             <ContactForm />
           </div>
 
           <div className="space-y-8">
             <div>
-              <h3 className="text-xl font-semibold mb-4 font-headline">Contact Information</h3>
+              <h3 className="text-xl font-semibold mb-4">Contact Information</h3>
               <ul className="space-y-4 text-muted-foreground">
                 <li className="flex items-start">
                   <MapPin className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
@@ -42,7 +42,7 @@ export default function ContactPage() {
             </div>
             
             <div>
-              <h3 className="text-xl font-semibold mb-4 font-headline">Follow Us</h3>
+              <h3 className="text-xl font-semibold mb-4">Follow Us</h3>
               <div className="flex space-x-4">
                 <a href="#" aria-label="Facebook"><Button variant="outline" size="icon"><Facebook className="h-5 w-5" /></Button></a>
                 <a href="#" aria-label="Twitter"><Button variant="outline" size="icon"><Twitter className="h-5 w-5" /></Button></a>

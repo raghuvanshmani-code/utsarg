@@ -28,7 +28,7 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         )}
         <CardHeader>
-          <CardTitle className="font-headline text-lg">{event.title}</CardTitle>
+          <CardTitle className="text-lg">{event.title}</CardTitle>
         </CardHeader>
         <CardContent className="flex-grow">
           <div className="text-sm text-muted-foreground space-y-2">

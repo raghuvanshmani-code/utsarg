@@ -53,7 +53,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
         )}
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 container mx-auto px-4">
-          <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             {event.title}
           </h1>
         </div>
@@ -63,7 +63,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           
           <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold font-headline text-primary mb-4">About the Event</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4">About the Event</h2>
             <p className="text-muted-foreground text-lg">{event.description}</p>
           </div>
           
@@ -74,7 +74,7 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
                 </Button>
                 
                 <div>
-                  <h3 className="text-lg font-semibold font-headline mb-4 border-b pb-2">Details</h3>
+                  <h3 className="text-lg font-semibold mb-4 border-b pb-2">Details</h3>
                   <ul className="space-y-4 text-muted-foreground">
                     <li className="flex items-center">
                       <Calendar className="h-5 w-5 mr-3 text-primary" />

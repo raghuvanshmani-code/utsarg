@@ -29,7 +29,7 @@ export function BlogCard({ post }: BlogCardProps) {
                     <span className="flex items-center"><User className="h-3 w-3 mr-1.5" /> {post.author}</span>
                     <span className="flex items-center"><Calendar className="h-3 w-3 mr-1.5" /> {format(new Date(post.date), 'MMM dd, yyyy')}</span>
                 </div>
-                <CardTitle className="font-headline text-lg mt-2">{post.title}</CardTitle>
+                <CardTitle className="text-lg mt-2">{post.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow">
                 <CardDescription>{post.summary}</CardDescription>

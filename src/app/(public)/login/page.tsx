@@ -124,7 +124,7 @@ export default function LoginPage() {
                         <div className="flex justify-center">
                             <Logo />
                         </div>
-                        <h1 className="text-3xl font-bold font-headline text-primary">
+                        <h1 className="text-3xl font-bold text-primary">
                             Welcome to UTSARG
                         </h1>
                         <p className="text-muted-foreground">

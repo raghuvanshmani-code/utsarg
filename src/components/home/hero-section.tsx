@@ -15,7 +15,7 @@ export function HeroSection() {
             <p className="text-lg md:text-xl font-semibold text-neutral-300 mb-2">The Official Student Committee of GSVM Medical College</p>
         </div>
         <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200 ease-in-out">
-            <h1 className="text-6xl md:text-8xl font-extrabold font-headline tracking-tighter leading-tight text-white">
+            <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter leading-tight text-white">
             UTSARG
             </h1>
         </div>

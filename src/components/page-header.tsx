@@ -10,7 +10,7 @@ export function PageHeader({ title, subtitle, className }: PageHeaderProps) {
   return (
     <section className={cn("py-12 md:py-16 text-center bg-card", className)}>
       <div className="container">
-        <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl font-headline">
+        <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl">
           {title}
         </h1>
         {subtitle && (

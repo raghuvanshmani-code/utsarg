@@ -4,11 +4,10 @@ import { cn } from '@/lib/utils';
 import { SiteHeader } from '@/components/layout/header';
 import { SiteFooter } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { FirebaseClientProvider } from '@/firebase';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-headline' });
 
 export const metadata: Metadata = {
   title: 'UTSARG: GSVM Student Hub',
@@ -25,12 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet" />
-      </head>
-      <body className={cn('min-h-screen bg-background font-body antialiased', inter.variable, playfair.variable)}>
+      <head />
+      <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
         <FirebaseClientProvider>
             <div className="relative flex min-h-dvh flex-col">
               <SiteHeader />

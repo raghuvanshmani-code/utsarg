@@ -53,7 +53,7 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
         )}
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 container mx-auto px-4">
-          <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             {club.name}
           </h1>
         </div>
@@ -63,13 +63,13 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           <div className="lg:col-span-2 space-y-8">
             <div>
-              <h2 className="text-2xl font-bold font-headline text-primary mb-4">About the Club</h2>
+              <h2 className="text-2xl font-bold text-primary mb-4">About the Club</h2>
               <p className="text-muted-foreground text-lg">{club.description}</p>
             </div>
             
             {club.achievements && club.achievements.length > 0 && (
               <div>
-                <h2 className="text-2xl font-bold font-headline text-primary mb-4">Our Achievements</h2>
+                <h2 className="text-2xl font-bold text-primary mb-4">Our Achievements</h2>
                 <ul className="space-y-3">
                   {club.achievements.map((achievement, index) => (
                     <li key={index} className="flex items-start">
@@ -83,7 +83,7 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
           </div>
           <div className="lg:col-span-1">
              <div className="bg-card p-6 rounded-lg shadow-sm">
-                <h3 className="text-xl font-bold font-headline mb-4">Get Involved!</h3>
+                <h3 className="text-xl font-bold mb-4">Get Involved!</h3>
                 <p className="text-muted-foreground mb-6">Ready to join the fun? Contact us to learn more about membership and our activities.</p>
                 <Button size="lg" className="w-full transform transition-transform hover:scale-105">
                     Contact Us
@@ -94,7 +94,7 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
         
         {filteredEvents.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-3xl font-bold text-center mb-8 font-headline">
+            <h2 className="text-3xl font-bold text-center mb-8">
               <PartyPopper className="h-8 w-8 inline-block mr-2 text-primary" />
               Upcoming Events
             </h2>
