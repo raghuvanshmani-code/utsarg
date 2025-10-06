@@ -1,5 +1,6 @@
+
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Heart } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,8 +51,11 @@ export function SiteFooter() {
             </form>
           </div>
         </div>
-        <div className="mt-8 border-t border-border pt-8 text-center">
+        <div className="mt-8 border-t border-border pt-8 text-center space-y-2">
           <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UTSARG Student Committee. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground/80 flex items-center justify-center gap-1">
+            Crafted with <Heart className="h-3 w-3 text-red-500" /> by a passionate developer
+          </p>
         </div>
       </div>
     </footer>
