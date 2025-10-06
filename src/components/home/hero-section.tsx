@@ -2,14 +2,25 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { TypeAnimation } from 'react-type-animation';
+import Image from 'next/image';
 
 export function HeroSection() {
+  const heroImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759764366/IMG_0698_ffnomp.jpg";
 
   return (
     <section 
       className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-center text-white overflow-hidden"
     >
-       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 animate-gradient-x" />
+       <Image
+        src={heroImage}
+        alt="UTSARG students"
+        fill
+        className="object-cover"
+        priority
+       />
+       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-pink-500/70 via-red-500/70 to-yellow-500/70 animate-gradient-x" />
+       <div className="absolute inset-0 bg-black/30" />
+
 
       <div className="relative z-10 container mx-auto px-4">
         <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200 ease-in-out">
