@@ -16,6 +16,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import Confetti from 'react-confetti';
 
 const signUpSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -32,6 +33,7 @@ export default function LoginPage() {
     const { user, loading } = useUser();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
     const loginImage = "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759768678/62387705-8e60-47c6-9b17-2fb7db181511_swpmpc.jpg";
 
     const signUpForm = useForm<z.infer<typeof signUpSchema>>({
@@ -43,12 +45,18 @@ export default function LoginPage() {
         resolver: zodResolver(signInSchema),
         defaultValues: { email: "", password: "" },
     });
-
+    
     useEffect(() => {
         if (!loading && user) {
-            router.push('/');
+            setShowConfetti(true);
+            setTimeout(() => router.push('/'), 3000);
         }
     }, [user, loading, router]);
+
+
+    const handleSuccessfulLogin = () => {
+        setShowConfetti(true);
+    };
 
     const handleGoogleSignIn = async () => {
         setIsSubmitting(true);
@@ -56,7 +64,7 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
-            router.push('/');
+            handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing in with Google", error);
             if (error.code !== 'auth/popup-closed-by-user') {
@@ -77,7 +85,7 @@ export default function LoginPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
             await updateProfile(userCredential.user, { displayName: values.name });
-            router.push('/');
+            handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing up", error);
             toast({
@@ -95,7 +103,7 @@ export default function LoginPage() {
         const auth = getAuth();
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            router.push('/');
+            handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing in", error);
              toast({
@@ -108,16 +116,21 @@ export default function LoginPage() {
         }
     };
     
-    if (loading || user) {
+    if (loading) {
         return (
           <div className="flex items-center justify-center min-h-screen bg-background">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         );
     }
+    
+    if (showConfetti) {
+        return <Confetti recycle={false} numberOfPieces={500} />;
+    }
 
     return (
         <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
+            {showConfetti && <Confetti recycle={false} />}
             <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                 <div className="mx-auto grid w-[380px] gap-8">
                     <div className="grid gap-4 text-center">

@@ -6,6 +6,7 @@ import { SiteFooter } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Inter } from 'next/font/google';
 import { FirebaseClientProvider } from '@/firebase';
+import { ScrollAnimator } from '@/components/scroll-animator';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -33,6 +34,7 @@ export default function RootLayout({
               <SiteFooter />
             </div>
             <Toaster />
+            <ScrollAnimator />
         </FirebaseClientProvider>
       </body>
     </html>

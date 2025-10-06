@@ -23,7 +23,7 @@ export function LatestNews() {
   const latestPosts = posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
 
   return (
-    <section className="py-16 md:py-24 container mx-auto">
+    <section className="py-16 md:py-24 container mx-auto" data-scroll>
       <h2 className="text-3xl font-bold text-center mb-2">Latest News</h2>
       <p className="text-center text-muted-foreground mb-8">Stay updated with the latest happenings and stories.</p>
        {loading ? (
@@ -40,7 +40,7 @@ export function LatestNews() {
             </div>
         )}
       <div className="text-center mt-12">
-        <Button asChild size="lg" variant="outline" className="transform transition-transform hover:scale-105">
+        <Button asChild size="lg" variant="outline" className="transform transition-transform hover:scale-105 rounded-full">
           <Link href="/blog">Read More Articles</Link>
         </Button>
       </div>

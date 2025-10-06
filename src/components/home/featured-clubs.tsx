@@ -18,7 +18,7 @@ export function FeaturedClubs() {
   const featuredClubs = clubs.slice(0, 6);
 
   return (
-    <section className="py-16 md:py-24 bg-card">
+    <section className="py-16 md:py-24 bg-card" data-scroll>
         <div className="container mx-auto">
             <h2 className="text-3xl font-bold text-center mb-2">Featured Clubs</h2>
             <p className="text-center text-muted-foreground mb-8">Discover a community that shares your passion.</p>
