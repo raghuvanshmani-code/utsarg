@@ -13,7 +13,7 @@ export default function AboutPage() {
       />
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div>
+          <div className="mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold text-primary font-headline mb-4">Our Mission</h2>
             <p className="text-muted-foreground text-lg mb-6">
               UTSARG is the official student committee of GSVM Medical College, dedicated to enriching the student experience. Our mission is to foster a vibrant and inclusive campus community by providing a platform for students to explore their interests, develop their talents, and create lasting memories.
