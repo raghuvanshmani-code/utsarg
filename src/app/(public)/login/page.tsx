@@ -49,7 +49,8 @@ export default function LoginPage() {
     useEffect(() => {
         if (!loading && user) {
             setShowConfetti(true);
-            setTimeout(() => router.push('/'), 3000);
+            const redirectPath = new URLSearchParams(window.location.search).get('redirect') || '/';
+            setTimeout(() => router.push(redirectPath), 3000);
         }
     }, [user, loading, router]);
 
@@ -85,6 +86,8 @@ export default function LoginPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
             await updateProfile(userCredential.user, { displayName: values.name });
+            // Manually refresh token to ensure custom claims from onCreate trigger are available if needed.
+            await userCredential.user.getIdToken(true);
             handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing up", error);
@@ -106,10 +109,14 @@ export default function LoginPage() {
             handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing in", error);
+            let description = "An unknown error occurred.";
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                description = "Invalid email or password. Please try again.";
+            }
              toast({
                 variant: "destructive",
                 title: "Sign-in Failed",
-                description: "Invalid email or password.",
+                description: description,
             });
         } finally {
             setIsSubmitting(false);

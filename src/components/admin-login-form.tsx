@@ -1,4 +1,3 @@
-
 'use client';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -26,18 +25,22 @@ export function AdminLoginForm() {
             } else {
                 await signInWithEmailAndPassword(auth, email, password);
             }
-            // On successful sign-in, the layout's auth guard will re-evaluate.
-            // A router.refresh() can help ensure the server-side state is updated if necessary,
-            // but the client-side useUser hook should update automatically.
              router.refresh(); 
         } catch (error: any) {
             console.error(`Error signing in with ${provider}`, error);
+            let description = "An unknown error occurred.";
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                description = "Invalid email or password. Please try again.";
+            } else if (error.code !== 'auth/popup-closed-by-user') {
+                description = error.message;
+            }
+
             if (error.code !== 'auth/popup-closed-by-user') {
-              toast({
-                variant: "destructive",
-                title: "Sign-in Failed",
-                description: error.message || "An unknown error occurred.",
-              });
+                toast({
+                    variant: "destructive",
+                    title: "Sign-in Failed",
+                    description: description,
+                });
             }
         } finally {
             setIsSubmitting(false);
