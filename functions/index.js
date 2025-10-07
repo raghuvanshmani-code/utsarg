@@ -1,211 +1,233 @@
-/**
- * @fileoverview Cloud Functions for Firebase.
- * This file contains the robust `importSeedDocuments` callable function for seeding Firestore.
- *
- * To deploy, run `firebase deploy --only functions`.
- */
-
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-
-// Initialize Firebase Admin SDK if it hasn't been already.
-if (admin.apps.length === 0) {
-  admin.initializeApp();
-}
-
+// functions/index.js
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
 const db = admin.firestore();
-const BATCH_SIZE = 400; // Safe batch size, well below the 500 limit.
+const { Timestamp } = admin.firestore;
+const crypto = require('crypto');
 
-/**
- * Validates a single document against a simplified schema of required fields.
- * @param {object} docData The document data to validate.
- * @param {string[]} requiredFields An array of required field names.
- * @returns {string|null} An error message string if validation fails, otherwise null.
- */
-function validateDocument(docData, requiredFields) {
-    if (!docData || typeof docData !== 'object') {
-        return "Document data is not a valid object.";
-    }
-    if (!requiredFields || requiredFields.length === 0) {
-        return null; // No fields to validate
-    }
-    for (const field of requiredFields) {
-        if (!Object.prototype.hasOwnProperty.call(docData, field)) {
-            return `Missing required field: '${field}'.`;
-        }
-    }
-    return null;
+const MAX_BATCH = 400;
+const MAX_RETRIES = 2;
+const RETRY_BASE_MS = 300;
+
+// helper: safe ISO date test
+function isIsoDateString(s) {
+  if (typeof s !== 'string') return false;
+  // quick check then try Date parse
+  const d = new Date(s);
+  return !isNaN(d.getTime());
 }
 
-/**
- * A robust, production-ready callable Cloud Function to securely import seed data into Firestore.
- *
- * @param {object} data The data passed to the function, expecting `{ seedData: { [collectionName]: { [docId]: docData } } }`.
- * @param {functions.https.CallableContext} context The context of the call, including authentication information.
- * @returns {Promise<object>} A detailed report of the seeding operation.
- */
-exports.importSeedDocuments = functions
-  .region('us-central1') // Specify region for consistency
-  .runWith({ timeoutSeconds: 540, memory: '1GB' }) // Increase timeout and memory for large seeds
-  .https.onCall(async (data, context) => {
-    
-    // 1. Authentication Check
-    // This function requires an authenticated user to run.
-    if (!context.auth) {
-        throw new functions.https.HttpsError(
-            "unauthenticated",
-            "Authentication is required to call this function."
-        );
+// helper: sanitize doc id
+function sanitizeId(id) {
+  if (typeof id !== 'string') return null;
+  if (id.includes('/') || id.trim() === '') return null;
+  return id;
+}
+
+// convert fields: only convert known date-like keys (date, createdAt, uploadedAt)
+function sanitizeDocData(doc) {
+  const out = {};
+  for (const [k, v] of Object.entries(doc)) {
+    if ((k.toLowerCase() === 'date' || k.toLowerCase().endsWith('date') || k.toLowerCase().endsWith('at')) && v != null) {
+      if (isIsoDateString(v)) {
+        out[k] = Timestamp.fromDate(new Date(v));
+      } else {
+        // keep original if not parseable (string or other) so we don't fail
+        out[k] = v;
+      }
+    } else {
+      out[k] = v;
     }
-    
-    // NOTE: The admin check has been removed to simplify permissions.
-    // The function is protected by requiring authentication.
-    // if (context.auth.token.admin !== true) { ... }
+  }
+  return out;
+}
 
-    // 2. Input Validation
-    const { seedData } = data;
-    if (!seedData || typeof seedData !== 'object' || Object.keys(seedData).length === 0) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "The 'seedData' payload must be a non-empty object where keys are collection names."
-        );
-    }
-
-    // Schemas for validating required fields in each collection's documents.
-    const schemas = {
-        users: ['uid', 'name', 'email', 'role'],
-        clubs: ['name', 'description'],
-        events: ['title', 'description'],
-        gallery: ['title', 'type', 'mediaURL'],
-        blog: ['title', 'summary', 'author', 'date', 'content'],
-        uploads: ['secure_url', 'public_id'],
-    };
-
-    const report = {
-        successCount: 0,
-        failedCount: 0,
-        errors: [],
-    };
-    
-    const dateFieldsToConvert = ['createdAt', 'updatedAt', 'date', 'uploadedAt'];
-
-    let batch = db.batch();
-    let writeCountInBatch = 0;
-
-    // 3. Process Each Collection
-    for (const collectionName in seedData) {
-        if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
-            const docs = seedData[collectionName];
-            if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
-                const errorMsg = `Data for '${collectionName}' must be an object of documents.`;
-                functions.logger.error(errorMsg);
-                report.errors.push({ collection: collectionName, id: 'N/A', error: errorMsg });
-                report.failedCount += Object.keys(docs || {}).length;
-                continue; // Skip this malformed collection
-            }
-
-            for (const docId in docs) {
-                if (Object.prototype.hasOwnProperty.call(docs, docId)) {
-                    // Document ID validation
-                    if (docId.includes('/') || docId.startsWith('__')) {
-                        report.failedCount++;
-                        report.errors.push({ collection: collectionName, id: docId, error: "Invalid document ID." });
-                        continue;
-                    }
-
-                    let docData = { ...docs[docId] };
-
-                    // Document shape validation
-                    const requiredFields = schemas[collectionName];
-                    if (requiredFields) {
-                        const validationError = validateDocument(docData, requiredFields);
-                        if (validationError) {
-                            report.failedCount++;
-                            report.errors.push({ collection: collectionName, id: docId, error: validationError });
-                            continue;
-                        }
-                    }
-                    
-                    // Safely convert date strings to Timestamps
-                    for (const field of dateFieldsToConvert) {
-                        // ONLY convert if the field is a non-empty string
-                        if (docData[field] && typeof docData[field] === 'string') {
-                             try {
-                               const d = new Date(docData[field]);
-                               if (!isNaN(d.getTime())) { // Check if the date is valid
-                                docData[field] = admin.firestore.Timestamp.fromDate(d);
-                               } else {
-                                functions.logger.warn(`Invalid date string '${docData[field]}' for doc '${docId}' in '${collectionName}'. Keeping original value.`);
-                               }
-                             } catch (e) {
-                                functions.logger.warn(`Could not parse date string '${docData[field]}' for doc '${docId}' in '${collectionName}'. Keeping original value.`);
-                             }
-                        }
-                    }
-
-                    // Add server timestamps for creation and update times.
-                    const now = admin.firestore.FieldValue.serverTimestamp();
-                    docData.createdAt = docData.createdAt || now;
-                    docData.updatedAt = now;
-                    
-                    const docRef = db.collection(collectionName).doc(docId);
-                    batch.set(docRef, docData, { merge: true });
-                    writeCountInBatch++;
-
-                    // Commit batch if it's full
-                    if (writeCountInBatch >= BATCH_SIZE) {
-                        try {
-                            await batch.commit();
-                            report.successCount += writeCountInBatch;
-                            functions.logger.info(`Committed batch of ${writeCountInBatch} docs.`);
-                        } catch (e) {
-                            report.failedCount += writeCountInBatch;
-                            const errorMsg = `Batch commit failed: ${e.message}`;
-                            report.errors.push({ collection: 'BATCH_COMMIT', id: 'N/A', error: errorMsg });
-                            functions.logger.error(errorMsg, { batchSize: writeCountInBatch });
-                        } finally {
-                            batch = db.batch(); // Start a new batch
-                            writeCountInBatch = 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // 4. Commit any remaining writes in the last batch
-    if (writeCountInBatch > 0) {
-        try {
-            await batch.commit();
-            report.successCount += writeCountInBatch;
-            functions.logger.info(`Committed final batch of ${writeCountInBatch} docs.`);
-        } catch(e) {
-            report.failedCount += writeCountInBatch;
-            const errorMsg = `Final batch commit failed: ${e.message}`;
-            report.errors.push({ collection: 'FINAL_BATCH_COMMIT', id: 'N/A', error: errorMsg });
-            functions.logger.error(errorMsg, { batchSize: writeCountInBatch });
-        }
-    }
-    
-    // 5. Log the entire seed operation for auditing
-    const seedLog = {
-        runBy: context.auth.uid,
-        runAt: admin.firestore.FieldValue.serverTimestamp(),
-        collectionsSeeded: Object.keys(seedData),
-        report: report,
-    };
-
+// commit batch with retries
+async function commitBatchWithRetry(batch, batchDocIds = []) {
+  let attempt = 0;
+  while (attempt <= MAX_RETRIES) {
     try {
-      const logRef = await db.collection("seeds").add(seedLog);
-      functions.logger.info(`Seed operation successful. Log ID: ${logRef.id}`);
-      return {
-        status: report.failedCount > 0 ? "Completed with errors" : "Success",
-        ...report,
-        logId: logRef.id
-      };
+      await batch.commit();
+      return { success: true };
     } catch (e) {
-         const finalError = `Seeding partially completed but failed to write audit log. Error: ${e.message}`;
-         functions.logger.error(finalError, { report });
-         throw new functions.https.HttpsError("internal", finalError, { report });
+      attempt++;
+      console.error(`Batch commit failed (attempt ${attempt})`, e && e.stack ? e.stack : e);
+      if (attempt > MAX_RETRIES) {
+        return { success: false, error: e, batchDocIds };
+      }
+      // exponential backoff
+      await new Promise(res => setTimeout(res, RETRY_BASE_MS * Math.pow(2, attempt)));
     }
-});
+  }
+}
+
+// main callable function
+exports.importSeedDocuments = functions
+  .runWith({ timeoutSeconds: 540, memory: '1GB' })
+  .https.onCall(async (data, context) => {
+    // auth check
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Request not authenticated');
+    }
+    const claims = context.auth.token || {};
+    if (!claims.admin) {
+      throw new functions.https.HttpsError('permission-denied', 'Admin claim required');
+    }
+
+    // Accept either docsByCollection passed in data OR read from a storage path in data.filePath
+    let docsByCollection = data && data.docsByCollection;
+    if (!docsByCollection && data && data.filePath) {
+      // try read from Cloud Storage (optional)
+      const { Storage } = require('@google-cloud/storage');
+      const storage = new Storage();
+      const match = data.filePath.match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (!match) {
+        throw new functions.https.HttpsError('invalid-argument', 'filePath must be a gs:// bucket path');
+      }
+      const bucketName = match[1], filePath = match[2];
+      try {
+        const contents = await storage.bucket(bucketName).file(filePath).download();
+        docsByCollection = JSON.parse(contents.toString('utf8'));
+      } catch (e) {
+        console.error('Failed to read seed file from GCS', e && e.stack ? e.stack : e);
+        throw new functions.https.HttpsError('internal', 'Failed to read seed file: ' + (e.message || e));
+      }
+    }
+
+    if (!docsByCollection || typeof docsByCollection !== 'object') {
+      throw new functions.https.HttpsError('invalid-argument', 'docsByCollection is required');
+    }
+
+    // Prepare report
+    const seedId = crypto.randomUUID();
+    const runByUid = context.auth.uid;
+    const startedAt = admin.firestore.FieldValue.serverTimestamp();
+    const report = {
+      seedId,
+      runByUid,
+      startedAt: new Date().toISOString(),
+      countsPerCollection: {},
+      successCount: 0,
+      failedCount: 0,
+      errors: []
+    };
+
+    // seeding loop with batching
+    let batch = db.batch();
+    let batchCount = 0;
+    let batchDocIds = [];
+
+    // helper to finalize batch when hits limit
+    async function flushBatchIfNeeded(force = false) {
+      if (batchCount === 0) return;
+      if (batchCount >= MAX_BATCH || force) {
+        const res = await commitBatchWithRetry(batch, batchDocIds);
+        if (!res.success) {
+          // record batch failure
+          const errMsg = `Batch commit failed permanently for docs: ${JSON.stringify(res.batchDocIds)}`;
+          console.error(errMsg, res.error && res.error.stack ? res.error.stack : res.error);
+          report.errors.push({ type: 'batch_commit', message: errMsg, error: (res.error && res.error.message) || String(res.error) });
+          report.failedCount += res.batchDocIds.length;
+        } else {
+          report.successCount += batchDocIds.length;
+        }
+        // reset batch
+        batch = db.batch();
+        batchCount = 0;
+        batchDocIds = [];
+      }
+    }
+
+    // Iterate over collections
+    try {
+      for (const [collectionName, docs] of Object.entries(docsByCollection)) {
+        if (!docs || typeof docs !== 'object') continue;
+        const docIds = Object.keys(docs);
+        report.countsPerCollection[collectionName] = docIds.length;
+
+        for (const docIdRaw of docIds) {
+          const sanitizedId = sanitizeId(docIdRaw);
+          if (!sanitizedId) {
+            const msg = `Skipping invalid doc id "${docIdRaw}" in collection "${collectionName}"`;
+            console.warn(msg);
+            report.errors.push({ type: 'invalid_doc_id', collection: collectionName, docId: docIdRaw, message: msg });
+            report.failedCount++;
+            continue;
+          }
+
+          let doc = docs[docIdRaw];
+          if (!doc || typeof doc !== 'object') {
+            const msg = `Skipping invalid doc payload for ${collectionName}/${docIdRaw}`;
+            console.warn(msg);
+            report.errors.push({ type: 'invalid_doc_payload', collection: collectionName, docId: docIdRaw, message: msg });
+            report.failedCount++;
+            continue;
+          }
+
+          // Sanitize/convert fields
+          let docData;
+          try {
+            docData = sanitizeDocData(doc);
+          } catch (e) {
+            const msg = `Field sanitization error for ${collectionName}/${docIdRaw}: ${e && e.message ? e.message : String(e)}`;
+            console.error(msg, e && e.stack ? e.stack : e);
+            report.errors.push({ type: 'sanitization_error', collection: collectionName, docId: docIdRaw, message: msg });
+            report.failedCount++;
+            continue;
+          }
+
+          // Add to batch
+          try {
+            const ref = db.collection(collectionName).doc(sanitizedId);
+            batch.set(ref, docData, { merge: true });
+            batchCount++;
+            batchDocIds.push(`${collectionName}/${sanitizedId}`);
+          } catch (e) {
+            const msg = `Batch add failed for ${collectionName}/${docIdRaw}: ${e && e.message ? e.message : String(e)}`;
+            console.error(msg, e && e.stack ? e.stack : e);
+            report.errors.push({ type: 'batch_add_error', collection: collectionName, docId: docIdRaw, message: msg });
+            report.failedCount++;
+            continue;
+          }
+
+          // flush if needed
+          if (batchCount >= MAX_BATCH) {
+            await flushBatchIfNeeded(true);
+          }
+        } // end per-doc
+      } // end per-collection
+
+      // final flush
+      await flushBatchIfNeeded(true);
+
+    } catch (e) {
+      console.error('Unexpected exception during seeding loop', e && e.stack ? e.stack : e);
+      report.errors.push({ type: 'unexpected', message: e && e.message ? e.message : String(e) });
+    }
+
+    // Finalize: write seed audit doc
+    try {
+      const seedRef = db.collection('seeds').doc(seedId);
+      await seedRef.set({
+        seedId,
+        runByUid,
+        startedAt: admin.firestore.Timestamp.now(),
+        reportSummary: {
+          countsPerCollection: report.countsPerCollection,
+          successCount: report.successCount,
+          failedCount: report.failedCount,
+          errorsCount: report.errors.length
+        },
+        fullReport: report,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) {
+      console.error('Failed to write seeds audit doc', e && e.stack ? e.stack : e);
+      // don't fail the whole function for audit write errors; just log
+      report.errors.push({ type: 'audit_write_failed', message: e && e.message ? e.message : String(e) });
+    }
+
+    // return cleaned report
+    return { report };
+  });

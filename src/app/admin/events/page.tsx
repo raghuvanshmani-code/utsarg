@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { Event } from '@/lib/types';
-import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -94,17 +94,22 @@ export default function EventsAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
+      const data = {
+        ...values,
+        updatedAt: serverTimestamp(),
+      };
+
       if (selectedEvent) {
           // Update existing event
           const docRef = doc(db, 'events', selectedEvent.id);
-          updateDoc(docRef, values).then(() => {
+          updateDoc(docRef, data).then(() => {
               toast({ title: "Success", description: "Event updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
                   path: docRef.path,
                   operation: 'update',
-                  requestResourceData: values,
+                  requestResourceData: data,
               });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
@@ -113,14 +118,14 @@ export default function EventsAdminPage() {
       } else {
           // Add new event
           const collectionRef = collection(db, 'events');
-          addDoc(collectionRef, values).then(() => {
+          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Event added successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
               const permissionError = new FirestorePermissionError({
                   path: collectionRef.path,
                   operation: 'create',
-                  requestResourceData: values,
+                  requestResourceData: data,
               });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
