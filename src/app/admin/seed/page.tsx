@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 type SeedData = { [collectionName: string]: { [docId: string]: any } };
 type SeedReport = { 
@@ -43,40 +45,49 @@ export default function SeedAdminPage() {
     router.push('/');
   };
 
+  const parseAndSetSeedData = (content: string, sourceName: string) => {
+     try {
+        const parsedData = JSON.parse(content);
+        if (typeof parsedData === 'object' && !Array.isArray(parsedData) && parsedData !== null) {
+          setSeedData(parsedData);
+          setFileName(sourceName);
+          toast({ title: 'JSON Loaded', description: `${sourceName} is ready.` });
+        } else {
+          throw new Error('JSON root must be an object of collections.');
+        }
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'JSON Parsing Error', description: error.message || 'Could not parse the provided JSON.' });
+        setSeedData(null);
+        setFileName('');
+      }
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setSeedReport(null); // Reset report on new file
-    setFileName(file.name);
     const reader = new FileReader();
-
     reader.onload = (e) => {
-      const content = e.target?.result as string;
-      try {
-        if (file.type === 'application/json') {
-          const parsedData = JSON.parse(content);
-           if (typeof parsedData === 'object' && !Array.isArray(parsedData) && parsedData !== null) {
-            setSeedData(parsedData);
-            toast({ title: 'File Loaded', description: `${file.name} is ready for a dry run.` });
-          } else {
-            throw new Error('JSON root must be an object of collections.');
-          }
-        } else {
-            throw new Error('Unsupported file type. Please upload a single JSON file.');
-        }
-      } catch (error: any) {
-        toast({ variant: 'destructive', title: 'File Parsing Error', description: error.message || 'Could not parse the file.' });
-        setSeedData(null);
-        setFileName('');
-      }
+        const content = e.target?.result as string;
+        parseAndSetSeedData(content, file.name);
     };
     reader.readAsText(file);
+  };
+  
+  const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const content = event.target.value;
+      if (!content) {
+          setSeedData(null);
+          setFileName('');
+          return;
+      }
+      parseAndSetSeedData(content, 'Pasted Content');
   };
 
   const handleSeed = async () => {
     if (!seedData || Object.keys(seedData).length === 0) {
-      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid data file.' });
+      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload or paste a valid JSON data file.' });
       return;
     }
     
@@ -99,11 +110,11 @@ export default function SeedAdminPage() {
     const importSeedDocuments = httpsCallable(functions, 'importSeedDocuments');
 
     try {
-      const result = await importSeedDocuments({ seedData }) as { data: SeedReport };
-      const report = result.data;
+      const result = await importSeedDocuments({ docsByCollection: seedData }) as { data: {report: SeedReport} };
+      const report = result.data.report;
       setSeedReport(report);
 
-      if (report.status === 'Success') {
+      if (report.failedCount === 0) {
         toast({
           title: 'Seeding Successful',
           description: `Wrote ${report.successCount} documents. See report below.`,
@@ -186,14 +197,33 @@ export default function SeedAdminPage() {
           <div className="md:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FileJson /> Import from JSON</CardTitle>
-                <CardDescription>Upload a single JSON file where each key is a collection name and the value is an object of documents to be seeded.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><FileJson /> Import Data</CardTitle>
+                <CardDescription>Upload a JSON file or paste the content directly. Each key should be a collection name and the value an object of documents.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="file-upload">Upload Seed File</Label>
-                    <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} className="max-w-md" />
-                  </div>
+                 <Tabs defaultValue="upload" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">Upload File</TabsTrigger>
+                    <TabsTrigger value="paste">Paste JSON</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upload">
+                    <div className="space-y-2 pt-4">
+                        <Label htmlFor="file-upload">JSON Seed File</Label>
+                        <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} className="max-w-md" />
+                      </div>
+                  </TabsContent>
+                  <TabsContent value="paste">
+                    <div className="space-y-2 pt-4">
+                      <Label htmlFor="json-paste">Paste JSON Content</Label>
+                      <Textarea 
+                        id="json-paste"
+                        placeholder='{ "my_collection": { "doc1": { "field": "value" } } }' 
+                        className="min-h-48 font-mono text-xs" 
+                        onChange={handleTextChange} 
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 
                 {seedData && (
                   <Card>
@@ -255,11 +285,11 @@ export default function SeedAdminPage() {
                   <Card>
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2">
-                              {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
+                              {seedReport.failedCount === 0 ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
                               Seed Report
                           </CardTitle>
                           <CardDescription>
-                              Operation status: {seedReport.status}. {seedReport.successCount} documents written. 
+                              Operation status: {seedReport.failedCount > 0 ? 'Completed with errors' : 'Success'}. {seedReport.successCount} documents written. 
                               Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
                           </CardDescription>
                       </CardHeader>
