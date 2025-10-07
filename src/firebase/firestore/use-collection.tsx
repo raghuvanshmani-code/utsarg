@@ -11,16 +11,20 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const memoizedConstraints = JSON.stringify(queryConstraints.map(c => c.toString()));
+  // Create a stable JSON string representation of the constraints to use in the dependency array.
+  // This prevents the effect from re-running on every render.
+  const memoizedConstraints = JSON.stringify(queryConstraints.map(c => c.type + JSON.stringify(c)));
 
   useEffect(() => {
     if (!db || !path) {
+        setData([]);
         setLoading(false);
         return;
     }
 
     setLoading(true);
     
+    // The query is now constructed inside the effect, ensuring `db` is available.
     const collectionRef = collection(db, path);
     const q = query(collectionRef, ...queryConstraints);
     
@@ -38,6 +42,7 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
         });
         errorEmitter.emit('permission-error', permissionError);
         setError(permissionError);
+        setData([]); // Clear data on error
         setLoading(false);
       }
     );
