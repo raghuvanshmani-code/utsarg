@@ -31,19 +31,42 @@
     },
     "club": {
       "title": "Club",
-      "description": "Represents a student club.",
+      "description": "Represents a student club with all its details.",
       "type": "object",
       "properties": {
         "name": { "type": "string", "description": "The name of the club." },
-        "genres": { "type": "array", "items": { "type": "string" }, "description": "An array of genres associated with the club." },
-        "volunteersCount": { "type": "number", "description": "The total number of volunteers in the club." },
-        "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of volunteer names for the core team." },
+        "type": { "type": "string", "description": "The category or type of the club (e.g., music, dance)." },
+        "description": { "type": "string", "description": "A summary of the club's purpose and activities." },
+        "logo": { "type": "string", "format": "uri", "description": "URL for the club's logo image." },
+        "bannerImage": { "type": "string", "format": "uri", "description": "URL for the club's banner image." },
+        "volunteers": { "type": "number", "description": "The total number of volunteers in the club." },
         "membersCount": { "type": "number", "description": "The total number of members in the club." },
-        "requirements": { "type": "object", "description": "Map of requirements for the club.", "additionalProperties": true },
-        "budget": { "type": "object", "description": "Map of budget details for the club.", "additionalProperties": true },
-        "sequenceFirstProgram": { "type": "array", "items": { "type": "string" }, "description": "Sequence of events for the first program." }
+        "coreVolunteers": {
+          "type": "array",
+          "description": "The core team members of the club.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "role": { "type": "string" }
+            },
+            "required": ["name", "role"]
+          }
+        },
+        "genres": { "type": "array", "items": { "type": "string" }, "description": "Musical, dance, or literary genres associated with the club." },
+        "activities": { "type": "array", "items": { "type": "string" }, "description": "Specific activities the club performs." },
+        "performanceOrder": { "type": "array", "items": { "type": "string" }, "description": "Typical sequence of a performance or event." },
+        "requirements": { "type": "array", "items": { "type": "string" }, "description": "List of common requirements for events." },
+        "budgetPerEventINR": { "type": "number", "description": "Estimated budget per event in Indian Rupees." },
+        "firstEventSetupBudgetINR": { "type": "number", "description": "One-time setup budget for the first event." },
+        "refreshments3MonthsINR": { "type": "number", "description": "Quarterly budget for refreshments." },
+        "performanceDurationMinutes": {
+            "type": "object",
+            "description": "Duration of performances in minutes, keyed by type.",
+            "additionalProperties": { "type": "number" }
+        }
       },
-      "required": ["name"]
+      "required": ["name", "type", "description"]
     },
     "volunteer": {
       "title": "Volunteer",
@@ -136,7 +159,7 @@
     "/volunteers/{volunteerId}": { "schema": { "$ref": "#/entities/volunteer" }, "description": "Profiles for student volunteers." },
     "/members/{memberId}": { "schema": { "$ref": "#/entities/member" }, "description": "Profiles for general members." },
     "/events/{eventId}": { "schema": { "$ref": "#/entities/event" }, "description": "Details about club events." },
-    "/gallery/{photoId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the main gallery." },
+    "/gallery/{galleryId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the main gallery." },
     "/funds/accounting/transactions/{transactionId}": { "schema": { "$ref": "#/entities/fundTransaction" }, "description": "Logs all financial transactions." },
     "/philanthropy/{activityId}": { "schema": { "$ref": "#/entities/philanthropyActivity" }, "description": "Records of philanthropic activities." }
   }

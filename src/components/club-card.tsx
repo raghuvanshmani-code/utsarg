@@ -28,16 +28,16 @@ export function ClubCard({ club, className }: ClubCardProps) {
             )}
             <div className='w-full'>
                 <CardTitle className="text-xl">{club.name}</CardTitle>
-                {club.members_count && (
+                {club.membersCount && (
                     <span className="text-xs text-muted-foreground flex items-center mt-1">
                         <Users className="h-3 w-3 mr-1.5" />
-                        {club.members_count} Members
+                        {club.membersCount} Members
                     </span>
                 )}
             </div>
             </CardHeader>
             <CardContent className="flex-grow p-6 pt-0">
-            <CardDescription>{club.short_description}</CardDescription>
+            <CardDescription>{club.description}</CardDescription>
             </CardContent>
             <CardFooter className="p-6 pt-0">
               <div className="text-sm text-accent font-semibold flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
