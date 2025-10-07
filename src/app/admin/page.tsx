@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, HeartHandshake, IndianRupee } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 
@@ -37,6 +37,16 @@ export default function AdminDashboard() {
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip={{children: 'Clubs'}}>
                           <Link href="/admin/clubs"><BookOpen /><span>Clubs</span></Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                   <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip={{children: 'Philanthropy'}}>
+                         <Link href="/admin/philanthropy"><HeartHandshake /><span>Philanthropy</span></Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                   <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip={{children: 'Finance'}}>
+                         <Link href="/admin/finance"><IndianRupee /><span>Finance</span></Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
