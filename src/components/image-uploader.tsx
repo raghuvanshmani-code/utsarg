@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, UploadCloud, Trash2 } from 'lucide-react';
@@ -20,7 +21,7 @@ const CLOUDINARY_UPLOAD_PRESET = 'Utsarg';
 export function ImageUploader({ value, onChange, folder = 'my_project_uploads' }: ImageUploaderProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const fileInputId = `file-upload-${Math.random()}`;
+  const fileInputId = useId();
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
