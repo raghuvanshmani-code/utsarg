@@ -76,3 +76,21 @@ export type UserImage = {
   fileSize: number;
   uploadedAt: { seconds: number; nanoseconds: number; };
 };
+
+export type PhilanthropyActivity = {
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    volunteers: string[];
+    photos: string[];
+};
+
+export type FundTransaction = {
+    id: string;
+    amount: number;
+    source: string;
+    purpose: string;
+    date: string;
+    signatories: string[];
+};
