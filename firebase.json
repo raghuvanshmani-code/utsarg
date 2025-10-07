@@ -34,7 +34,7 @@
   ],
   "emulators": {
     "auth": {
-      "port": 9190,
+      "port": 9191,
       "host": "0.0.0.0"
     },
     "functions": {
