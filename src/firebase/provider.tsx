@@ -78,3 +78,11 @@ export const useStorage = () => {
     }
     return context.storage;
 };
+
+export const useFunctions = () => {
+    const context = useContext(FirebaseContext);
+    if (context === undefined) {
+        throw new Error('useFunctions must be used within a FirebaseProvider');
+    }
+    return context.functions;
+};
