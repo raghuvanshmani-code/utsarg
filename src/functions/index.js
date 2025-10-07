@@ -11,22 +11,13 @@ if (admin.apps.length === 0) {
  * from a single JSON object containing multiple collections.
  */
 exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
-  // 1. Authentication and Authorization Checks
+  // 1. Authentication Check
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "The function must be called while authenticated."
     );
   }
-  // Admin check is commented out to allow any authenticated user to seed data.
-  // For production, you would want to enable this and set custom claims.
-  // const isAdmin = context.auth.token.admin === true;
-  // if (!isAdmin) {
-  //   throw new functions.https.HttpsError(
-  //     "permission-denied",
-  //     "Only admin users can import data."
-  //   );
-  // }
 
   // 2. Input Validation
   const { seedData } = data;
@@ -39,66 +30,59 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
 
   const firestore = admin.firestore();
   const batch = firestore.batch();
-  const errors = [];
   let totalSuccessCount = 0;
-  const now = new Date(); // Use a standard JS Date for server-side operations
+  const now = new Date(); 
 
   // 3. Firestore Batch Write Logic for each collection
-  for (const collectionName in seedData) {
-      if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
-          const docs = seedData[collectionName];
-          if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
-              errors.push({ collection: collectionName, error: `The value for '${collectionName}' must be an object of documents.` });
-              continue; // Skip to the next collection if the format is wrong
-          }
+  try {
+    for (const collectionName in seedData) {
+        if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
+            const docs = seedData[collectionName];
+            
+            // Ensure the collection data is an object
+            if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
+                throw new functions.https.HttpsError(
+                    "invalid-argument",
+                    `The value for collection '${collectionName}' must be an object of documents.`
+                );
+            }
 
-          const collectionRef = firestore.collection(collectionName);
-          let collectionSuccessCount = 0;
-
-          for (const docId in docs) {
-              if (Object.prototype.hasOwnProperty.call(docs, docId)) {
-                  try {
-                      const docData = docs[docId];
-                      const docRef = collectionRef.doc(docId); // Use the key as the document ID
-                      
-                      const dataToSet = {
-                          ...docData,
-                          // Use the server-side timestamp for creation and update times.
-                          // The 'createdAt' from the JSON will be overwritten to ensure consistency.
-                          createdAt: now,
-                          updatedAt: now
-                      };
-                      
-                      batch.set(docRef, dataToSet, { merge: true });
-                      collectionSuccessCount++;
-                  } catch (e) {
-                      errors.push({ collection: collectionName, docId: docId, error: e.message });
-                  }
-              }
-          }
-          totalSuccessCount += collectionSuccessCount;
-      }
+            const collectionRef = firestore.collection(collectionName);
+            
+            for (const docId in docs) {
+                if (Object.prototype.hasOwnProperty.call(docs, docId)) {
+                    const docData = docs[docId];
+                    const docRef = collectionRef.doc(docId); // Use the key as the document ID
+                    
+                    const dataToSet = {
+                        ...docData,
+                        createdAt: now,
+                        updatedAt: now
+                    };
+                    
+                    batch.set(docRef, dataToSet, { merge: true });
+                    totalSuccessCount++;
+                }
+            }
+        }
+    }
+  } catch (error) {
+     console.error("Error during batch preparation:", error);
+     throw new functions.https.HttpsError(
+      "internal",
+      "An error occurred while preparing the data for import. Check Cloud Function logs.",
+      error.message
+    );
   }
 
 
   // 4. Commit the Batch and Return Results
-  if (errors.length > 0) {
-      // If there were validation errors before batching, don't commit.
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Validation errors occurred. No data was written.",
-        { errors }
-      );
-  }
-  
   try {
     await batch.commit();
     return {
       success: true,
-      message: "Data seeded successfully.",
+      message: `Data seeded successfully. Wrote ${totalSuccessCount} documents.`,
       totalSuccessCount: totalSuccessCount,
-      failedCount: 0,
-      errors: [],
     };
   } catch (error) {
     console.error("Batch commit failed:", error);
