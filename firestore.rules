@@ -1,135 +1,102 @@
-/**
- * @file Overview
- * This ruleset enforces a hybrid security model, balancing public readability with owner-controlled writes.
- *
- * @dataStructure
- * - /users/{userId}: User profiles, accessible only to the owner.
- * - /clubs/{clubId}: Public club information, writeable by authorized users.
- * - /events/{eventId}: Public event listings, writeable by authorized users.
- * - /gallery/{galleryId}: Public gallery items, writeable by authorized users.
- * - /blog/{blogId}: Public blog posts, writeable by authorized users.
- * - /uploads/{uploadId}: Public upload metadata, writeable by authorized users.
- * - /seeds/{seedId}: Audit logs for seed operations, writeable by authorized users.
- *
- * @keySecurityDecisions
- * - Users can only read/write their own profile data under /users/{userId}.
- * - Listing of users is disallowed.
- * - Top-level collections (/clubs, /events, /gallery, /blog, /uploads) are publicly readable.
- * - Writes to top-level collections are restricted using an owner-only model, with `createdAt` and `updatedAt` timestamps to allow for change tracking.
- *
- * @denormalizationForAuthorization
- * - The rules rely on the `clubId` field to authorize gallery and event data.
- * -  The rules rely on the `userId` field to identify seed operations.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles.
-     * @path /users/{userId}
-     * @allow (read, write) if request.auth.uid == userId
-     * @deny (read, write) if request.auth.uid != userId
-     * @principle Enforces user-ownership: only the user can read/write their own profile.
+     * @description Allows anyone to read the society metadata.
+     * @path /society/meta
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for society metadata.
      */
-    match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.uid == userId;
-      allow update: if isOwner(userId) && request.resource.data.uid == resource.data.uid;
-      allow delete: if isOwner(userId) && resource != null;
+    match /society/meta {
+      allow get, list: if true;
     }
 
     /**
-     * @description Controls access to club data.
+     * @description Allows anyone to read the clubs collection.
      * @path /clubs/{clubId}
-     * @allow (read) Public read access.
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
-     * @principle Public read, owner-only writes.
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for club information.
      */
     match /clubs/{clubId} {
-        allow get, list: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+      allow get, list: if true;
     }
 
     /**
-     * @description Controls access to event data.
+     * @description Allows anyone to read the volunteers collection.
+     * @path /volunteers/{volunteerId}
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for volunteer profiles.
+     */
+    match /volunteers/{volunteerId} {
+      allow get, list: if true;
+    }
+
+    /**
+     * @description Allows anyone to read the members collection.
+     * @path /members/{memberId}
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for member profiles.
+     */
+    match /members/{memberId} {
+      allow get, list: if true;
+    }
+
+    /**
+     * @description Allows anyone to read the events collection.
      * @path /events/{eventId}
-     * @allow (read) Public read access.
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
-     * @principle Public read, owner-only writes.
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for event details.
      */
     match /events/{eventId} {
-        allow get, list: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+      allow get, list: if true;
     }
 
     /**
-     * @description Controls access to gallery data.
-     * @path /gallery/{galleryId}
-     * @allow (read) Public read access.
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
-     * @principle Public read, owner-only writes.
+     * @description Allows anyone to read the gallery collection.
+     * @path /gallery/{photoId}
+     * @allow (get, list)
+     * @deny (create, update, delete, write)
+     * @principle Public read access for gallery media items.
      */
-    match /gallery/{galleryId} {
-        allow get, list: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+    match /gallery/{photoId} {
+      allow get, list: if true;
     }
 
     /**
-     * @description Controls access to blog data.
-     * @path /blog/{blogId}
-     * @allow (read) Public read access.
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
-     * @principle Public read, owner-only writes.
+     * @description Restricts access to the funds transactions collection.
+     * @path /funds/transactions/{transactionId}
+     * @allow get, list: if false;
+     * @allow create, update, delete, write: if false;
+     * @principle No public access to financial transaction logs.
      */
-    match /blog/{blogId} {
-        allow get, list: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+    match /funds/transactions/{transactionId} {
+      allow read: if false;
+      allow write: if false;
     }
 
     /**
-     * @description Controls access to upload data.
-     * @path /uploads/{uploadId}
-     * @allow (read) Public read access.
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
-     * @principle Public read, owner-only writes.
+     * @description Allows anyone to read the philanthropy activities collection.
+     * @path /philanthropy/{activityId}
+     * @allow get, list: if true;
+     * @deny create, update, delete, write: if false;
+     * @principle Public read access for philanthropy activities.
      */
-    match /uploads/{uploadId} {
-        allow get, list: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+    match /philanthropy/{activityId} {
+      allow get, list: if true;
     }
 
     /**
-     * @description Controls access to seed operation audit logs.
-     * @path /seeds/{seedId}
-     * @allow (create, update, delete) if request.auth != null
-     * @deny (create, update, delete) if request.auth == null
+     * @description Helper function to determine if a user is signed in.
+     * @return {bool} True if the user is signed in, false otherwise.
      */
-    match /seeds/{seedId} {
-        allow get, list: if false; // Do not allow listing/getting of seed logs.
-        allow create: if request.auth != null;
-        allow update: if request.auth != null && resource != null;
-        allow delete: if request.auth != null && resource != null;
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
