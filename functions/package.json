@@ -7,7 +7,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "build": "echo 'No build step required for JS functions'"
   },
   "engines": {
     "node": "18"
@@ -16,7 +17,8 @@
   "dependencies": {
     "firebase-admin": "^11.0.1",
     "firebase-functions": "^4.0.0",
-    "@google-cloud/storage": "^6.9.0"
+    "@google-cloud/storage": "^6.9.0",
+    "crypto": "^1.0.1"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

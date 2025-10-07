@@ -10,7 +10,17 @@ To get started, take a look at src/app/page.tsx.
 
 To test the `importSeedDocuments` Cloud Function safely before deploying, use the Firebase Local Emulator Suite.
 
-**1. Start the Emulators:**
+**1. Install Function Dependencies:**
+
+Before starting the emulators, navigate to the `functions` directory and install its dependencies:
+
+```bash
+cd functions
+npm install
+cd ..
+```
+
+**2. Start the Emulators:**
 
 Ensure you have a seed file (e.g., `utsarg_seed.json`) in your project's root directory or a known path. Then run:
 
@@ -20,7 +30,7 @@ firebase emulators:start --only firestore,functions,auth
 
 This will start local emulators for Firestore, Functions, and Authentication, which you can interact with without touching your live project.
 
-**2. Set an Admin Custom Claim for a Test User:**
+**3. Set an Admin Custom Claim for a Test User:**
 
 The seeder function requires the calling user to have an `admin:true` custom claim.
 
@@ -31,7 +41,7 @@ The seeder function requires the calling user to have an `admin:true` custom cla
 *   In the "Custom claims" field, enter `{"admin":true}`.
 *   Save the changes. Note the UID of this test user.
 
-**3. Run the Seeder from the Admin UI:**
+**4. Run the Seeder from the Admin UI:**
 
 *   Start your Next.js development server (`npm run dev`).
 *   Open your application and navigate to the Admin Panel -> Seed Data page.
