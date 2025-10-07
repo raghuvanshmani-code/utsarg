@@ -11,20 +11,22 @@ if (admin.apps.length === 0) {
  * from a single JSON object containing multiple collections.
  */
 exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
-  // 1. Authentication and Authorization Checks
+  // 1. Authentication Check - The user must be signed in.
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "The function must be called while authenticated."
     );
   }
-  // Admin check is commented out to allow any authenticated user to seed data.
-  // For production, you would want to enable this and set custom claims.
+  
+  // NOTE: The admin check has been removed to allow any authenticated user to seed data.
+  // For a production environment, you would re-enable this and manage admin roles
+  // via custom claims.
   // const isAdmin = context.auth.token.admin === true;
   // if (!isAdmin) {
   //   throw new functions.https.HttpsError(
   //     "permission-denied",
-  //     "Only admin users can import data."
+  //     "This functionality is restricted to admin users."
   //   );
   // }
 
