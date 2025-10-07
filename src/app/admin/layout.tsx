@@ -16,16 +16,6 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, loading } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    // If loading is done and we have a user who is an admin, we are good.
-    if (!loading && user && isAdmin) {
-      return;
-    }
-    // If loading is done and there's no user or the user is not an admin,
-    // we don't redirect here, we just show the login form.
-  }, [user, isAdmin, loading, router]);
-
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">

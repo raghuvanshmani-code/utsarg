@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ export const useUser = () => {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true); // Set loading to true while we check claims
       if (user) {
         setUser(user);
         try {
