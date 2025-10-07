@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { PhilanthropyActivity } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
@@ -35,18 +35,25 @@ interface PhilanthropyFormProps {
 }
 
 export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isSubmitting, isDialog = false }: PhilanthropyFormProps) {
+  const [isClient, setIsClient] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { type: '', description: '', date: new Date().toISOString(), photos: [], volunteers: [] },
   });
 
   useEffect(() => {
+    setIsClient(true);
     if (activity) {
       form.reset({ ...activity, date: activity.date || new Date().toISOString() });
     } else {
       form.reset({ type: '', description: '', date: new Date().toISOString(), photos: [], volunteers: [] });
     }
   }, [activity, form, isOpen]);
+
+  if (!isClient) {
+    return null;
+  }
 
   const dialogTitle = activity ? 'Edit Activity' : 'Add New Activity';
   const dialogDescription = activity ? 'Make changes to the activity details here.' : 'Add a new philanthropic activity.';

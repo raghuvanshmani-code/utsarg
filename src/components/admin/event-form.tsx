@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Event, Club } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useCollection } from '@/firebase';
@@ -39,6 +39,7 @@ interface EventFormProps {
 
 export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting, isDialog = false }: EventFormProps) {
   const { data: clubs, loading: clubsLoading } = useCollection<Club>('clubs');
+  const [isClient, setIsClient] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,12 +47,17 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
   });
 
   useEffect(() => {
+    setIsClient(true);
     if (event) {
       form.reset({ ...event, date: event.date || new Date().toISOString() });
     } else {
       form.reset({ title: '', description: '', location: '', date: new Date().toISOString(), clubId: '', bannerImage: '' });
     }
   }, [event, form, isOpen]);
+
+  if (!isClient) {
+    return null;
+  }
 
   const dialogTitle = event ? 'Edit Event' : 'Add New Event';
   const dialogDescription = event ? 'Make changes to the event details here.' : 'Add a new event.';

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Post } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
@@ -37,6 +37,8 @@ interface BlogFormProps {
 }
 
 export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, isDialog = false }: BlogFormProps) {
+  const [isClient, setIsClient] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,6 +53,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
   });
 
   useEffect(() => {
+    setIsClient(true);
     if (post) {
       form.reset({
         ...post,
@@ -69,6 +72,9 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
     }
   }, [post, form, isOpen]);
 
+  if (!isClient) {
+    return null;
+  }
 
   const dialogTitle = post ? 'Edit Post' : 'Add New Post';
   const dialogDescription = post ? 'Make changes to the post details here.' : 'Add a new post to the blog.';

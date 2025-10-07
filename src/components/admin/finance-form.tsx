@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { FundTransaction } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
@@ -33,18 +33,25 @@ interface FinanceFormProps {
 }
 
 export function FinanceForm({ isOpen, onOpenChange, onSubmit, transaction, isSubmitting, isDialog = false }: FinanceFormProps) {
+  const [isClient, setIsClient] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] },
   });
 
   useEffect(() => {
+    setIsClient(true);
     if (transaction) {
       form.reset({ ...transaction, date: transaction.date || new Date().toISOString() });
     } else {
       form.reset({ purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] });
     }
   }, [transaction, form, isOpen]);
+
+  if (!isClient) {
+    return null;
+  }
 
   const dialogTitle = transaction ? 'Edit Transaction' : 'Add New Transaction';
   const dialogDescription = transaction ? 'Make changes to the transaction details here.' : 'Add a new transaction to the records.';
