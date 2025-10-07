@@ -1,4 +1,3 @@
-
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -11,7 +10,6 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_USE_EMULATORS: process.env.NODE_ENV === 'development' ? 'true' : 'false',
-    NEXT_PUBLIC_EMULATOR_HOST: 'localhost',
   },
   images: {
     remotePatterns: [

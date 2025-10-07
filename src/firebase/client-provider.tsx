@@ -25,8 +25,9 @@ export function FirebaseClientProvider({ children }: { children: React.ReactNode
     if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
       const { auth, firestore, storage, functions } = firebase;
 
-      // This code now runs only on the client, so `window` is available.
-      const host = window.location.hostname;
+      // In this environment, the browser connects to localhost,
+      // which is then port-forwarded to the emulators in the cloud workstation.
+      const host = 'localhost';
 
       // @ts-ignore - Check if emulators are already connected
       if (!auth.emulatorConfig) {
