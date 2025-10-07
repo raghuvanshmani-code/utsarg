@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
@@ -40,7 +41,7 @@ export function initializeFirebase(): {
   return { firebaseApp: app, auth, firestore, storage, functions };
 }
 
-export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, useStorage } from './provider';
+export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore, useStorage, useFunctions } from './provider';
 export { FirebaseClientProvider } from './client-provider';
 export { useUser } from './auth/use-user';
 export { useCollection } from './firestore/use-collection';

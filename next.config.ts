@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  env: {
+    NEXT_PUBLIC_USE_EMULATORS: process.env.NODE_ENV === 'development' ? 'true' : 'false',
+    NEXT_PUBLIC_EMULATOR_HOST: 'localhost',
+  },
   images: {
     remotePatterns: [
       {
@@ -42,5 +46,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-    
