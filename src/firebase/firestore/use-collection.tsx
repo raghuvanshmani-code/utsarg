@@ -11,6 +11,8 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
+  const memoizedConstraints = JSON.stringify(queryConstraints);
+
   useEffect(() => {
     if (!db || !path) {
         setLoading(false);
@@ -19,7 +21,6 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
 
     setLoading(true);
     
-    // The query is now constructed inside the effect, ensuring `db` is available.
     const collectionRef = collection(db, path);
     const q = query(collectionRef, ...queryConstraints);
     
@@ -42,9 +43,8 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
     );
 
     return () => unsubscribe();
-  // We stringify constraints to create a stable dependency for useEffect.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, path, JSON.stringify(queryConstraints)]);
+  }, [db, path, memoizedConstraints]);
 
   return { data, loading, error };
 }
