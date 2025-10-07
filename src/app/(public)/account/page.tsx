@@ -1,7 +1,7 @@
 'use client';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,30 +12,14 @@ import { ShieldCheck, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AccountPage() {
-    const { user, loading } = useUser();
+    const { user, loading, isAdmin } = useUser();
     const router = useRouter();
-    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
             router.push('/login');
         }
     }, [user, loading, router]);
-
-    useEffect(() => {
-        const checkAdmin = async () => {
-            if(user) {
-                try {
-                    const idTokenResult = await user.getIdTokenResult();
-                    setIsAdmin(!!idTokenResult.claims.admin);
-                } catch (error) {
-                    console.error("Error fetching ID token result:", error);
-                    setIsAdmin(false);
-                }
-            }
-        };
-        checkAdmin();
-    }, [user]);
 
     const handleSignOut = () => {
         getAuth().signOut();
