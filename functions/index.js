@@ -79,7 +79,7 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
           success: false,
           message: "Validation errors occurred. No data was written.",
           totalSuccessCount: 0,
-          failedCount: Object.keys(seedData).reduce((acc, key) => acc + seedData[key].length, 0),
+          failedCount: Object.keys(seedData).reduce((acc, key) => acc + (Array.isArray(seedData[key]) ? seedData[key].length : 0), 0) - totalSuccessCount,
           errors: errors,
       };
   }
