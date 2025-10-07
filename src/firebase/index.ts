@@ -23,16 +23,20 @@ export function initializeFirebase(): {
     const host = process.env.NEXT_PUBLIC_EMULATOR_HOST || 'localhost';
     
     // Check if emulators are already connected to prevent errors on hot-reloads
-    if (!(auth as any)._isEmulator) {
+    // @ts-ignore
+    if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, `http://${host}:9191`, { disableWarnings: true });
     }
-    if (!(firestore as any)._isEmulator) {
+    // @ts-ignore
+    if (!firestore._settings.host.includes('localhost')) {
       connectFirestoreEmulator(firestore, host, 8080);
     }
-    if (!(storage as any)._isEmulator) {
+    // @ts-ignore
+    if (!storage.emulator) {
       connectStorageEmulator(storage, host, 9199);
     }
-    if (!(functions as any)._isEmulator) {
+    // @ts-ignore
+    if (!functions.emulatorOrigin) {
       connectFunctionsEmulator(functions, host, 5001);
     }
   }
