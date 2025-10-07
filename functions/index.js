@@ -18,8 +18,8 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
       "The function must be called while authenticated."
     );
   }
-  // This check is commented out to allow seeding without custom claims for now.
-  // Re-enable this for production security.
+  // Admin check is commented out to allow any authenticated user to seed data.
+  // For production, you would want to enable this and set custom claims.
   // const isAdmin = context.auth.token.admin === true;
   // if (!isAdmin) {
   //   throw new functions.https.HttpsError(
@@ -41,33 +41,30 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
   const batch = firestore.batch();
   const errors = [];
   let totalSuccessCount = 0;
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  const now = new Date(); // Use a standard JS Date for server-side operations
 
   // 3. Firestore Batch Write Logic for each collection
   for (const collectionName in seedData) {
       if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
           const docs = seedData[collectionName];
-          // **FIX:** The documents are in an object, not an array.
           if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
               errors.push({ collection: collectionName, error: `The value for '${collectionName}' must be an object of documents.` });
-              continue;
+              continue; // Skip to the next collection if the format is wrong
           }
 
           const collectionRef = firestore.collection(collectionName);
           let collectionSuccessCount = 0;
 
-          // **FIX:** Iterate over the keys of the documents object.
           for (const docId in docs) {
               if (Object.prototype.hasOwnProperty.call(docs, docId)) {
                   try {
                       const docData = docs[docId];
                       const docRef = collectionRef.doc(docId); // Use the key as the document ID
                       
-                      // Prepare data for setting, ensuring not to mutate original object
                       const dataToSet = {
                           ...docData,
-                          // Use the server timestamp for creation and update times.
-                          // The `createdAt` in the JSON will be overwritten if it exists.
+                          // Use the server-side timestamp for creation and update times.
+                          // The 'createdAt' from the JSON will be overwritten to ensure consistency.
                           createdAt: now,
                           updatedAt: now
                       };
@@ -107,7 +104,7 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
     console.error("Batch commit failed:", error);
     throw new functions.https.HttpsError(
       "internal",
-      "Failed to write documents to Firestore.",
+      "Failed to write documents to Firestore. Check Cloud Function logs for details.",
       error.message
     );
   }
