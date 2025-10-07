@@ -1,37 +1,12 @@
 
 'use client';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider, useUser } from '@/firebase';
+import { FirebaseClientProvider } from '@/firebase';
 import '../globals.css';
 import { cn } from '@/lib/utils';
 import { Inter } from 'next/font/google';
-import { AdminLoginForm } from '@/components/admin-login-form';
-import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, loading } = useUser();
-  const router = useRouter();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-4">Authenticating...</p>
-      </div>
-    );
-  }
-
-  if (!user || !isAdmin) {
-    return <AdminLoginForm />;
-  }
-
-  return <>{children}</>;
-}
-
 
 export default function AdminLayout({
   children,
@@ -44,9 +19,7 @@ export default function AdminLayout({
        <head />
       <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
         <FirebaseClientProvider>
-            <AdminAuthGuard>
-              {children}
-            </AdminAuthGuard>
+            {children}
             <Toaster />
         </FirebaseClientProvider>
       </body>
