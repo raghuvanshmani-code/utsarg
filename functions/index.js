@@ -39,6 +39,7 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
   const batch = firestore.batch();
   const errors = [];
   let totalSuccessCount = 0;
+  const now = new Date(); // Use a standard JavaScript Date object for server-side writes
 
   // 3. Firestore Batch Write Logic for each collection
   for (const collectionName in seedData) {
@@ -57,9 +58,9 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
                   const docRef = docData.id ? collectionRef.doc(String(docData.id)) : collectionRef.doc();
                   batch.set(docRef, {
                       ...docData,
-                      // Adding timestamps, ensuring they don't overwrite existing ones if merging
-                      createdAt: docData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
-                      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                      // Adding timestamps. For the Admin SDK, we use a JS Date object.
+                      createdAt: docData.createdAt || now,
+                      updatedAt: now
                   }, { merge: true });
                   collectionSuccessCount++;
               } catch (e) {
