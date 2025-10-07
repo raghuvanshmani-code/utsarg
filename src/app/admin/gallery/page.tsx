@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
@@ -97,6 +96,7 @@ export default function GalleryAdminPage() {
       
       const data = {
         ...values,
+        uploadedBy: user?.uid, // Add user ID
         updatedAt: serverTimestamp(),
       };
 
@@ -119,7 +119,7 @@ export default function GalleryAdminPage() {
       } else {
           // Add new item
           const collectionRef = collection(db, 'gallery');
-          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
+          addDoc(collectionRef, { ...data, createdAt: serverTimestamp(), date: new Date().toISOString() }).then(() => {
               toast({ title: "Success", description: "Gallery item added successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
@@ -242,7 +242,7 @@ export default function GalleryAdminPage() {
                     {galleryItems.map((item) => (
                         <TableRow key={item.id}>
                             <TableCell>
-                                {item.url && (item.url.startsWith('http://') || item.url.startsWith('https://')) ? (
+                                {item.url && (item.url.startsWith('http://') || item.url.startsWith('https')) ? (
                                     <Image
                                     src={item.url}
                                     alt={item.caption || 'Gallery Image'}

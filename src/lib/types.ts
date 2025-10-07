@@ -1,4 +1,3 @@
-
 export type NavItem = {
   title: string;
   href: string;
@@ -34,12 +33,12 @@ export type Event = {
   date: string;
   location: string;
   description: string;
-  capacity: number;
-  rsvp_count: number;
-  budget: number;
-  gallery: string[];
+  budget?: number;
+  gallery?: string[];
   bannerImage?: string;
-  created_at: any;
+  created_at?: any;
+  venue: string; // From entity, keeping for compatibility if used elsewhere
+  status: 'planned' | 'complete'; // From entity
 };
 
 export type Post = {
@@ -58,14 +57,11 @@ export type Post = {
 
 export type GalleryImage = {
   id: string;
-  url?: string;
+  url: string;
   caption?: string;
   tags?: string[];
-  event_id?: string;
-  mediaURL?: string;
-  title: string;
-  type: 'image' | 'video';
-  clubId?: string;
+  uploadedBy?: string;
+  date?: string;
 };
 
 export type UserImage = {

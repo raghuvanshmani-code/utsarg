@@ -19,7 +19,7 @@ export function GalleryGrid() {
       )
   }
   
-  const validImages = images.filter(image => image.mediaURL && (image.mediaURL.startsWith('http://') || image.mediaURL.startsWith('https://')));
+  const validImages = images.filter(image => image.url && (image.url.startsWith('http://') || image.url.startsWith('https://')));
 
   return (
     <>
@@ -31,14 +31,14 @@ export function GalleryGrid() {
               onClick={() => setSelectedImage(image)}
             >
               <Image
-                src={image.mediaURL}
-                alt={image.title}
+                src={image.url}
+                alt={image.caption || 'Gallery Image'}
                 width={500}
                 height={500}
                 className="w-full h-auto rounded-lg shadow-md transition-transform duration-300 transform group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center">
-                <p className="text-white text-center p-4">{image.title}</p>
+                <p className="text-white text-center p-4">{image.caption}</p>
               </div>
             </div>
           ))}
@@ -48,11 +48,11 @@ export function GalleryGrid() {
         <DialogContent className="max-w-4xl p-0 border-0 bg-transparent">
           {selectedImage && (
             <>
-              <DialogTitle className="sr-only">{selectedImage.title}</DialogTitle>
-              <DialogDescription className="sr-only">Enlarged view of the gallery image: {selectedImage.title}</DialogDescription>
+              <DialogTitle className="sr-only">{selectedImage.caption}</DialogTitle>
+              <DialogDescription className="sr-only">Enlarged view of the gallery image: {selectedImage.caption}</DialogDescription>
               <Image
-                src={selectedImage.mediaURL}
-                alt={selectedImage.title}
+                src={selectedImage.url!}
+                alt={selectedImage.caption || ''}
                 width={1200}
                 height={800}
                 className="w-full h-auto rounded-lg object-contain"

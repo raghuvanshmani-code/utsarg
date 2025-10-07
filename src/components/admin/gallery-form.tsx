@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,14 +9,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { GalleryImage } from '@/lib/types';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ImageUploader } from '../image-uploader';
 
 
 const formSchema = z.object({
-  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  mediaURL: z.string().optional(),
-  type: z.enum(['image', 'video'], { required_error: "You need to select a media type."}),
+  caption: z.string().min(2, { message: "Caption must be at least 2 characters." }).optional(),
+  url: z.string().url({ message: "Please enter a valid URL." }),
+  tags: z.array(z.string()).optional(),
 });
 
 interface GalleryFormProps {
@@ -32,9 +30,9 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      mediaURL: '',
-      type: 'image',
+      caption: '',
+      url: '',
+      tags: [],
     }
   });
   
@@ -44,9 +42,9 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
         form.reset(item);
       } else {
         form.reset({
-          title: '',
-          mediaURL: '',
-          type: 'image',
+          caption: '',
+          url: '',
+          tags: [],
         });
       }
     }
@@ -67,10 +65,10 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto pr-6">
             <FormField
               control={form.control}
-              name="title"
+              name="caption"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>Caption</FormLabel>
                   <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -79,7 +77,7 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
             
             <FormField
               control={form.control}
-              name="mediaURL"
+              name="url"
               render={({ field }) => (
                  <FormItem>
                   <FormLabel>Image</FormLabel>
@@ -94,40 +92,6 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
               )}
             />
             
-             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Media Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="image" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Image
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="video" disabled />
-                        </FormControl>
-                        <FormLabel className="font-normal text-muted-foreground">
-                          Video (coming soon)
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6 pb-6">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>

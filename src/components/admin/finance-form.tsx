@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +5,6 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { FundTransaction } from '@/lib/types';
 import { useEffect } from 'react';
@@ -19,7 +17,7 @@ import { Calendar } from '../ui/calendar';
 const formSchema = z.object({
   purpose: z.string().min(2, { message: "Purpose must be at least 2 characters." }),
   source: z.string().min(2, { message: "Source must be at least 2 characters." }),
-  amount: z.coerce.number().min(0, { message: "Amount must be a positive number." }),
+  amount: z.coerce.number(),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   signatories: z.array(z.string()).optional(), // Making optional for simplicity
 });
