@@ -98,7 +98,7 @@ export function AdminLoginForm() {
             console.error("Error signing in", error);
             let description = "An unknown error occurred.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                description = "Invalid email or password. Please try again.";
+                description = "Invalid email or password. Please try again or sign up if you don't have an account.";
             } else if (error.code !== 'auth/popup-closed-by-user') {
                 description = error.message;
             }
