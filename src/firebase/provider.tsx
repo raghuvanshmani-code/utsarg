@@ -3,10 +3,10 @@
 
 import React, { createContext, useContext } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Auth, connectAuthEmulator } from 'firebase/auth';
-import { Firestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
-import { Functions, connectFunctionsEmulator } from 'firebase/functions';
+import { Auth } from 'firebase/auth';
+import { Firestore } from 'firebase/firestore';
+import { FirebaseStorage } from 'firebase/storage';
+import { Functions } from 'firebase/functions';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseContextType {
@@ -30,30 +30,7 @@ interface FirebaseProviderProps {
   };
 }
 
-// This flag ensures we only connect to emulators once.
-let emulatorsConnected = false;
-
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, value }) => {
-  const { auth, firestore, storage, functions } = value;
-
-  // This logic now runs synchronously before the first render completes.
-  // It ensures services are pointed to emulators before any other code can use them.
-  if (process.env.NODE_ENV === 'development' && !emulatorsConnected) {
-    if (auth) {
-      connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-    }
-    if (firestore) {
-      connectFirestoreEmulator(firestore, 'localhost', 8080);
-    }
-    if (storage) {
-      connectStorageEmulator(storage, 'localhost', 9199);
-    }
-    if (functions) {
-      connectFunctionsEmulator(functions, 'localhost', 5001);
-    }
-    emulatorsConnected = true;
-  }
-
   return (
     <FirebaseContext.Provider value={value}>
       {children}
