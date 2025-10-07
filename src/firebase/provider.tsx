@@ -34,8 +34,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, va
   const { auth, firestore, storage, functions } = value;
 
   useEffect(() => {
-    // NOTE: This check is for development mode only.
-    // In a production app, you would not include this block.
+    // This check is for development mode only.
     if (process.env.NODE_ENV === 'development') {
       // Check if emulators are already connected to prevent re-connecting on hot reloads
       if (auth && !(auth as any).emulatorConfig) {
@@ -47,7 +46,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, va
       if (storage && storage?._service?.host && !storage._service.host.includes('localhost')) {
           connectStorageEmulator(storage, 'localhost', 9199);
       }
-      if (functions && functions?.customDomain && !functions.customDomain.includes('localhost')) {
+      if (functions && (!functions.customDomain || !functions.customDomain.includes('localhost'))) {
           connectFunctionsEmulator(functions, 'localhost', 5001);
       }
     }
