@@ -42,7 +42,7 @@ export default function FinanceAdminPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const { data: transactions, loading } = useCollection<FundTransaction>('funds/transactions');
+  const { data: transactions, loading } = useCollection<FundTransaction>('funds/accounting/transactions');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<FundTransaction | null>(null);
@@ -73,7 +73,7 @@ export default function FinanceAdminPage() {
     if (!transactionToDelete || !db) return;
     
     setIsSubmitting(true);
-    const docRef = doc(db, 'funds/transactions', transactionToDelete.id);
+    const docRef = doc(db, 'funds/accounting/transactions', transactionToDelete.id);
     
     deleteDoc(docRef).then(() => {
         toast({ title: "Success", description: "Transaction deleted successfully." });
@@ -101,7 +101,7 @@ export default function FinanceAdminPage() {
 
       if (selectedTransaction) {
           // Update existing transaction
-          const docRef = doc(db, 'funds/transactions', selectedTransaction.id);
+          const docRef = doc(db, 'funds/accounting/transactions', selectedTransaction.id);
           updateDoc(docRef, data).then(() => {
               toast({ title: "Success", description: "Transaction updated successfully." });
               setIsDialogOpen(false);
@@ -117,7 +117,7 @@ export default function FinanceAdminPage() {
           });
       } else {
           // Add new transaction
-          const collectionRef = collection(db, 'funds/transactions');
+          const collectionRef = collection(db, 'funds/accounting/transactions');
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Transaction added successfully." });
               setIsDialogOpen(false);

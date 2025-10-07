@@ -122,7 +122,7 @@
     "/members/{memberId}": { "schema": { "$ref": "#/entities/member" }, "description": "Profiles for general members." },
     "/events/{eventId}": { "schema": { "$ref": "#/entities/event" }, "description": "Details about club events." },
     "/gallery/{photoId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the main gallery." },
-    "/funds/transactions/{transactionId}": { "schema": { "$ref": "#/entities/fundTransaction" }, "description": "Logs all financial transactions." },
+    "/funds/accounting/transactions/{transactionId}": { "schema": { "$ref": "#/entities/fundTransaction" }, "description": "Logs all financial transactions." },
     "/philanthropy/{activityId}": { "schema": { "$ref": "#/entities/philanthropyActivity" }, "description": "Records of philanthropic activities." }
   }
 }

@@ -1,102 +1,175 @@
+/**
+ * @fileoverview Firestore Security Rules for the student society app.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes secure data access based on a combination of
+ * ownership and public readability where appropriate. It aims to provide a
+ * flexible-yet-secure foundation for rapid prototyping.
+ *
+ * Data Structure:
+ * The Firestore database is structured as follows:
+ * - /society/meta: Singleton document containing society metadata.
+ * - /clubs/{clubId}: Documents representing individual clubs.
+ * - /volunteers/{volunteerId}: Documents representing student volunteers.
+ * - /members/{memberId}: Documents representing general members.
+ * - /events/{eventId}: Documents representing club events.
+ * - /gallery/{photoId}: Documents representing media items in the gallery.
+ * - /funds/transactions/{transactionId}: Documents representing financial transactions.
+ * - /philanthropy/{activityId}: Documents representing philanthropic activities.
+ *
+ * Key Security Decisions:
+ * - Public read access is granted to the /gallery collection.
+ * - All write operations require authentication.
+ * - The rules explicitly deny listing the /funds/transactions collection to avoid
+ *   accidental exposure of financial data.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read the society metadata.
+     * @description Grants full read access to the society metadata. Write access is denied.
      * @path /society/meta
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for society metadata.
+     * @allow (get, list): Any user can read the society metadata.
+     * @deny (create, update, delete): No user can create, update, or delete the society metadata through the client.
+     * @principle Permits public read access for informational content; restricts writes to backend only.
      */
     match /society/meta {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows anyone to read the clubs collection.
+     * @description Manages access to club documents.
      * @path /clubs/{clubId}
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for club information.
+     * @allow (get, list): Any user can read club information.
+     * @allow (create): Any authenticated user can create a club.
+     * @allow (update, delete): Only the club's owner can update or delete the club.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @principle Owner-only write access with public read.
      */
     match /clubs/{clubId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows anyone to read the volunteers collection.
+     * @description Manages access to volunteer profiles.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for volunteer profiles.
+     * @allow (get, list): Any user can read volunteer profiles.
+     * @allow (create): Any authenticated user can create a volunteer profile.
+     * @allow (update, delete): Only the volunteer can update or delete their own profile.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @deny (update, delete): If the volunteerId in the path does not match the authenticated user's ID.
+     * @principle Owner-only write access with public read.
      */
     match /volunteers/{volunteerId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows anyone to read the members collection.
+     * @description Manages access to member profiles.
      * @path /members/{memberId}
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for member profiles.
+     * @allow (get, list): Any user can read member profiles.
+     * @allow (create): Any authenticated user can create a member profile.
+     * @allow (update, delete): Only the member can update or delete their own profile.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @deny (update, delete): If the memberId in the path does not match the authenticated user's ID.
+     * @principle Owner-only write access with public read.
      */
     match /members/{memberId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows anyone to read the events collection.
+     * @description Manages access to event documents.
      * @path /events/{eventId}
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for event details.
+     * @allow (get, list): Any user can read event details.
+     * @allow (create): Any authenticated user can create an event.
+     * @allow (update, delete): Only the club organizing the event can update or delete it.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @principle Owner-only write access with public read.
      */
     match /events/{eventId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows anyone to read the gallery collection.
+     * @description Grants public read access to the gallery. Write access is restricted.
      * @path /gallery/{photoId}
-     * @allow (get, list)
-     * @deny (create, update, delete, write)
-     * @principle Public read access for gallery media items.
+     * @allow (get, list): Any user can view gallery items.
+     * @allow (create): Any authenticated user can upload a gallery item.
+     * @allow (update, delete): Only the user who uploaded the item can modify or delete it.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @principle Public read access with owner-only writes.
      */
     match /gallery/{photoId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Restricts access to the funds transactions collection.
+     * @description Manages access to financial transactions.
      * @path /funds/transactions/{transactionId}
-     * @allow get, list: if false;
-     * @allow create, update, delete, write: if false;
-     * @principle No public access to financial transaction logs.
+     * @allow (get): Any user can read transaction details.
+     * @deny (list): Listing transactions is not allowed.
+     * @allow (create): Any authenticated user can create a transaction.
+     * @allow (update, delete): Only authorized personnel can update or delete transactions.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @principle Restricts listing of financial data; limits write access to authorized personnel.
      */
     match /funds/transactions/{transactionId} {
-      allow read: if false;
-      allow write: if false;
+      allow get: if isSignedIn(); // Limit get to signed in users for now.
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows anyone to read the philanthropy activities collection.
+     * @description Manages access to philanthropy activity records.
      * @path /philanthropy/{activityId}
-     * @allow get, list: if true;
-     * @deny create, update, delete, write: if false;
-     * @principle Public read access for philanthropy activities.
+     * @allow (get, list): Any user can read about philanthropy activities.
+     * @allow (create): Any authenticated user can create an activity record.
+     * @allow (update, delete): Only authorized personnel can update or delete activity records.
+     * @deny (create): If request.auth is null (user not signed in)
+     * @principle Public read access with restricted write access.
      */
     match /philanthropy/{activityId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
+  }
 
-    /**
-     * @description Helper function to determine if a user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
+  /**
+   * @description Checks if the user is signed in.
+   * @return {bool} True if the user is signed in, false otherwise.
+   */
+  function isSignedIn() {
+    return request.auth != null;
   }
 }

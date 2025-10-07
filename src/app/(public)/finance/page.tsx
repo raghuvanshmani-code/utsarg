@@ -20,7 +20,7 @@ function FinanceSkeleton() {
 }
 
 export default function FinancePage() {
-    const { data: transactions, loading } = useCollection<FundTransaction>('funds/transactions');
+    const { data: transactions, loading } = useCollection<FundTransaction>('funds/accounting/transactions');
 
     return (
         <div>
