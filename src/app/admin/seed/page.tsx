@@ -15,7 +15,6 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import Papa from 'papaparse';
@@ -27,7 +26,7 @@ export default function SeedAdminPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [mode, setMode] = useState<SeedMode>("clubs");
+  const [mode, setMode] = useState<SeedMode | null>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,6 +40,19 @@ export default function SeedAdminPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const name = file.name.split('.')[0].toLowerCase();
+    const validModes: SeedMode[] = ["clubs", "events", "volunteers", "posts", "gallery", "finances"];
+    
+    if (validModes.includes(name as SeedMode)) {
+        setMode(name as SeedMode);
+    } else {
+        toast({ variant: 'destructive', title: 'Invalid File Name', description: `File name must be one of: ${validModes.join(', ')}` });
+        setMode(null);
+        setDocs([]);
+        setFileName('');
+        return;
+    }
 
     setFileName(file.name);
     const reader = new FileReader();
@@ -71,13 +83,13 @@ export default function SeedAdminPage() {
   };
 
   const handleSeed = async () => {
-    if (docs.length === 0) {
-      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a file with documents to seed.' });
+    if (docs.length === 0 || !mode) {
+      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid file with documents to seed.' });
       return;
     }
     
     if (isDryRun) {
-        toast({ title: 'Dry Run Completed', description: 'No data was written. Uncheck "Dry Run" to seed the database.' });
+        toast({ title: 'Dry Run Completed', description: `Simulated writing ${docs.length} documents to '${mode}'. No data was written.` });
         return;
     }
 
@@ -147,34 +159,18 @@ export default function SeedAdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Import Data into Firestore</CardTitle>
-              <CardDescription>Upload a JSON or CSV file to seed a collection. Ensure the file structure matches the target collection.</CardDescription>
+              <CardDescription>Upload a JSON or CSV file to seed a collection. The collection name is determined by the filename (e.g., `clubs.json` or `events.csv`).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="mode-select">Target Collection</Label>
-                  <Select value={mode} onValueChange={(value) => setMode(value as SeedMode)}>
-                    <SelectTrigger id="mode-select"><SelectValue placeholder="Select a collection" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="clubs">Clubs</SelectItem>
-                      <SelectItem value="events">Events</SelectItem>
-                      <SelectItem value="volunteers">Volunteers</SelectItem>
-                      <SelectItem value="posts">Posts</SelectItem>
-                      <SelectItem value="gallery">Gallery</SelectItem>
-                      <SelectItem value="finances">Finances</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="file-upload">Upload File</Label>
+               <div className="space-y-2">
+                  <Label htmlFor="file-upload">Upload Data File</Label>
                   <Input id="file-upload" type="file" accept=".json,.csv" onChange={handleFileChange} />
                 </div>
-              </div>
               
-              {docs.length > 0 && (
+              {docs.length > 0 && mode && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Data Preview</CardTitle>
+                        <CardTitle>Data Preview for `{mode}` collection</CardTitle>
                         <CardDescription>Found {docs.length} documents in {fileName}.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-64 overflow-auto">
@@ -228,3 +224,5 @@ export default function SeedAdminPage() {
     </SidebarProvider>
   );
 }
+
+    
