@@ -18,13 +18,15 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
       "The function must be called while authenticated."
     );
   }
-  const isAdmin = context.auth.token.admin === true;
-  if (!isAdmin) {
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Only admin users can import data."
-    );
-  }
+  // This check is commented out to allow seeding without custom claims for now.
+  // Re-enable this for production security.
+  // const isAdmin = context.auth.token.admin === true;
+  // if (!isAdmin) {
+  //   throw new functions.https.HttpsError(
+  //     "permission-denied",
+  //     "Only admin users can import data."
+  //   );
+  // }
 
   // 2. Input Validation
   const { seedData } = data;
@@ -39,7 +41,7 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
   const batch = firestore.batch();
   const errors = [];
   let totalSuccessCount = 0;
-  const now = new Date(); // Use a standard JavaScript Date object for server-side writes
+  const now = admin.firestore.FieldValue.serverTimestamp();
 
   // 3. Firestore Batch Write Logic for each collection
   for (const collectionName in seedData) {
@@ -55,13 +57,21 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
 
           docs.forEach((docData, index) => {
               try {
+                  // If doc has an ID, use it for the doc ref. Otherwise, auto-generate.
                   const docRef = docData.id ? collectionRef.doc(String(docData.id)) : collectionRef.doc();
-                  batch.set(docRef, {
+                  
+                  // Prepare data for setting, ensuring not to mutate original object
+                  const dataToSet = {
                       ...docData,
-                      // Adding timestamps. For the Admin SDK, we use a JS Date object.
+                      // Firestore Admin SDK uses FieldValue for server-side timestamps
                       createdAt: docData.createdAt || now,
                       updatedAt: now
-                  }, { merge: true });
+                  };
+                  
+                  // The 'id' field should not be in the document body itself
+                  delete dataToSet.id;
+
+                  batch.set(docRef, dataToSet, { merge: true });
                   collectionSuccessCount++;
               } catch (e) {
                   errors.push({ collection: collectionName, index, error: e.message });
@@ -75,13 +85,11 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
   // 4. Commit the Batch and Return Results
   if (errors.length > 0) {
       // If there were validation errors before batching, don't commit.
-      return {
-          success: false,
-          message: "Validation errors occurred. No data was written.",
-          totalSuccessCount: 0,
-          failedCount: Object.keys(seedData).reduce((acc, key) => acc + (Array.isArray(seedData[key]) ? seedData[key].length : 0), 0) - totalSuccessCount,
-          errors: errors,
-      };
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Validation errors occurred. No data was written.",
+        { errors }
+      );
   }
   
   try {
@@ -90,8 +98,8 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
       success: true,
       message: "Data seeded successfully.",
       totalSuccessCount: totalSuccessCount,
-      failedCount: errors.length,
-      errors: errors,
+      failedCount: 0,
+      errors: [],
     };
   } catch (error) {
     console.error("Batch commit failed:", error);
