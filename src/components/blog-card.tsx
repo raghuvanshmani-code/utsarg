@@ -13,7 +13,7 @@ export function BlogCard({ post }: BlogCardProps) {
   
   return (
     <Link href={`/blog/${post.id}`} className="group block h-full">
-        <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1">
+        <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 rounded-xl shadow-lg">
             {post.thumbnail && (
             <div className="aspect-video relative overflow-hidden">
                 <Image
@@ -29,12 +29,12 @@ export function BlogCard({ post }: BlogCardProps) {
                     <span className="flex items-center"><User className="h-3 w-3 mr-1.5" /> {post.author}</span>
                     <span className="flex items-center"><Calendar className="h-3 w-3 mr-1.5" /> {format(new Date(post.date), 'MMM dd, yyyy')}</span>
                 </div>
-                <CardTitle className="text-lg mt-2">{post.title}</CardTitle>
+                <CardTitle className="text-xl mt-2">{post.title}</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow p-6">
                 <CardDescription>{post.summary}</CardDescription>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="p-6">
                 <span className="text-sm text-accent font-semibold flex items-center">
                     Read More <ArrowRight className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
                 </span>

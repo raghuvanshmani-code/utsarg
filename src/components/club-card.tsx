@@ -15,8 +15,8 @@ export function ClubCard({ club, className }: ClubCardProps) {
 
   return (
     <Link href={`/clubs/${club.id}`} className="group block h-full">
-        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 flex flex-col shadow-lg", className)}>
-            <CardHeader className="flex flex-row items-center gap-4">
+        <Card className={cn("h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 flex flex-col shadow-lg rounded-xl", className)}>
+            <CardHeader className="flex flex-row items-center gap-4 p-6">
             {club.logo && (
                 <Image
                 src={club.logo}
@@ -27,7 +27,7 @@ export function ClubCard({ club, className }: ClubCardProps) {
                 />
             )}
             <div className='w-full'>
-                <CardTitle>{club.name}</CardTitle>
+                <CardTitle className="text-xl">{club.name}</CardTitle>
                 {club.members_count && (
                     <span className="text-xs text-muted-foreground flex items-center mt-1">
                         <Users className="h-3 w-3 mr-1.5" />
@@ -36,10 +36,10 @@ export function ClubCard({ club, className }: ClubCardProps) {
                 )}
             </div>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow p-6 pt-0">
             <CardDescription>{club.short_description}</CardDescription>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="p-6 pt-0">
               <div className="text-sm text-accent font-semibold flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                   View More <ArrowRight className="ml-2 h-4 w-4" />
               </div>
