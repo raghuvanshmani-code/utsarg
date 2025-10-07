@@ -1,9 +1,9 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
-import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getFunctions, Functions } from 'firebase/functions';
 import { firebaseConfig } from './config';
 
 export function initializeFirebase(): {
@@ -19,27 +19,8 @@ export function initializeFirebase(): {
   const storage = getStorage(app);
   const functions = getFunctions(app);
 
-  if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
-    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST || 'localhost';
-    
-    // Check if emulators are already connected to prevent errors on hot-reloads
-    // @ts-ignore
-    if (!auth.emulatorConfig) {
-      connectAuthEmulator(auth, `http://${host}:9191`, { disableWarnings: true });
-    }
-    // @ts-ignore
-    if (!firestore._settings.host.includes('localhost')) {
-      connectFirestoreEmulator(firestore, host, 8080);
-    }
-    // @ts-ignore
-    if (!storage.emulator) {
-      connectStorageEmulator(storage, host, 9199);
-    }
-    // @ts-ignore
-    if (!functions.emulatorOrigin) {
-      connectFunctionsEmulator(functions, host, 5001);
-    }
-  }
+  // Emulator connection logic will be handled in the client provider
+  // to avoid 'window is not defined' errors on the server.
 
   return { firebaseApp: app, auth, firestore, storage, functions };
 }
