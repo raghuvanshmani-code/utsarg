@@ -13,8 +13,11 @@ export function useCollection<T>(pathOrQuery: string | Query | null) {
 
   useEffect(() => {
     if (!db || !pathOrQuery) {
-      setData([]);
-      setLoading(false);
+      // Still loading if db or query is not ready, but don't set data
+      if(!pathOrQuery) {
+        setLoading(false);
+        setData([]);
+      }
       return;
     }
 
