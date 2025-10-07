@@ -129,6 +129,25 @@ export default function SeedAdminPage() {
 
   const previewCollections = seedData ? Object.keys(seedData) : [];
 
+  const jsonFormatExample = `{
+  "collection_name": {
+    "your_custom_document_id_1": {
+      "field1": "value1",
+      "field2": 123,
+      "dateField": "2024-01-01T12:00:00.000Z"
+    },
+    "your_custom_document_id_2": {
+      "field1": "value2",
+      "field2": 456
+    }
+  },
+  "another_collection": {
+    "another_doc_id": {
+      "some_field": true
+    }
+  }
+}`;
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -163,113 +182,129 @@ export default function SeedAdminPage() {
             </div>
           )}
         </header>
-        <main className="flex-1 p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileJson /> Import from JSON</CardTitle>
-              <CardDescription>Upload a single JSON file where each key is a collection name and the value is an object of documents to be seeded.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-               <div className="space-y-2">
-                  <Label htmlFor="file-upload">Upload Seed File</Label>
-                  <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} className="max-w-md" />
-                </div>
-              
-              {seedData && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Dry Run Preview</CardTitle>
-                        <CardDescription>Found {previewCollections.length} collections in <strong>{fileName}</strong>. This is a preview of the data structure. No data will be written in Dry Run mode.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="max-h-72 overflow-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                  <TableHead>Collection</TableHead>
-                                  <TableHead>Documents</TableHead>
-                                  <TableHead>Sample ID</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {previewCollections.map((collectionName) => {
-                                  const docIds = Object.keys(seedData[collectionName]);
-                                  return (
-                                    <TableRow key={collectionName}>
-                                        <TableCell className="font-medium">{collectionName}</TableCell>
-                                        <TableCell>{docIds.length}</TableCell>
-                                        <TableCell className="font-mono text-xs">{docIds[0] || 'N/A'}</TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-              )}
-
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-lg border bg-background p-4">
-                 <div className="flex items-center space-x-2">
-                    <Switch id="dry-run-switch" checked={isDryRun} onCheckedChange={setIsDryRun} aria-label="Toggle dry run mode" />
-                    <Label htmlFor="dry-run-switch" className="flex flex-col">
-                        <span>Dry Run Mode</span>
-                        <span className="text-xs text-muted-foreground">Simulate seeding without writing to the database.</span>
-                    </Label>
-                </div>
-                <Button onClick={handleSeed} disabled={isProcessing || !seedData} size="lg">
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                    {isDryRun ? 'Perform Dry Run' : 'Confirm & Seed Database'}
-                </Button>
-              </div>
-
-               {!isDryRun && (
-                 <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-                    <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                    <div className="flex-1">
-                        <p className="font-semibold">LIVE RUN ENABLED</p>
-                        <p className="text-sm">You are about to write data to the live database. This action may be irreversible. Always perform a Dry Run first.</p>
-                    </div>
-                </div>
-               )}
-
-              {seedReport && (
-                 <Card>
-                    <CardHeader>
-                         <CardTitle className="flex items-center gap-2">
-                            {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
-                             Seed Report
-                        </CardTitle>
-                        <CardDescription>
-                            Operation status: {seedReport.status}. {seedReport.successCount} documents written. 
-                            Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
-                        </CardDescription>
-                    </CardHeader>
-                    {seedReport.errors.length > 0 && (
-                        <CardContent className="max-h-72 overflow-auto">
-                            <h4 className="font-semibold mb-2">Errors:</h4>
-                            <Table>
-                               <TableHeader>
-                                 <TableRow>
+        <main className="flex-1 p-6 grid gap-6 md:grid-cols-2">
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><FileJson /> Import from JSON</CardTitle>
+                <CardDescription>Upload a single JSON file where each key is a collection name and the value is an object of documents to be seeded.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="file-upload">Upload Seed File</Label>
+                    <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} className="max-w-md" />
+                  </div>
+                
+                {seedData && (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Dry Run Preview</CardTitle>
+                          <CardDescription>Found {previewCollections.length} collections in <strong>{fileName}</strong>. This is a preview of the data structure. No data will be written in Dry Run mode.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="max-h-72 overflow-auto">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
                                     <TableHead>Collection</TableHead>
-                                    <TableHead>Doc ID</TableHead>
-                                    <TableHead>Error</TableHead>
-                                 </TableRow>
-                               </TableHeader>
-                               <TableBody>
-                                 {seedReport.errors.map((err, i) => (
-                                     <TableRow key={i} className="text-destructive">
-                                         <TableCell>{err.collection}</TableCell>
-                                         <TableCell className="font-mono text-xs">{err.id}</TableCell>
-                                         <TableCell>{err.error}</TableCell>
-                                     </TableRow>
-                                 ))}
-                               </TableBody>
-                            </Table>
-                        </CardContent>
-                    )}
-                </Card>
-              )}
+                                    <TableHead>Documents</TableHead>
+                                    <TableHead>Sample ID</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {previewCollections.map((collectionName) => {
+                                    const docIds = Object.keys(seedData[collectionName]);
+                                    return (
+                                      <TableRow key={collectionName}>
+                                          <TableCell className="font-medium">{collectionName}</TableCell>
+                                          <TableCell>{docIds.length}</TableCell>
+                                          <TableCell className="font-mono text-xs">{docIds[0] || 'N/A'}</TableCell>
+                                      </TableRow>
+                                    )
+                                  })}
+                              </TableBody>
+                          </Table>
+                      </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-lg border bg-background p-4">
+                  <div className="flex items-center space-x-2">
+                      <Switch id="dry-run-switch" checked={isDryRun} onCheckedChange={setIsDryRun} aria-label="Toggle dry run mode" />
+                      <Label htmlFor="dry-run-switch" className="flex flex-col">
+                          <span>Dry Run Mode</span>
+                          <span className="text-xs text-muted-foreground">Simulate seeding without writing to the database.</span>
+                      </Label>
+                  </div>
+                  <Button onClick={handleSeed} disabled={isProcessing || !seedData} size="lg">
+                      {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                      {isDryRun ? 'Perform Dry Run' : 'Confirm & Seed Database'}
+                  </Button>
+                </div>
+
+                {!isDryRun && (
+                  <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                      <div className="flex-1">
+                          <p className="font-semibold">LIVE RUN ENABLED</p>
+                          <p className="text-sm">You are about to write data to the live database. This action may be irreversible. Always perform a Dry Run first.</p>
+                      </div>
+                  </div>
+                )}
+
+                {seedReport && (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                              {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
+                              Seed Report
+                          </CardTitle>
+                          <CardDescription>
+                              Operation status: {seedReport.status}. {seedReport.successCount} documents written. 
+                              Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
+                          </CardDescription>
+                      </CardHeader>
+                      {seedReport.errors.length > 0 && (
+                          <CardContent className="max-h-72 overflow-auto">
+                              <h4 className="font-semibold mb-2">Errors:</h4>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Collection</TableHead>
+                                      <TableHead>Doc ID</TableHead>
+                                      <TableHead>Error</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {seedReport.errors.map((err, i) => (
+                                      <TableRow key={i} className="text-destructive">
+                                          <TableCell>{err.collection}</TableCell>
+                                          <TableCell className="font-mono text-xs">{err.id}</TableCell>
+                                          <TableCell>{err.error}</TableCell>
+                                      </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                          </CardContent>
+                      )}
+                  </Card>
+                )}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
+
+          <div className="md:col-span-2 lg:md:col-span-1">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Required JSON Format</CardTitle>
+                      <CardDescription>Your seed file must follow this structure. The top-level keys are your collection names, and the nested keys are your custom document IDs.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <pre className="p-4 rounded-lg bg-muted text-xs overflow-x-auto">
+                          <code>{jsonFormatExample}</code>
+                      </pre>
+                  </CardContent>
+              </Card>
+          </div>
         </main>
       </SidebarInset>
     </SidebarProvider>
