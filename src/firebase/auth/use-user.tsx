@@ -20,6 +20,7 @@ export const useUser = () => {
       if (user) {
         setUser(user);
         try {
+          // Force a token refresh to get the latest custom claims.
           const idTokenResult = await user.getIdTokenResult(true);
           setIsAdmin(!!idTokenResult.claims.admin);
         } catch (error) {
@@ -30,6 +31,7 @@ export const useUser = () => {
         setUser(null);
         setIsAdmin(false);
       }
+      // Only set loading to false after user and claims have been processed.
       setLoading(false);
     });
 
