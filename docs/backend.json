@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "user": {
@@ -168,8 +169,7 @@
       "required": [
         "title",
         "description",
-        "date",
-        "clubId"
+        "date"
       ]
     },
     "galleryItem": {
@@ -210,7 +210,9 @@
       },
       "required": [
         "title",
-        "type"
+        "type",
+        "mediaURL",
+        "uploadedAt"
       ]
     },
     "blogPost": {
@@ -258,19 +260,19 @@
         "content"
       ]
     },
-    "cloudinaryImage": {
-      "title": "Cloudinary Image",
-      "description": "Metadata for an image uploaded to Cloudinary.",
+    "upload": {
+      "title": "Upload",
+      "description": "Metadata for an image uploaded to a CDN.",
       "type": "object",
       "properties": {
         "secure_url": {
           "type": "string",
           "format": "uri",
-          "description": "The secure HTTPS URL for the uploaded image on Cloudinary's CDN."
+          "description": "The secure HTTPS URL for the uploaded image."
         },
         "public_id": {
           "type": "string",
-          "description": "The unique identifier for the asset in Cloudinary."
+          "description": "The unique identifier for the asset in the CDN."
         },
         "uploadedAt": {
           "type": "string",
@@ -324,9 +326,9 @@
     },
     "/uploads/{uploadId}": {
       "schema": {
-        "$ref": "#/entities/cloudinaryImage"
+        "$ref": "#/entities/upload"
       },
-      "description": "Stores metadata about images uploaded to Cloudinary."
+      "description": "Stores metadata about images uploaded to a CDN."
     }
   }
 }
