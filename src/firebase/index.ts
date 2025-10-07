@@ -20,12 +20,12 @@ export function initializeFirebase(): {
   const functions = getFunctions(app);
 
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
-    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST || 'localhost';
+    const host = 'localhost';
     
     // Check if emulators are already connected to prevent errors on hot-reloads
     // This is a common pattern in Next.js development with Fast Refresh.
     if (!(auth as any)._isEmulator) {
-      connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+      connectAuthEmulator(auth, `http://${host}:9190`, { disableWarnings: true });
     }
     if (!(firestore as any)._isEmulator) {
       connectFirestoreEmulator(firestore, host, 8080);
