@@ -8,41 +8,62 @@ export type Club = {
   id: string;
   name: string;
   logo?: string;
-  description: string;
-  achievements?: string[];
   bannerImage?: string;
-  events?: string[];
+  short_description: string;
+  long_description: string;
+  genres: string[];
+  core_volunteers: string[];
+  volunteer_list: string[];
+  sequence_events: string[];
+  requirements: object;
+  budget: object;
+  gallery: string[];
+  tags: string[];
+  members_count?: number;
+  created_at: any;
+  updated_at: any;
 };
 
 export type Event = {
   id:string;
-  title: string;
-  date: string;
   clubId: string;
-  description: string;
+  title: string;
+  start_date: string;
+  end_date: string;
   location: string;
+  description: string;
+  capacity: number;
+  rsvp_count: number;
+  budget: number;
+  gallery: string[];
   bannerImage?: string;
-  media?: string[];
+  created_at: any;
 };
 
 export type Post = {
   id: string;
   title: string;
+  content: string;
+  tags: string[];
+  created_by: string;
+  created_at: any;
   summary: string;
   author: string;
   date: string;
   thumbnail?: string;
   bannerImage?: string;
-  content: string;
 };
 
 export type GalleryImage = {
   id: string;
-  title: string;
+  url: string;
+  caption: string;
+  tags: string[];
+  event_id: string;
   mediaURL?: string;
+  title: string;
   type: 'image' | 'video';
   clubId?: string;
-  eventId?: string;
 };
 
 export type UserImage = {

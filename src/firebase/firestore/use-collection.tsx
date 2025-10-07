@@ -5,21 +5,23 @@ import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-export function useCollection<T>(path: string) {
+export function useCollection<T>(pathOrQuery: string | Query | null) {
   const db = useFirestore();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!db) {
+    if (!db || !pathOrQuery) {
       setLoading(false);
       return;
     }
 
-    const collectionRef = collection(db, path);
+    const isQuery = typeof pathOrQuery !== 'string';
+    const query = isQuery ? pathOrQuery : collection(db, pathOrQuery);
+    
     const unsubscribe = onSnapshot(
-      collectionRef,
+      query,
       (snapshot: QuerySnapshot<DocumentData>) => {
         const data: T[] = snapshot.docs.map(doc => ({ ...doc.data() as T, id: doc.id }));
         setData(data);
@@ -27,7 +29,7 @@ export function useCollection<T>(path: string) {
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: collectionRef.path,
+          path: isQuery ? (query as Query).path : pathOrQuery,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -37,7 +39,7 @@ export function useCollection<T>(path: string) {
     );
 
     return () => unsubscribe();
-  }, [db, path]);
+  }, [db, pathOrQuery]);
 
   return { data, loading, error };
 }
