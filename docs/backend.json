@@ -82,6 +82,37 @@
           "items": {
             "type": "string"
           }
+        },
+        "genres": {
+          "type": "array",
+          "description": "An array of genres associated with the club.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "coreVolunteers": {
+          "type": "array",
+          "description": "An array of user IDs for core volunteers.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "membersCount": {
+          "type": "number",
+          "description": "The number of members in the club."
+        },
+        "requirements": {
+          "type": "object",
+          "description": "Requirements for the club."
+        },
+        "budgetEstimatePerEvent": {
+          "type": "number",
+          "description": "Estimated budget per event."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the club was created."
         }
       },
       "required": [
@@ -123,6 +154,15 @@
             "type": "string",
             "format": "uri"
           }
+        },
+        "recurring": {
+          "type": "object",
+          "description": "Details about the event's recurring schedule."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the event was created."
         }
       },
       "required": [
@@ -158,9 +198,14 @@
           "type": "string",
           "description": "Optional ID of the club associated with this media."
         },
-        "eventID": {
+        "eventId": {
           "type": "string",
           "description": "Optional ID of the event associated with this media."
+        },
+        "uploadedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the gallery item was uploaded."
         }
       },
       "required": [
