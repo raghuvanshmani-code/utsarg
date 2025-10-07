@@ -32,7 +32,6 @@ export type Event = {
   clubId: string;
   title: string;
   date: string;
-  end_date: string;
   location: string;
   description: string;
   capacity: number;
