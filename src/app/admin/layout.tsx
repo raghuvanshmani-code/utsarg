@@ -13,51 +13,51 @@ import { AdminLoginForm } from '@/components/admin-login-form';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useUser();
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(true);
+  const { user, loading: userLoading } = useUser();
+  const [status, setStatus] = useState<'loading' | 'admin' | 'guest'>('loading');
 
   useEffect(() => {
-    if (loading) {
-      return; // Wait for user state to be determined
-    }
-
-    if (!user) {
-      // If user is not logged in, stop verification and show login form
-      setIsVerifying(false);
+    if (userLoading) {
+      setStatus('loading');
       return;
     }
 
-    // User is logged in, check for admin claim
-    user.getIdTokenResult(true) // Force refresh the token
-      .then((idTokenResult) => {
+    if (!user) {
+      setStatus('guest');
+      return;
+    }
+
+    const checkAdminStatus = async () => {
+      try {
+        // Force refresh the token to get the latest custom claims
+        const idTokenResult = await user.getIdTokenResult(true);
         if (idTokenResult.claims.admin) {
-          setIsAdmin(true);
+          setStatus('admin');
         } else {
-          // Non-admin user, show "access denied"
-          setIsAdmin(false);
+          setStatus('guest'); // User is logged in but not an admin
         }
-        setIsVerifying(false);
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        setIsVerifying(false);
-      });
-  }, [user, loading, router]);
-  
-  if (isVerifying) {
-      return (
-          <div className="flex h-screen w-full items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-      )
+      } catch (error) {
+        console.error("Error verifying admin status:", error);
+        setStatus('guest'); // Default to guest on any error
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, userLoading]);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
-  if (!isAdmin) {
+  if (status === 'guest') {
     return <AdminLoginForm />;
   }
 
+  // status === 'admin'
   return <>{children}</>;
 }
 

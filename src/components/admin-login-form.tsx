@@ -1,3 +1,4 @@
+
 'use client';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import { toast } from '@/hooks/use-toast';
 import { Logo } from '@/components/layout/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,7 @@ const signInSchema = z.object({
 export function AdminLoginForm() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState('signin');
 
     const signUpForm = useForm<z.infer<typeof signUpSchema>>({
         resolver: zodResolver(signUpSchema),
@@ -47,7 +48,7 @@ export function AdminLoginForm() {
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
-            router.refresh(); 
+            // The auth guard will handle the redirect on successful login
         } catch (error: any) {
             console.error("Error signing in with Google", error);
             if (error.code !== 'auth/popup-closed-by-user') {
@@ -70,11 +71,10 @@ export function AdminLoginForm() {
             await updateProfile(userCredential.user, { displayName: values.name });
             toast({
                 title: "Account Created",
-                description: "You can now sign in with your new account.",
+                description: "You can now sign in with your new credentials.",
             });
             // Switch to sign-in tab after successful sign-up
-            const signInTab = document.querySelector('[data-state="inactive"][value="signin"]') as HTMLElement | null;
-            signInTab?.click();
+            setActiveTab('signin');
             signInForm.reset({ email: values.email, password: '' });
         } catch (error: any) {
             console.error("Error signing up", error);
@@ -93,7 +93,7 @@ export function AdminLoginForm() {
         const auth = getAuth();
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            router.refresh(); 
+            // The auth guard will handle redirecting on successful login
         } catch (error: any) {
             console.error("Error signing in", error);
             let description = "An unknown error occurred.";
@@ -124,11 +124,11 @@ export function AdminLoginForm() {
                     </div>
                     <CardTitle className="text-2xl font-bold font-headline">Admin Access</CardTitle>
                     <CardDescription>
-                        Sign in or create an account to request access.
+                        Sign in to access the dashboard.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="signin" className="w-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="signin">Sign In</TabsTrigger>
                             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -139,7 +139,7 @@ export function AdminLoginForm() {
                                     <FormField control={signInForm.control} name="email" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Email</FormLabel>
-                                            <FormControl><Input placeholder="m@example.com" {...field} /></FormControl>
+                                            <FormControl><Input placeholder="admin@example.com" {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
