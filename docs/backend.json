@@ -1,6 +1,20 @@
 
 {
   "entities": {
+    "userProfile": {
+      "title": "User Profile",
+      "description": "Public profile information for a registered user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID from Firebase Auth." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the user profile was created." },
+        "customClaims": { "type": "object", "description": "Custom claims for the user, e.g., admin status." }
+      },
+      "required": ["uid", "displayName", "email", "createdAt"]
+    },
     "societyMeta": {
       "title": "Society Metadata",
       "description": "A singleton document containing metadata about the entire student society.",
@@ -23,7 +37,7 @@
         "name": { "type": "string", "description": "The name of the club." },
         "genres": { "type": "array", "items": { "type": "string" }, "description": "An array of genres associated with the club." },
         "volunteersCount": { "type": "number", "description": "The total number of volunteers in the club." },
-        "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of volunteer IDs for the core team." },
+        "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of volunteer names for the core team." },
         "membersCount": { "type": "number", "description": "The total number of members in the club." },
         "requirements": { "type": "object", "description": "Map of requirements for the club.", "additionalProperties": true },
         "budget": { "type": "object", "description": "Map of budget details for the club.", "additionalProperties": true },
@@ -116,6 +130,7 @@
     "providers": ["google.com", "password"]
   },
   "firestore": {
+    "/users/{userId}": { "schema": { "$ref": "#/entities/userProfile" }, "description": "Stores public-facing user profiles." },
     "/society/meta": { "schema": { "$ref": "#/entities/societyMeta" }, "description": "Singleton document for society-wide metadata." },
     "/clubs/{clubId}": { "schema": { "$ref": "#/entities/club" }, "description": "Stores information about individual student clubs." },
     "/volunteers/{volunteerId}": { "schema": { "$ref": "#/entities/volunteer" }, "description": "Profiles for student volunteers." },

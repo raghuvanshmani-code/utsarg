@@ -11,6 +11,66 @@ const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 300;
 
 /**
+ * Callable Cloud Function to set custom claims on a user.
+ * This is used by the admin panel to grant/revoke admin privileges.
+ */
+exports.setUserRole = functions
+  .runWith({ memory: '128MB' })
+  .https.onCall(async (data, context) => {
+    // 1. Authentication and Authorization Check
+    if (!context.auth || context.auth.token.admin !== true) {
+      throw new functions.https.HttpsError('permission-denied', 'You must be an admin to manage user roles.');
+    }
+
+    // 2. Input Validation
+    const { uid, role } = data;
+    if (typeof uid !== 'string' || !uid) {
+      throw new functions.https.HttpsError('invalid-argument', 'The `uid` must be a non-empty string.');
+    }
+    if (role !== 'admin' && role !== 'user') {
+      throw new functions.https.HttpsError('invalid-argument', 'The `role` must be either "admin" or "user".');
+    }
+
+    try {
+      // 3. Set the custom claim
+      const newClaims = role === 'admin' ? { admin: true } : { admin: false };
+      await admin.auth().setCustomUserClaims(uid, newClaims);
+
+      // 4. Update the user's profile in Firestore to reflect the change
+      // This allows the client to see role changes in real-time without refreshing tokens
+      await db.collection('users').doc(uid).set({ 
+        customClaims: newClaims 
+      }, { merge: true });
+
+      functions.logger.info(`Successfully set role '${role}' for user ${uid} by admin ${context.auth.uid}`);
+      return { success: true, message: `Role successfully updated to ${role}.` };
+    } catch (error) {
+      functions.logger.error(`Error setting user role for UID: ${uid}`, { error: error.message });
+      throw new functions.https.HttpsError('internal', 'An error occurred while setting the user role.', error.message);
+    }
+});
+
+
+/**
+ * Firestore Trigger: on user creation, create a corresponding user profile document.
+ * This is crucial for the User Management page to be able to list all users.
+ */
+exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
+    const { uid, email, displayName, photoURL } = user;
+    const userProfileRef = db.collection('users').doc(uid);
+
+    return userProfileRef.set({
+        uid,
+        email,
+        displayName: displayName || 'Unnamed User',
+        photoURL: photoURL || null,
+        createdAt: Timestamp.now(),
+        customClaims: {} // Initially no claims
+    });
+});
+
+
+/**
  * Checks if a string is a valid ISO 8601 date string.
  * @param {string} s The string to check.
  * @returns {boolean} True if the string is a valid date.

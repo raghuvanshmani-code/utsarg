@@ -2,7 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, AlertTriangle, Upload, HeartHandshake, IndianRupee } from 'lucide-react';
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, AlertTriangle, Upload, HeartHandshake, IndianRupee, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import Link from 'next/link';
@@ -39,6 +39,11 @@ export default function DatabaseAdminPage() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
                 <Link href="/admin"><Home /><span>Dashboard</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
+                <Link href="/admin/users"><Users /><span>Users</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
