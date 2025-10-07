@@ -78,10 +78,14 @@ export function AdminLoginForm() {
             signInForm.reset({ email: values.email, password: '' });
         } catch (error: any) {
             console.error("Error signing up", error);
+            let description = error.message;
+            if (error.code === 'auth/email-already-in-use') {
+                description = "An account with this email already exists. Please sign in instead.";
+            }
             toast({
                 variant: "destructive",
                 title: "Sign-up Failed",
-                description: error.message,
+                description: description,
             });
         } finally {
             setIsSubmitting(false);

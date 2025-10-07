@@ -1,3 +1,4 @@
+
 'use client';
 import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -91,10 +92,14 @@ export default function LoginPage() {
             handleSuccessfulLogin();
         } catch (error: any) {
             console.error("Error signing up", error);
+            let description = error.message;
+            if (error.code === 'auth/email-already-in-use') {
+                description = "An account with this email already exists. Please use the 'Sign In' tab instead.";
+            }
             toast({
                 variant: "destructive",
                 title: "Sign-up Failed",
-                description: error.message,
+                description: description,
             });
         } finally {
             setIsSubmitting(false);
