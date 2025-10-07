@@ -1,21 +1,19 @@
 
 {
   "entities": {
-    "user": {
-      "title": "User",
-      "description": "Represents a user in the system.",
+    "societyMeta": {
+      "title": "Society Metadata",
+      "description": "A singleton document containing metadata about the entire student society.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "The user's unique ID from Firebase Authentication." },
-        "name": { "type": "string", "description": "The user's full name." },
-        "email": { "type": "string", "format": "email", "description": "The user's email address." },
-        "role": { "type": "string", "enum": ["student", "admin", "club_leader"], "description": "The user's role." },
-        "joinedClubs": { "type": "array", "items": { "type": "string" }, "description": "An array of club IDs that the user has joined." },
-        "profilePicURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the user account was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the user account was last updated." }
+        "name": { "type": "string", "description": "The official name of the student society." },
+        "altNames": { "type": "array", "items": { "type": "string" }, "description": "Alternative or past names for the society." },
+        "aim": { "type": "string", "description": "The primary mission statement or aim of the society." },
+        "contact": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "phone": { "type": "string" } }, "description": "Official contact information." },
+        "totals": { "type": "object", "properties": { "clubs": { "type": "number" }, "members": { "type": "number" } }, "description": "Aggregated totals for the society." },
+        "eventCycle": { "type": "string", "description": "The annual event cycle or academic year schedule." }
       },
-      "required": ["uid", "name", "email", "role"]
+      "required": ["name", "aim"]
     },
     "club": {
       "title": "Club",
@@ -23,128 +21,108 @@
       "type": "object",
       "properties": {
         "name": { "type": "string", "description": "The name of the club." },
-        "description": { "type": "string", "description": "A brief description of the club." },
-        "logo": { "type": "string", "format": "uri", "description": "URL of the club's logo." },
-        "bannerImage": { "type": "string", "format": "uri", "description": "URL of the club's banner image." },
-        "events": { "type": "array", "items": { "type": "string" }, "description": "An array of event IDs organized by the club." },
         "genres": { "type": "array", "items": { "type": "string" }, "description": "An array of genres associated with the club." },
-        "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of user IDs for core volunteers." },
-        "membersCount": { "type": "number", "description": "The number of members in the club." },
-        "requirements": {
-          "type": "object",
-          "description": "Requirements for the club (startup, per-event, maintenance).",
-          "properties": {
-            "startup": { "type": "array", "items": { "type": "string" } },
-            "perEvent": { "type": "array", "items": { "type": "string" } },
-            "maintenance": { "type": "array", "items": { "type": "string" } }
-          }
-        },
-        "budgetEstimatePerEvent": { "type": "number", "description": "Estimated budget per event." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the club was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the club was last updated." }
+        "volunteersCount": { "type": "number", "description": "The total number of volunteers in the club." },
+        "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of volunteer IDs for the core team." },
+        "membersCount": { "type": "number", "description": "The total number of members in the club." },
+        "requirements": { "type": "object", "description": "Map of requirements for the club.", "additionalProperties": true },
+        "budget": { "type": "object", "description": "Map of budget details for the club.", "additionalProperties": true },
+        "sequenceFirstProgram": { "type": "array", "items": { "type": "string" }, "description": "Sequence of events for the first program." }
       },
-      "required": ["name", "description"]
+      "required": ["name"]
+    },
+    "volunteer": {
+      "title": "Volunteer",
+      "description": "Represents a student volunteer.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The full name of the volunteer." },
+        "para": { "type": "string", "description": "A short paragraph or bio about the volunteer." },
+        "roles": { "type": "array", "items": { "type": "string" }, "description": "Roles the volunteer holds within various clubs." },
+        "clubs": { "type": "array", "items": { "type": "string" }, "description": "An array of club document references the volunteer is part of." },
+        "contact": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "phone": { "type": "string" } }, "description": "Personal contact information." },
+        "photoUrl": { "type": "string", "format": "uri", "description": "URL of the volunteer's profile picture." }
+      },
+      "required": ["name", "clubs"]
+    },
+    "member": {
+      "title": "Member",
+      "description": "Represents a general member of a club.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The full name of the member." },
+        "para": { "type": "string", "description": "A short paragraph or bio about the member." },
+        "clubs": { "type": "array", "items": { "type": "string" }, "description": "An array of club IDs the member has joined." }
+      },
+      "required": ["name"]
     },
     "event": {
       "title": "Event",
       "description": "Represents a club event.",
       "type": "object",
       "properties": {
+        "clubId": { "type": "string", "description": "The ID of the club organizing the event." },
         "title": { "type": "string", "description": "The title of the event." },
+        "date": { "type": "string", "format": "date-time", "description": "The date and time of the event." },
+        "venue": { "type": "string", "description": "The location where the event will take place." },
         "description": { "type": "string", "description": "A detailed description of the event." },
-        "date": { "type": ["string", "null"], "format": "date-time", "description": "The date and time of the event." },
-        "clubId": { "type": ["string", "null"], "description": "The ID of the club organizing the event, or null." },
-        "bannerImage": { "type": "string", "format": "uri", "description": "URL for the event's banner image." },
-        "mediaURLs": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "An array of URLs for media associated with the event." },
-        "recurring": {
-          "type": ["object", "null"],
-          "description": "Details about the event's recurring schedule (e.g., { type: 'daily', time: '18:00' }).",
-          "properties": {
-            "type": { "type": "string" },
-            "time": { "type": "string" }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the event was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the event was last updated." }
+        "budget": { "type": "number", "description": "The estimated or final budget for the event." },
+        "status": { "type": "string", "enum": ["planned", "complete"], "description": "The current status of the event." },
+        "photos": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "An array of URLs for photos from the event." }
       },
-      "required": ["title", "description"]
+      "required": ["clubId", "title", "date", "venue", "status"]
     },
     "galleryItem": {
       "title": "Gallery Item",
       "description": "Represents a media item in the gallery.",
       "type": "object",
       "properties": {
-        "title": { "type": "string", "description": "The title or caption for the media item." },
-        "type": { "type": "string", "enum": ["image", "video"], "description": "The type of media." },
-        "mediaURL": { "type": "string", "format": "uri", "description": "The URL of the media." },
-        "clubId": { "type": ["string", "null"], "description": "Optional ID of the club associated with this media." },
-        "eventId": { "type": "string", "description": "Optional ID of the event associated with this media." },
-        "uploadedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the gallery item was uploaded." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the gallery item was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the gallery item was last updated." }
+        "url": { "type": "string", "format": "uri", "description": "The URL of the media." },
+        "caption": { "type": "string", "description": "The title or caption for the media item." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Descriptive tags for the media." },
+        "uploadedBy": { "type": "string", "description": "ID of the user who uploaded the item." },
+        "date": { "type": "string", "format": "date-time", "description": "The timestamp when the media was captured or uploaded." }
       },
-      "required": ["title", "type", "mediaURL"]
+      "required": ["url", "uploadedBy", "date"]
     },
-    "blogPost": {
-      "title": "Blog Post",
-      "description": "Represents a blog or news post.",
+    "fundTransaction": {
+      "title": "Fund Transaction",
+      "description": "Represents a financial transaction for accounting.",
       "type": "object",
       "properties": {
-        "title": { "type": "string", "description": "The title of the blog post." },
-        "summary": { "type": "string", "description": "A short summary of the blog post." },
-        "author": { "type": "string", "description": "The name of the post's author." },
-        "date": { "type": "string", "format": "date-time", "description": "The publication date of the post." },
-        "thumbnail": { "type": "string", "format": "uri", "description": "URL for the post's thumbnail image." },
-        "bannerImage": { "type": "string", "format": "uri", "description": "URL for the post's main banner image." },
-        "content": { "type": "string", "description": "The HTML content of the blog post." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the blog post was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the blog post was last updated." }
+        "amount": { "type": "number", "description": "The transaction amount." },
+        "source": { "type": "string", "description": "The source of the funds (e.g., club name, sponsor)." },
+        "purpose": { "type": "string", "description": "The reason for the transaction." },
+        "date": { "type": "string", "format": "date-time", "description": "The date of the transaction." },
+        "signatories": { "type": "array", "items": { "type": "string" }, "description": "IDs of users who authorized the transaction." }
       },
-      "required": ["title", "summary", "author", "date", "content"]
+      "required": ["amount", "source", "purpose", "date", "signatories"]
     },
-    "upload": {
-      "title": "Upload",
-      "description": "Metadata for a file uploaded to a CDN.",
+    "philanthropyActivity": {
+      "title": "Philanthropy Activity",
+      "description": "Represents a philanthropic event or activity.",
       "type": "object",
       "properties": {
-        "secure_url": { "type": "string", "format": "uri", "description": "The secure HTTPS URL for the uploaded file." },
-        "public_id": { "type": "string", "description": "The unique identifier for the asset in the CDN." },
-        "uploadedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the file was uploaded." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the record was created." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the record was last updated." }
+        "type": { "type": "string", "description": "The type of activity (e.g., Blood Donation, Charity Drive)." },
+        "description": { "type": "string", "description": "A description of the activity." },
+        "date": { "type": "string", "format": "date-time", "description": "The date of the activity." },
+        "volunteers": { "type": "array", "items": { "type": "string" }, "description": "IDs of volunteers who participated." },
+        "photos": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Links to photos from the activity." }
       },
-      "required": ["secure_url", "public_id"]
-    },
-    "seed": {
-        "title": "Seed Log",
-        "description": "An audit log entry for a database seed operation.",
-        "type": "object",
-        "properties": {
-            "runBy": { "type": "string", "description": "The UID of the admin who ran the seed." },
-            "runAt": { "type": "string", "format": "date-time", "description": "The timestamp of the seed operation." },
-            "collectionsSeeded": { "type": "array", "items": { "type": "string" }, "description": "The names of the collections that were seeded." },
-            "report": {
-                "type": "object",
-                "properties": {
-                    "successCount": { "type": "number" },
-                    "failedCount": { "type": "number" },
-                    "errors": { "type": "array" }
-                }
-            }
-        },
-        "required": ["runBy", "runAt", "collectionsSeeded", "report"]
+      "required": ["type", "description", "date"]
     }
   },
-  "auth": { "providers": ["google.com", "password"] },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
   "firestore": {
-    "/users/{userId}": { "schema": { "$ref": "#/entities/user" }, "description": "Stores public profiles for all users." },
-    "/clubs/{clubId}": { "schema": { "$ref": "#/entities/club" }, "description": "Stores information about student clubs." },
-    "/events/{eventId}": { "schema": { "$ref": "#/entities/event" }, "description": "Stores details about upcoming and past events." },
-    "/gallery/{galleryId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the gallery." },
-    "/blog/{blogId}": { "schema": { "$ref": "#/entities/blogPost" }, "description": "Stores blog posts and news articles." },
-    "/uploads/{uploadId}": { "schema": { "$ref": "#/entities/upload" }, "description": "Stores metadata about files uploaded to a CDN." },
-    "/seeds/{seedId}": { "schema": { "$ref": "#/entities/seed" }, "description": "Audit log for database seed operations." }
+    "/society/meta": { "schema": { "$ref": "#/entities/societyMeta" }, "description": "Singleton document for society-wide metadata." },
+    "/clubs/{clubId}": { "schema": { "$ref": "#/entities/club" }, "description": "Stores information about individual student clubs." },
+    "/volunteers/{volunteerId}": { "schema": { "$ref": "#/entities/volunteer" }, "description": "Profiles for student volunteers." },
+    "/members/{memberId}": { "schema": { "$ref": "#/entities/member" }, "description": "Profiles for general members." },
+    "/events/{eventId}": { "schema": { "$ref": "#/entities/event" }, "description": "Details about club events." },
+    "/gallery/{photoId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the main gallery." },
+    "/funds/transactions/{transactionId}": { "schema": { "$ref": "#/entities/fundTransaction" }, "description": "Logs all financial transactions." },
+    "/philanthropy/{activityId}": { "schema": { "$ref": "#/entities/philanthropyActivity" }, "description": "Records of philanthropic activities." }
   }
 }
-
-    
