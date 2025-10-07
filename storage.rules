@@ -1,26 +1,37 @@
 rules_version = '2';
 
+// Helper function to check for admin custom claim
+function isAdmin() {
+  return request.auth != null && request.auth.token.admin == true;
+}
+
+// Helper function to check if the user is the owner
+function isOwner(userId) {
+  return request.auth != null && request.auth.uid == userId;
+}
+
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Helper function to check for admin custom claim
-    function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+    // Public folders: Anyone can read, only admins can write.
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
-
-    // Public read for specific public-facing folders
-    match /{folder}/{allPaths=**} where folder in ['public', 'clubImages'] {
+    
+    // Club images: Same as public for simplicity.
+    match /clubImages/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // User-specific uploads folder
+    // User-specific uploads: Only the user or an admin can read/write.
+    // The {uid} in the path must match the authenticated user's UID.
     match /userUploads/{uid}/{allPaths=**} {
-      // Allow read/write for the owner of the folder or an admin
-      allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow read, write: if isOwner(uid) || isAdmin();
     }
-
-    // Default deny for any other paths
+    
+    // Deny all other access by default.
     match /{allPaths=**} {
       allow read, write: if false;
     }

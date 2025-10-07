@@ -82,6 +82,14 @@ export default function SeedAdminPage() {
     
     if (isDryRun) {
         toast({ title: 'Dry Run Completed', description: `Simulated seeding from ${fileName}. No data was written.` });
+        // Although it's a dry run, we can still generate a preview report for clarity.
+        setSeedReport({
+            status: "Dry Run Preview",
+            successCount: 0,
+            failedCount: 0,
+            errors: [],
+            logId: "N/A"
+        });
         return;
     }
 
@@ -111,8 +119,8 @@ export default function SeedAdminPage() {
       console.error("Cloud Function Error:", error);
       toast({
         variant: "destructive",
-        title: "Seeding Failed",
-        description: error.message || "The function returned an error. Check logs for details.",
+        title: `Seeding Failed: ${error.code || 'UNKNOWN_ERROR'}`,
+        description: error.message || "The function returned an error. Check Cloud Function logs for details.",
       });
     } finally {
       setIsProcessing(false);
@@ -218,7 +226,7 @@ export default function SeedAdminPage() {
                     <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                     <div className="flex-1">
                         <p className="font-semibold">LIVE RUN ENABLED</p>
-                        <p className="text-sm">You are about to write data to the live database. This action may be irreversible.</p>
+                        <p className="text-sm">You are about to write data to the live database. This action may be irreversible. Always perform a Dry Run first.</p>
                     </div>
                 </div>
                )}
@@ -227,11 +235,11 @@ export default function SeedAdminPage() {
                  <Card>
                     <CardHeader>
                          <CardTitle className="flex items-center gap-2">
-                            {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
+                            {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
                              Seed Report
                         </CardTitle>
                         <CardDescription>
-                            Operation completed. {seedReport.successCount} documents written. 
+                            Operation status: {seedReport.status}. {seedReport.successCount} documents written. 
                             Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
                         </CardDescription>
                     </CardHeader>
