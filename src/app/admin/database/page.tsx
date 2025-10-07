@@ -20,6 +20,11 @@ export default function DatabaseAdminPage() {
     getAuth().signOut();
     router.push('/');
   };
+  
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const firestoreConsoleUrl = projectId
+    ? `https://console.firebase.google.com/project/${projectId}/firestore/data`
+    : 'https://console.firebase.google.com/';
 
   return (
     <SidebarProvider>
@@ -101,7 +106,7 @@ export default function DatabaseAdminPage() {
               </CardHeader>
               <CardContent>
                  <p className="text-sm text-muted-foreground">
-                    You can manage your Firestore data, including deleting collections and documents, directly in the <a href={`https://console.firebase.google.com/project/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/firestore/data`} target="_blank" rel="noopener noreferrer" className="text-primary underline">Firebase Console</a>.
+                    You can manage your Firestore data, including deleting collections and documents, directly in the <a href={firestoreConsoleUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">Firebase Console</a>.
                  </p>
               </CardContent>
           </Card>

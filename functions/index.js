@@ -6,44 +6,58 @@ const db = admin.firestore();
 const { Timestamp } = admin.firestore;
 const crypto = require('crypto');
 
-const MAX_BATCH = 400;
+const MAX_BATCH_SIZE = 400;
 const MAX_RETRIES = 2;
-const RETRY_BASE_MS = 300;
+const RETRY_BASE_DELAY_MS = 300;
 
-// helper: safe ISO date test
+/**
+ * Checks if a string is a valid ISO 8601 date string.
+ * @param {string} s The string to check.
+ * @returns {boolean} True if the string is a valid date.
+ */
 function isIsoDateString(s) {
-  if (typeof s !== 'string') return false;
-  // quick check then try Date parse
+  if (typeof s !== 'string' || !s) return false;
   const d = new Date(s);
-  return !isNaN(d.getTime());
+  return !isNaN(d.getTime()) && d.toISOString() === s;
 }
 
-// helper: sanitize doc id
+/**
+ * Sanitizes a document ID to ensure it's valid for Firestore.
+ * Rejects IDs with slashes.
+ * @param {string} id The document ID.
+ * @returns {string|null} The sanitized ID or null if invalid.
+ */
 function sanitizeId(id) {
-  if (typeof id !== 'string') return null;
-  if (id.includes('/') || id.trim() === '') return null;
-  return id;
+  if (typeof id !== 'string' || id.trim() === '' || id.includes('/')) {
+    return null;
+  }
+  return id.trim();
 }
 
-// convert fields: only convert known date-like keys (date, createdAt, uploadedAt)
+/**
+ * Converts specific date-like fields in a document to Firestore Timestamps.
+ * @param {object} doc The document data.
+ * @returns {object} The document with converted date fields.
+ */
 function sanitizeDocData(doc) {
-  const out = {};
-  for (const [k, v] of Object.entries(doc)) {
-    if ((k.toLowerCase() === 'date' || k.toLowerCase().endsWith('date') || k.toLowerCase().endsWith('at')) && v != null) {
-      if (isIsoDateString(v)) {
-        out[k] = Timestamp.fromDate(new Date(v));
-      } else {
-        // keep original if not parseable (string or other) so we don't fail
-        out[k] = v;
-      }
-    } else {
-      out[k] = v;
+  const out = { ...doc };
+  for (const [key, value] of Object.entries(out)) {
+    if ((key.toLowerCase().endsWith('at') || key.toLowerCase().endsWith('date')) && isIsoDateString(value)) {
+      out[key] = Timestamp.fromDate(new Date(value));
     }
   }
+  // Ensure server timestamps for creation and update
+  out.createdAt = out.createdAt && out.createdAt instanceof Timestamp ? out.createdAt : Timestamp.now();
+  out.updatedAt = Timestamp.now();
   return out;
 }
 
-// commit batch with retries
+/**
+ * Commits a Firestore batch with exponential backoff retry logic.
+ * @param {admin.firestore.WriteBatch} batch The batch to commit.
+ * @param {string[]} batchDocIds The document IDs in the batch for logging purposes.
+ * @returns {Promise<{success: boolean, error?: Error, batchDocIds?: string[]}>}
+ */
 async function commitBatchWithRetry(batch, batchDocIds = []) {
   let attempt = 0;
   while (attempt <= MAX_RETRIES) {
@@ -52,182 +66,147 @@ async function commitBatchWithRetry(batch, batchDocIds = []) {
       return { success: true };
     } catch (e) {
       attempt++;
-      console.error(`Batch commit failed (attempt ${attempt})`, e && e.stack ? e.stack : e);
+      functions.logger.error(`Batch commit failed (attempt ${attempt})`, {
+        error: e.message,
+        stack: e.stack,
+        docIds: batchDocIds.slice(0, 10), // Log first 10 docs for context
+      });
       if (attempt > MAX_RETRIES) {
         return { success: false, error: e, batchDocIds };
       }
-      // exponential backoff
-      await new Promise(res => setTimeout(res, RETRY_BASE_MS * Math.pow(2, attempt)));
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      await new Promise(res => setTimeout(res, delay));
     }
   }
+  return { success: false, error: new Error('Exceeded max retries for batch commit.'), batchDocIds };
 }
 
-// main callable function
+/**
+ * Callable Cloud Function to seed Firestore with documents from a JSON object.
+ * This function is hardened for production use with validation, batching, and robust error handling.
+ */
 exports.importSeedDocuments = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onCall(async (data, context) => {
-    // auth check
+    // 1. Authentication and Authorization Check
     if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Request not authenticated');
+      throw new functions.https.HttpsError('unauthenticated', 'Request must be authenticated.');
     }
-    const claims = context.auth.token || {};
-    if (!claims.admin) {
-      throw new functions.https.HttpsError('permission-denied', 'Admin claim required');
-    }
-
-    // Accept either docsByCollection passed in data OR read from a storage path in data.filePath
-    let docsByCollection = data && data.docsByCollection;
-    if (!docsByCollection && data && data.filePath) {
-      // try read from Cloud Storage (optional)
-      const { Storage } = require('@google-cloud/storage');
-      const storage = new Storage();
-      const match = data.filePath.match(/^gs:\/\/([^/]+)\/(.+)$/);
-      if (!match) {
-        throw new functions.https.HttpsError('invalid-argument', 'filePath must be a gs:// bucket path');
-      }
-      const bucketName = match[1], filePath = match[2];
-      try {
-        const contents = await storage.bucket(bucketName).file(filePath).download();
-        docsByCollection = JSON.parse(contents.toString('utf8'));
-      } catch (e) {
-        console.error('Failed to read seed file from GCS', e && e.stack ? e.stack : e);
-        throw new functions.https.HttpsError('internal', 'Failed to read seed file: ' + (e.message || e));
-      }
+    if (context.auth.token.admin !== true) {
+      throw new functions.https.HttpsError('permission-denied', 'You must have an admin claim to perform this operation.');
     }
 
-    if (!docsByCollection || typeof docsByCollection !== 'object') {
-      throw new functions.https.HttpsError('invalid-argument', 'docsByCollection is required');
+    // 2. Input Validation
+    const { docsByCollection } = data;
+    if (!docsByCollection || typeof docsByCollection !== 'object' || Object.keys(docsByCollection).length === 0) {
+      throw new functions.https.HttpsError('invalid-argument', 'The `docsByCollection` payload must be a non-empty object.');
     }
 
-    // Prepare report
+    // 3. Initialize Report and Seeding Process
     const seedId = crypto.randomUUID();
-    const runByUid = context.auth.uid;
-    const startedAt = admin.firestore.FieldValue.serverTimestamp();
     const report = {
       seedId,
-      runByUid,
+      runByUid: context.auth.uid,
       startedAt: new Date().toISOString(),
       countsPerCollection: {},
       successCount: 0,
       failedCount: 0,
-      errors: []
+      errors: [],
     };
 
-    // seeding loop with batching
     let batch = db.batch();
     let batchCount = 0;
     let batchDocIds = [];
 
-    // helper to finalize batch when hits limit
+    // Helper to flush batch when it hits the limit
     async function flushBatchIfNeeded(force = false) {
       if (batchCount === 0) return;
-      if (batchCount >= MAX_BATCH || force) {
+      if (batchCount >= MAX_BATCH_SIZE || force) {
         const res = await commitBatchWithRetry(batch, batchDocIds);
-        if (!res.success) {
-          // record batch failure
-          const errMsg = `Batch commit failed permanently for docs: ${JSON.stringify(res.batchDocIds)}`;
-          console.error(errMsg, res.error && res.error.stack ? res.error.stack : res.error);
-          report.errors.push({ type: 'batch_commit', message: errMsg, error: (res.error && res.error.message) || String(res.error) });
-          report.failedCount += res.batchDocIds.length;
-        } else {
+        if (res.success) {
           report.successCount += batchDocIds.length;
+        } else {
+          const errorMessage = `Batch commit failed permanently. See logs for details.`;
+          functions.logger.error(errorMessage, { error: res.error, docs: res.batchDocIds });
+          report.errors.push({ type: 'batch_commit_failure', message: errorMessage, docs: res.batchDocIds });
+          report.failedCount += res.batchDocIds.length;
         }
-        // reset batch
+        // Reset for the next batch
         batch = db.batch();
         batchCount = 0;
         batchDocIds = [];
       }
     }
 
-    // Iterate over collections
+    // 4. Iterate over collections and documents
     try {
       for (const [collectionName, docs] of Object.entries(docsByCollection)) {
-        if (!docs || typeof docs !== 'object') continue;
+        if (!docs || typeof docs !== 'object') {
+          report.errors.push({ type: 'invalid_collection_payload', collection: collectionName, message: `Payload for ${collectionName} is not an object.` });
+          continue;
+        }
         const docIds = Object.keys(docs);
         report.countsPerCollection[collectionName] = docIds.length;
 
         for (const docIdRaw of docIds) {
-          const sanitizedId = sanitizeId(docIdRaw);
-          if (!sanitizedId) {
-            const msg = `Skipping invalid doc id "${docIdRaw}" in collection "${collectionName}"`;
-            console.warn(msg);
-            report.errors.push({ type: 'invalid_doc_id', collection: collectionName, docId: docIdRaw, message: msg });
+          const docId = sanitizeId(docIdRaw);
+          if (!docId) {
+            const message = `Skipping invalid doc id "${docIdRaw}" in collection "${collectionName}"`;
+            functions.logger.warn(message);
+            report.errors.push({ type: 'invalid_doc_id', collection: collectionName, docId: docIdRaw, message });
             report.failedCount++;
             continue;
           }
 
-          let doc = docs[docIdRaw];
-          if (!doc || typeof doc !== 'object') {
-            const msg = `Skipping invalid doc payload for ${collectionName}/${docIdRaw}`;
-            console.warn(msg);
-            report.errors.push({ type: 'invalid_doc_payload', collection: collectionName, docId: docIdRaw, message: msg });
+          const docData = docs[docIdRaw];
+          if (!docData || typeof docData !== 'object') {
+            const message = `Skipping invalid doc payload for ${collectionName}/${docId}`;
+            functions.logger.warn(message);
+            report.errors.push({ type: 'invalid_doc_payload', collection: collectionName, docId, message });
             report.failedCount++;
             continue;
           }
 
-          // Sanitize/convert fields
-          let docData;
-          try {
-            docData = sanitizeDocData(doc);
-          } catch (e) {
-            const msg = `Field sanitization error for ${collectionName}/${docIdRaw}: ${e && e.message ? e.message : String(e)}`;
-            console.error(msg, e && e.stack ? e.stack : e);
-            report.errors.push({ type: 'sanitization_error', collection: collectionName, docId: docIdRaw, message: msg });
-            report.failedCount++;
-            continue;
-          }
+          // Sanitize data (e.g., convert dates) before adding to batch
+          const sanitizedData = sanitizeDocData(docData);
+          const ref = db.collection(collectionName).doc(docId);
+          batch.set(ref, sanitizedData, { merge: true });
+          batchCount++;
+          batchDocIds.push(`${collectionName}/${docId}`);
 
-          // Add to batch
-          try {
-            const ref = db.collection(collectionName).doc(sanitizedId);
-            batch.set(ref, docData, { merge: true });
-            batchCount++;
-            batchDocIds.push(`${collectionName}/${sanitizedId}`);
-          } catch (e) {
-            const msg = `Batch add failed for ${collectionName}/${docIdRaw}: ${e && e.message ? e.message : String(e)}`;
-            console.error(msg, e && e.stack ? e.stack : e);
-            report.errors.push({ type: 'batch_add_error', collection: collectionName, docId: docIdRaw, message: msg });
-            report.failedCount++;
-            continue;
-          }
+          await flushBatchIfNeeded();
+        } // end per-doc loop
+      } // end per-collection loop
 
-          // flush if needed
-          if (batchCount >= MAX_BATCH) {
-            await flushBatchIfNeeded(true);
-          }
-        } // end per-doc
-      } // end per-collection
-
-      // final flush
+      // Final flush for any remaining documents
       await flushBatchIfNeeded(true);
-
     } catch (e) {
-      console.error('Unexpected exception during seeding loop', e && e.stack ? e.stack : e);
-      report.errors.push({ type: 'unexpected', message: e && e.message ? e.message : String(e) });
+      const message = 'An unexpected error occurred during the seeding loop.';
+      functions.logger.error(message, { error: e.message, stack: e.stack });
+      report.errors.push({ type: 'unexpected_error', message: e.message });
+      // This is a critical failure, throw an error back to the client
+      throw new functions.https.HttpsError('internal', message, { error: e.message });
     }
 
-    // Finalize: write seed audit doc
+    // 5. Finalize by writing an audit log for the seed operation
     try {
-      const seedRef = db.collection('seeds').doc(seedId);
-      await seedRef.set({
-        seedId,
-        runByUid,
-        startedAt: admin.firestore.Timestamp.now(),
-        reportSummary: {
-          countsPerCollection: report.countsPerCollection,
+      const seedLogRef = db.collection('seeds').doc(seedId);
+      await seedLogRef.set({
+        runBy: report.runByUid,
+        runAt: Timestamp.now(),
+        collectionsSeeded: Object.keys(report.countsPerCollection),
+        report: {
           successCount: report.successCount,
           failedCount: report.failedCount,
-          errorsCount: report.errors.length
+          errors: report.errors.slice(0, 50), // Store a subset of errors
         },
-        fullReport: report,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     } catch (e) {
-      console.error('Failed to write seeds audit doc', e && e.stack ? e.stack : e);
-      // don't fail the whole function for audit write errors; just log
-      report.errors.push({ type: 'audit_write_failed', message: e && e.message ? e.message : String(e) });
+      const message = 'Failed to write seed audit log.';
+      functions.logger.error(message, { error: e.message, seedId });
+      report.errors.push({ type: 'audit_log_failure', message: e.message });
     }
 
-    // return cleaned report
+    // 6. Return the detailed report to the client
     return { report };
   });
