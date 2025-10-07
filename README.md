@@ -12,7 +12,7 @@ To test the `importSeedDocuments` Cloud Function safely before deploying, use th
 
 **1. Install Function Dependencies:**
 
-Before starting the emulators, navigate to the `functions` directory and install its dependencies:
+Before starting the emulators, navigate to the `functions` directory and install its dependencies. This is a crucial one-time step.
 
 ```bash
 cd functions
@@ -28,11 +28,11 @@ Ensure you have a seed file (e.g., `utsarg_seed.json`) in your project's root di
 firebase emulators:start --only firestore,functions,auth
 ```
 
-This will start local emulators for Firestore, Functions, and Authentication, which you can interact with without touching your live project.
+This will start local emulators for Firestore, Functions, and Authentication, which you can interact with without touching your live project. Your Next.js app will automatically connect to these emulators when you run `npm run dev`.
 
 **3. Set an Admin Custom Claim for a Test User:**
 
-The seeder function requires the calling user to have an `admin:true` custom claim.
+The seeder function requires the calling user to have an `admin:true` custom claim. This must be done for the very first admin user.
 
 *   Go to the Emulator UI (usually `http://localhost:4000`).
 *   Navigate to the **Authentication** tab.

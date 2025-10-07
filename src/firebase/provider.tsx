@@ -6,12 +6,14 @@ import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import type { Functions } from 'firebase/functions';
 
 interface FirebaseContextType {
   firebaseApp: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
   storage: FirebaseStorage | null;
+  functions: Functions | null;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ interface FirebaseProviderProps {
     auth: Auth;
     firestore: Firestore;
     storage: FirebaseStorage;
+    functions: Functions;
   };
 }
 

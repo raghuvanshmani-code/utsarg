@@ -2,8 +2,8 @@
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useUser } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useUser, useFirebase } from '@/firebase';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { Loader2, UploadCloud, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, AlertTriangle, FileJson, CheckCircle, XCircle, HeartHandshake, IndianRupee, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,15 +22,15 @@ import { Textarea } from '@/components/ui/textarea';
 
 type SeedData = { [collectionName: string]: { [docId: string]: any } };
 type SeedReport = { 
-    status: string;
+    seedId: string;
     successCount: number;
     failedCount: number;
-    errors: { collection: string; id: string; error: string }[];
-    logId: string;
+    errors: { type: string, collection?: string; docId?: string; message: string }[];
 };
 
 export default function SeedAdminPage() {
   const { user } = useUser();
+  const { functions: functionsInstance } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -92,22 +92,28 @@ export default function SeedAdminPage() {
     }
     
     if (isDryRun) {
-        toast({ title: 'Dry Run Completed', description: `Simulated seeding from ${fileName}. No data was written.` });
+        const totalDocs = Object.values(seedData).reduce((acc, docs) => acc + Object.keys(docs).length, 0);
+        toast({ title: 'Dry Run Completed', description: `Simulated seeding of ${totalDocs} documents from ${fileName}. No data was written.` });
         // Although it's a dry run, we can still generate a preview report for clarity.
         setSeedReport({
-            status: "Dry Run Preview",
-            successCount: 0,
+            seedId: "dry-run-preview",
+            successCount: totalDocs,
             failedCount: 0,
             errors: [],
-            logId: "N/A"
         });
         return;
     }
 
     setIsProcessing(true);
     setSeedReport(null);
-    const functions = getFunctions();
-    const importSeedDocuments = httpsCallable(functions, 'importSeedDocuments');
+    
+    if (!functionsInstance) {
+        toast({ variant: "destructive", title: "Error", description: "Firebase Functions not available."});
+        setIsProcessing(false);
+        return;
+    }
+
+    const importSeedDocuments = httpsCallable(functionsInstance, 'importSeedDocuments');
 
     try {
       const result = await importSeedDocuments({ docsByCollection: seedData }) as { data: {report: SeedReport} };
@@ -288,12 +294,12 @@ export default function SeedAdminPage() {
                   <Card>
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2">
-                              {seedReport.failedCount === 0 ? <CheckCircle className="text-green-500" /> : seedReport.status === "Dry Run Preview" ? <FileJson /> : <XCircle className="text-red-500" />}
+                              {seedReport.failedCount === 0 ? <CheckCircle className="text-green-500" /> : seedReport.seedId === "dry-run-preview" ? <FileJson /> : <XCircle className="text-red-500" />}
                               Seed Report
                           </CardTitle>
                           <CardDescription>
-                              Operation status: {seedReport.failedCount > 0 ? 'Completed with errors' : 'Success'}. {seedReport.successCount} documents written. 
-                              Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
+                              Operation status: {seedReport.failedCount > 0 ? 'Completed with errors' : 'Success'}. {seedReport.successCount} documents processed. 
+                              {seedReport.seedId !== 'dry-run-preview' && <>Log ID: <span className="font-mono text-xs">{seedReport.seedId}</span></>}
                           </CardDescription>
                       </CardHeader>
                       {seedReport.errors.length > 0 && (
@@ -311,8 +317,8 @@ export default function SeedAdminPage() {
                                   {seedReport.errors.map((err, i) => (
                                       <TableRow key={i} className="text-destructive">
                                           <TableCell>{err.collection}</TableCell>
-                                          <TableCell className="font-mono text-xs">{err.id}</TableCell>
-                                          <TableCell>{err.error}</TableCell>
+                                          <TableCell className="font-mono text-xs">{err.docId}</TableCell>
+                                          <TableCell>{err.message}</TableCell>
                                       </TableRow>
                                   ))}
                                 </TableBody>

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useUser, useFirebase } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,6 +35,7 @@ type UserProfile = {
 
 export default function UsersAdminPage() {
   const { user } = useUser();
+  const { functions: functionsInstance } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -56,11 +57,10 @@ export default function UsersAdminPage() {
   };
   
   const confirmRoleChange = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || !functionsInstance) return;
     setIsSubmitting(true);
     
-    const functions = getFunctions();
-    const setUserRole = httpsCallable(functions, 'setUserRole');
+    const setUserRole = httpsCallable(functionsInstance, 'setUserRole');
     
     try {
         await setUserRole({ uid: selectedUser.uid, role: targetRole });
@@ -68,8 +68,6 @@ export default function UsersAdminPage() {
             title: "Success",
             description: `${selectedUser.displayName}'s role has been updated to ${targetRole}.`,
         });
-        // Note: The `users` collection will be updated by the Cloud Function trigger,
-        // and the UI will reflect the change automatically via the `useCollection` hook.
     } catch (error: any) {
         console.error("Error setting user role:", error);
         toast({
