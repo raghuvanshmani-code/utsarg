@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { onSnapshot, Query, DocumentData, collection, QuerySnapshot, query, QueryConstraint } from 'firebase/firestore';
+import { onSnapshot, DocumentData, collection, QuerySnapshot, query, QueryConstraint } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
@@ -11,7 +11,7 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const memoizedConstraints = JSON.stringify(queryConstraints);
+  const memoizedConstraints = JSON.stringify(queryConstraints.map(c => c.toString()));
 
   useEffect(() => {
     if (!db || !path) {
