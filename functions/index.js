@@ -1,113 +1,157 @@
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
+const db = getFirestore();
+
 /**
- * A callable function that allows an admin to bulk-import documents into Firestore
- * from a single JSON object containing multiple collections.
+ * Validates a document against a simplified schema.
+ * @param {object} docData - The document data to validate.
+ * @param {string[]} requiredFields - An array of required field names.
+ * @returns {string|null} - An error message string if validation fails, otherwise null.
+ */
+function validateDocument(docData, requiredFields) {
+    if (!docData || typeof docData !== 'object') {
+        return "Document data is not a valid object.";
+    }
+    for (const field of requiredFields) {
+        if (!docData.hasOwnProperty(field)) {
+            return `Missing required field: '${field}'.`;
+        }
+    }
+    return null;
+}
+
+
+/**
+ * A callable Cloud Function to securely import seed data into Firestore collections.
+ * - Requires authentication and an 'admin' custom claim.
+ * - Processes data in safe batches to avoid Firestore limits.
+ * - Converts ISO date strings to Firestore Timestamps.
+ * - Logs each seed operation for auditing purposes.
+ * - Returns a detailed report of the operation.
  */
 exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
-  // 1. Authentication Check - The user must be signed in.
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "The function must be called while authenticated."
-    );
-  }
-  
-  // NOTE: The admin check has been removed to allow any authenticated user to seed data.
-  // For a production environment, you would re-enable this and manage admin roles
-  // via custom claims.
-  // const isAdmin = context.auth.token.admin === true;
-  // if (!isAdmin) {
-  //   throw new functions.https.HttpsError(
-  //     "permission-denied",
-  //     "This functionality is restricted to admin users."
-  //   );
-  // }
+    // 1. Authentication and Authorization Check
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "You must be authenticated to call this function."
+        );
+    }
+    const isAdminClaim = context.auth.token.admin === true;
+    if (!isAdminClaim) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "You must have an 'admin' custom claim to perform this operation."
+        );
+    }
 
-  // 2. Input Validation
-  const { seedData } = data;
-  if (typeof seedData !== 'object' || seedData === null || Object.keys(seedData).length === 0) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "The 'seedData' field must be a non-empty object."
-      );
-  }
+    // 2. Input Validation
+    const { seedData } = data;
+    if (!seedData || typeof seedData !== 'object' || Object.keys(seedData).length === 0) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "The 'seedData' payload must be a non-empty object."
+        );
+    }
 
-  const firestore = admin.firestore();
-  const batch = firestore.batch();
-  const errors = [];
-  let totalSuccessCount = 0;
-  const now = new Date(); // Use a standard JS Date for server-side operations
-
-  // 3. Firestore Batch Write Logic for each collection
-  for (const collectionName in seedData) {
-      if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
-          const docs = seedData[collectionName];
-          if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
-              errors.push({ collection: collectionName, error: `The value for '${collectionName}' must be an object of documents.` });
-              continue; // Skip to the next collection if the format is wrong
-          }
-
-          const collectionRef = firestore.collection(collectionName);
-          let collectionSuccessCount = 0;
-
-          for (const docId in docs) {
-              if (Object.prototype.hasOwnProperty.call(docs, docId)) {
-                  try {
-                      const docData = docs[docId];
-                      const docRef = collectionRef.doc(docId); // Use the key as the document ID
-                      
-                      const dataToSet = {
-                          ...docData,
-                          // Use the server-side timestamp for creation and update times.
-                          // The 'createdAt' from the JSON will be overwritten to ensure consistency.
-                          createdAt: now,
-                          updatedAt: now
-                      };
-                      
-                      batch.set(docRef, dataToSet, { merge: true });
-                      collectionSuccessCount++;
-                  } catch (e) {
-                      errors.push({ collection: collectionName, docId: docId, error: e.message });
-                  }
-              }
-          }
-          totalSuccessCount += collectionSuccessCount;
-      }
-  }
-
-
-  // 4. Commit the Batch and Return Results
-  if (errors.length > 0) {
-      // If there were validation errors before batching, don't commit.
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Validation errors occurred. No data was written.",
-        { errors }
-      );
-  }
-  
-  try {
-    await batch.commit();
-    return {
-      success: true,
-      message: "Data seeded successfully.",
-      totalSuccessCount: totalSuccessCount,
-      failedCount: 0,
-      errors: [],
+    const schemas = {
+        users: ['uid', 'name', 'email', 'role'],
+        clubs: ['name', 'description'],
+        events: ['title', 'date', 'clubId'],
+        gallery: ['title', 'type', 'mediaURL'],
+        blog: ['title', 'summary', 'author', 'date', 'content'],
+        uploads: ['secure_url', 'public_id', 'uploadedAt'],
     };
-  } catch (error) {
-    console.error("Batch commit failed:", error);
-    throw new functions.https.HttpsError(
-      "internal",
-      "Failed to write documents to Firestore. Check Cloud Function logs for details.",
-      error.message
-    );
-  }
+
+    const report = {
+        successCount: 0,
+        failedCount: 0,
+        errors: [],
+    };
+    const MAX_WRITES_PER_BATCH = 300;
+    let batch = db.batch();
+    let writeCount = 0;
+    const dateFields = ['createdAt', 'updatedAt', 'date', 'uploadedAt'];
+
+    // 3. Process Each Collection
+    for (const collectionName of Object.keys(seedData)) {
+        const docs = seedData[collectionName];
+        if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
+            report.errors.push({ collection: collectionName, id: 'N/A', error: `Data for '${collectionName}' must be an object of documents, not an array or other type.` });
+            report.failedCount += Object.keys(docs || {}).length;
+            continue;
+        }
+
+        for (const docId in docs) {
+            if (Object.prototype.hasOwnProperty.call(docs, docId)) {
+                let docData = docs[docId];
+
+                // Validate document shape
+                const requiredFields = schemas[collectionName];
+                if (requiredFields) {
+                    const validationError = validateDocument(docData, requiredFields);
+                    if (validationError) {
+                        report.failedCount++;
+                        report.errors.push({ collection: collectionName, id: docId, error: validationError });
+                        continue; // Skip this document
+                    }
+                }
+                
+                // Convert date strings to Timestamps and add server timestamps
+                const now = Timestamp.now();
+                docData.createdAt = docData.createdAt ? Timestamp.fromDate(new Date(docData.createdAt)) : now;
+                docData.updatedAt = now;
+
+                for (const field of dateFields) {
+                    if (docData[field] && typeof docData[field] === 'string' && !field.includes('At')) {
+                         try {
+                           docData[field] = Timestamp.fromDate(new Date(docData[field]));
+                         } catch (e) {
+                           // Ignore if parsing fails, keep original string
+                         }
+                    }
+                }
+                
+                const docRef = db.collection(collectionName).doc(docId);
+                batch.set(docRef, docData);
+                writeCount++;
+
+                // Commit batch if it's full
+                if (writeCount >= MAX_WRITES_PER_BATCH) {
+                    await batch.commit();
+                    report.successCount += writeCount;
+                    batch = db.batch(); // Start a new batch
+                    writeCount = 0;
+                }
+            }
+        }
+    }
+
+    // 4. Commit any remaining writes in the last batch
+    if (writeCount > 0) {
+        await batch.commit();
+        report.successCount += writeCount;
+    }
+    
+    // 5. Log the seed operation for auditing
+    const seedLog = {
+        runBy: context.auth.uid,
+        runAt: Timestamp.now(),
+        collectionsSeeded: Object.keys(seedData),
+        report: report,
+    };
+
+    const logRef = await db.collection("seeds").add(seedLog);
+
+    return {
+        status: report.failedCount > 0 ? "Completed with errors" : "Success",
+        ...report,
+        logId: logRef.id
+    };
 });

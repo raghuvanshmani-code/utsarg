@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { Loader2, UploadCloud, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, AlertTriangle } from 'lucide-react';
+import { Loader2, UploadCloud, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, AlertTriangle, FileJson, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
@@ -17,9 +17,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import Papa from 'papaparse';
 
-type SeedData = { [collectionName: string]: any[] };
+type SeedData = { [collectionName: string]: { [docId: string]: any } };
+type SeedReport = { 
+    status: string;
+    successCount: number;
+    failedCount: number;
+    errors: { collection: string; id: string; error: string }[];
+    logId: string;
+};
 
 export default function SeedAdminPage() {
   const { user } = useUser();
@@ -30,6 +36,7 @@ export default function SeedAdminPage() {
   const [fileName, setFileName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
+  const [seedReport, setSeedReport] = useState<SeedReport | null>(null);
   
   const handleSignOut = () => {
     getAuth().signOut();
@@ -40,6 +47,7 @@ export default function SeedAdminPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setSeedReport(null); // Reset report on new file
     setFileName(file.name);
     const reader = new FileReader();
 
@@ -50,15 +58,17 @@ export default function SeedAdminPage() {
           const parsedData = JSON.parse(content);
            if (typeof parsedData === 'object' && !Array.isArray(parsedData) && parsedData !== null) {
             setSeedData(parsedData);
+            toast({ title: 'File Loaded', description: `${file.name} is ready for a dry run.` });
           } else {
-            throw new Error('JSON file must be an object with collection names as keys.');
+            throw new Error('JSON root must be an object of collections.');
           }
         } else {
-            toast({ variant: 'destructive', title: 'Unsupported file type', description: 'Please upload a single JSON file containing all collections.' });
+            throw new Error('Unsupported file type. Please upload a single JSON file.');
         }
       } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Parsing Error', description: error.message || 'Could not parse the file. Please ensure it is valid.' });
+        toast({ variant: 'destructive', title: 'File Parsing Error', description: error.message || 'Could not parse the file.' });
         setSeedData(null);
+        setFileName('');
       }
     };
     reader.readAsText(file);
@@ -66,36 +76,43 @@ export default function SeedAdminPage() {
 
   const handleSeed = async () => {
     if (!seedData || Object.keys(seedData).length === 0) {
-      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid file with data to seed.' });
+      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid data file.' });
       return;
     }
     
     if (isDryRun) {
-        const collections = Object.keys(seedData).join(', ');
-        toast({ title: 'Dry Run Completed', description: `Simulated writing data to collections: ${collections}. No data was written.` });
+        toast({ title: 'Dry Run Completed', description: `Simulated seeding from ${fileName}. No data was written.` });
         return;
     }
 
     setIsProcessing(true);
+    setSeedReport(null);
     const functions = getFunctions();
     const importSeedDocuments = httpsCallable(functions, 'importSeedDocuments');
 
     try {
-      const result: any = await importSeedDocuments({ seedData });
-      if (result.data.success) {
+      const result = await importSeedDocuments({ seedData }) as { data: SeedReport };
+      const report = result.data;
+      setSeedReport(report);
+
+      if (report.status === 'Success') {
         toast({
           title: 'Seeding Successful',
-          description: `Wrote ${result.data.totalSuccessCount} documents across ${Object.keys(seedData).length} collections.`,
+          description: `Wrote ${report.successCount} documents. See report below.`,
         });
       } else {
-        throw new Error(result.data.errors?.[0]?.error || 'An unknown error occurred during seeding.');
+        toast({
+          variant: "destructive",
+          title: 'Seeding Completed with Errors',
+          description: `Wrote ${report.successCount} docs, but ${report.failedCount} failed. Check report.`,
+        });
       }
     } catch (error: any) {
-      console.error("Error calling Cloud Function:", error);
+      console.error("Cloud Function Error:", error);
       toast({
         variant: "destructive",
         title: "Seeding Failed",
-        description: error.message,
+        description: error.message || "The function returned an error. Check logs for details.",
       });
     } finally {
       setIsProcessing(false);
@@ -129,7 +146,7 @@ export default function SeedAdminPage() {
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">Admin Data Seeder</h1>
+            <h1 className="text-lg font-semibold">Database Seeder</h1>
           </div>
           {user && (
             <div className="flex items-center gap-2 text-sm">
@@ -141,36 +158,41 @@ export default function SeedAdminPage() {
         <main className="flex-1 p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import All Collections</CardTitle>
-              <CardDescription>Upload a single JSON file. The file should be an object where each key is a collection name (e.g. "clubs") and the value is an array of documents.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><FileJson /> Import from JSON</CardTitle>
+              <CardDescription>Upload a single JSON file where each key is a collection name and the value is an object of documents to be seeded.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <div className="space-y-2">
-                  <Label htmlFor="file-upload">Upload Data File</Label>
-                  <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} />
+                  <Label htmlFor="file-upload">Upload Seed File</Label>
+                  <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} className="max-w-md" />
                 </div>
               
-              {seedData && previewCollections.length > 0 && (
+              {seedData && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Data Preview</CardTitle>
-                        <CardDescription>Found {previewCollections.length} collections in {fileName}.</CardDescription>
+                        <CardTitle>Dry Run Preview</CardTitle>
+                        <CardDescription>Found {previewCollections.length} collections in <strong>{fileName}</strong>. This is a preview of the data structure. No data will be written in Dry Run mode.</CardDescription>
                     </CardHeader>
-                    <CardContent className="max-h-64 overflow-auto">
+                    <CardContent className="max-h-72 overflow-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                  <TableHead>Collection Name</TableHead>
-                                  <TableHead>Documents Found</TableHead>
+                                  <TableHead>Collection</TableHead>
+                                  <TableHead>Documents</TableHead>
+                                  <TableHead>Sample ID</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {previewCollections.map((collectionName) => (
+                                {previewCollections.map((collectionName) => {
+                                  const docIds = Object.keys(seedData[collectionName]);
+                                  return (
                                     <TableRow key={collectionName}>
                                         <TableCell className="font-medium">{collectionName}</TableCell>
-                                        <TableCell>{seedData[collectionName].length}</TableCell>
+                                        <TableCell>{docIds.length}</TableCell>
+                                        <TableCell className="font-mono text-xs">{docIds[0] || 'N/A'}</TableCell>
                                     </TableRow>
-                                ))}
+                                  )
+                                })}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -179,27 +201,65 @@ export default function SeedAdminPage() {
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-lg border bg-background p-4">
                  <div className="flex items-center space-x-2">
-                    <Switch id="dry-run-switch" checked={isDryRun} onCheckedChange={setIsDryRun} />
+                    <Switch id="dry-run-switch" checked={isDryRun} onCheckedChange={setIsDryRun} aria-label="Toggle dry run mode" />
                     <Label htmlFor="dry-run-switch" className="flex flex-col">
                         <span>Dry Run Mode</span>
-                        <span className="text-xs text-muted-foreground">No data will be written to the database.</span>
+                        <span className="text-xs text-muted-foreground">Simulate seeding without writing to the database.</span>
                     </Label>
                 </div>
                 <Button onClick={handleSeed} disabled={isProcessing || !seedData} size="lg">
                     {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                    {isDryRun ? 'Perform Dry Run' : 'Seed Database'}
+                    {isDryRun ? 'Perform Dry Run' : 'Confirm & Seed Database'}
                 </Button>
               </div>
 
                {!isDryRun && (
-                 <div className="flex items-start gap-3 rounded-lg border border-destructive/50 p-4 text-destructive">
+                 <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
                     <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                     <div className="flex-1">
-                        <p className="font-semibold">Warning: Live Run</p>
-                        <p className="text-sm">You are about to perform a live write to the database. This action may be irreversible.</p>
+                        <p className="font-semibold">LIVE RUN ENABLED</p>
+                        <p className="text-sm">You are about to write data to the live database. This action may be irreversible.</p>
                     </div>
                 </div>
                )}
+
+              {seedReport && (
+                 <Card>
+                    <CardHeader>
+                         <CardTitle className="flex items-center gap-2">
+                            {seedReport.status === 'Success' ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
+                             Seed Report
+                        </CardTitle>
+                        <CardDescription>
+                            Operation completed. {seedReport.successCount} documents written. 
+                            Log ID: <span className="font-mono text-xs">{seedReport.logId}</span>
+                        </CardDescription>
+                    </CardHeader>
+                    {seedReport.errors.length > 0 && (
+                        <CardContent className="max-h-72 overflow-auto">
+                            <h4 className="font-semibold mb-2">Errors:</h4>
+                            <Table>
+                               <TableHeader>
+                                 <TableRow>
+                                    <TableHead>Collection</TableHead>
+                                    <TableHead>Doc ID</TableHead>
+                                    <TableHead>Error</TableHead>
+                                 </TableRow>
+                               </TableHeader>
+                               <TableBody>
+                                 {seedReport.errors.map((err, i) => (
+                                     <TableRow key={i} className="text-destructive">
+                                         <TableCell>{err.collection}</TableCell>
+                                         <TableCell className="font-mono text-xs">{err.id}</TableCell>
+                                         <TableCell>{err.error}</TableCell>
+                                     </TableRow>
+                                 ))}
+                               </TableBody>
+                            </Table>
+                        </CardContent>
+                    )}
+                </Card>
+              )}
             </CardContent>
           </Card>
         </main>
