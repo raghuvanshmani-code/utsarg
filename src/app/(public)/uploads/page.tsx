@@ -23,6 +23,7 @@ type UserImage = {
     fileName: string;
     fileSize: number;
     uploadedAt: { seconds: number; nanoseconds: number };
+    userId: string;
 };
 
 export default function UploadPage() {
@@ -37,10 +38,9 @@ export default function UploadPage() {
     const [progress, setProgress] = useState(0);
 
     const { data: userImages, loading: imagesLoading } = useCollection<UserImage>(
-        user ? `userImages` : '' // Simplified query, will be filtered client-side or via security rules
+        user ? `userImages` : null, 
+        user ? where('userId', '==', user.uid) : where('userId', '==', 'placeholder')
     );
-    const filteredUserImages = userImages.filter(img => img.userId === user?.uid);
-
 
     useEffect(() => {
         if (!userLoading && !user) {
@@ -173,7 +173,7 @@ export default function UploadPage() {
                                 <div className="flex justify-center items-center h-40">
                                     <Loader2 className="h-6 w-6 animate-spin" />
                                 </div>
-                            ) : filteredUserImages.length === 0 ? (
+                            ) : userImages.length === 0 ? (
                                 <p className="text-center text-muted-foreground py-8">You haven't uploaded any images yet.</p>
                             ) : (
                                 <div className="max-h-96 overflow-y-auto">
@@ -186,7 +186,7 @@ export default function UploadPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredUserImages.map((image) => (
+                                            {userImages.map((image) => (
                                                 <TableRow key={image.id}>
                                                     <TableCell>
                                                         <Link href={image.downloadURL} target="_blank" rel="noopener noreferrer">

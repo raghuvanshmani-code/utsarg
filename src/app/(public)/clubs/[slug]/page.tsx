@@ -8,11 +8,15 @@ import { Button } from '@/components/ui/button';
 import { EventCard } from '@/components/event-card';
 import type { Club, Event } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { where } from 'firebase/firestore';
 
 
 export default function ClubDetailsPage({ params }: { params: { slug: string } }) {
   const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${params.slug}`);
-  const { data: clubEvents, loading: eventsLoading } = useCollection<Event>(`events`); // Simplified query
+  const { data: clubEvents, loading: eventsLoading } = useCollection<Event>(
+    'events',
+    where('clubId', '==', params.slug)
+  );
 
   if (clubLoading || eventsLoading) {
     return (
@@ -36,8 +40,6 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
   if (!club) {
     notFound();
   }
-  
-  const filteredEvents = clubEvents.filter(e => e.clubId === club.id);
   
   return (
     <div>
@@ -92,14 +94,14 @@ export default function ClubDetailsPage({ params }: { params: { slug: string } }
           </div>
         </div>
         
-        {filteredEvents.length > 0 && (
+        {clubEvents.length > 0 && (
           <div className="mt-16">
             <h2 className="text-3xl font-bold text-center mb-8">
               <PartyPopper className="h-8 w-8 inline-block mr-2 text-primary" />
               Upcoming Events
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map(event => (
+              {clubEvents.map(event => (
                 <EventCard key={event.id} event={event} />
               ))}
             </div>

@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase';
 import type { Event } from '@/lib/types';
 import { EventCard } from '@/components/event-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '../ui/skeleton';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { where, orderBy, limit } from 'firebase/firestore';
 
 function EventCardSkeleton() {
     return (
@@ -20,9 +20,12 @@ function EventCardSkeleton() {
 }
 
 export function UpcomingEvents() {
-  const db = useFirestore();
-  const eventsQuery = db ? query(collection(db, 'events'), where('date', '>=', new Date().toISOString()), orderBy('date', 'asc'), limit(3)) : null;
-  const { data: events, loading } = useCollection<Event>(eventsQuery);
+  const { data: events, loading } = useCollection<Event>(
+    'events',
+    where('date', '>=', new Date().toISOString()), 
+    orderBy('date', 'asc'), 
+    limit(3)
+  );
   
   return (
     <section className="py-16 md:py-24" data-scroll>

@@ -4,8 +4,7 @@ import type { Club } from '@/lib/types';
 import { ClubCard } from '@/components/club-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Skeleton } from '../ui/skeleton';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { orderBy, limit } from 'firebase/firestore';
 
 function ClubCardSkeleton() {
     return (
@@ -16,9 +15,11 @@ function ClubCardSkeleton() {
 }
 
 export function FeaturedClubs() {
-  const db = useFirestore();
-  const clubsQuery = db ? query(collection(db, 'clubs'), orderBy('members_count', 'desc'), limit(6)) : null;
-  const { data: clubs, loading } = useCollection<Club>(clubsQuery);
+  const { data: clubs, loading } = useCollection<Club>(
+    'clubs', 
+    orderBy('members_count', 'desc'), 
+    limit(6)
+  );
 
   return (
     <section className="py-16 md:py-24 bg-card" data-scroll>

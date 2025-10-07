@@ -1,32 +1,33 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { onSnapshot, Query, DocumentData, collection, QuerySnapshot } from 'firebase/firestore';
+import { onSnapshot, Query, DocumentData, collection, QuerySnapshot, query, QueryConstraint } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-export function useCollection<T>(pathOrQuery: string | Query | null) {
+export function useCollection<T>(path: string | null, ...queryConstraints: QueryConstraint[]) {
   const db = useFirestore();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  // Memoize the query constraints to prevent re-renders
+  const memoizedConstraints = JSON.stringify(queryConstraints);
 
   useEffect(() => {
-    if (!db || !pathOrQuery) {
-      // Still loading if db or query is not ready, but don't set data
-      if(!pathOrQuery) {
+    if (!db || !path) {
         setLoading(false);
-        setData([]);
-      }
-      return;
+        return;
     }
 
     setLoading(true);
-    const isQuery = typeof pathOrQuery !== 'string';
-    const queryToSnap = isQuery ? pathOrQuery : collection(db, pathOrQuery);
+    
+    // The query is now constructed inside the effect, ensuring `db` is available.
+    const collectionRef = collection(db, path);
+    const q = query(collectionRef, ...JSON.parse(memoizedConstraints));
     
     const unsubscribe = onSnapshot(
-      queryToSnap,
+      q,
       (snapshot: QuerySnapshot<DocumentData>) => {
         const data: T[] = snapshot.docs.map(doc => ({ ...doc.data() as T, id: doc.id }));
         setData(data);
@@ -34,7 +35,7 @@ export function useCollection<T>(pathOrQuery: string | Query | null) {
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: isQuery ? "Complex query" : pathOrQuery,
+          path: path,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -44,7 +45,8 @@ export function useCollection<T>(pathOrQuery: string | Query | null) {
     );
 
     return () => unsubscribe();
-  }, [db, pathOrQuery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db, path, memoizedConstraints]);
 
   return { data, loading, error };
 }
