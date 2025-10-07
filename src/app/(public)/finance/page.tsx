@@ -1,3 +1,5 @@
+
+'use client';
 import { PageHeader } from '@/components/page-header';
 import { useCollection } from '@/firebase';
 import type { FundTransaction } from '@/lib/types';
@@ -50,9 +52,9 @@ export default function FinancePage() {
                                             <TableCell>{format(new Date(tx.date), 'MMM dd, yyyy')}</TableCell>
                                             <TableCell className="font-medium">{tx.purpose}</TableCell>
                                             <TableCell className="text-muted-foreground">{tx.source}</TableCell>
-                                            <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            <TableCell className={`text-right font-semibold ${tx.amount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                                 <div className="flex items-center justify-end">
-                                                    {tx.amount > 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownLeft className="h-4 w-4 mr-1" />}
+                                                    {tx.amount >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownLeft className="h-4 w-4 mr-1" />}
                                                     ₹{Math.abs(tx.amount).toLocaleString('en-IN')}
                                                 </div>
                                             </TableCell>
