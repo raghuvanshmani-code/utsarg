@@ -1,14 +1,19 @@
 
 {
-  "hosting": [
-    {
-      "target": "utsarg-dffb1",
-      "source": ".",
-      "frameworksBackend": {
-        "region": "us-central1"
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "nextServer"
       }
-    }
-  ],
+    ]
+  },
   "storage": {
     "rules": "storage.rules"
   },
@@ -20,6 +25,7 @@
     {
       "source": "functions",
       "codebase": "default",
+      "runtime": "nodejs18",
       "ignore": [
         "node_modules",
         ".git",
@@ -29,6 +35,22 @@
       ],
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    },
+    {
+      "source": ".",
+      "codebase": "next-js",
+      "runtime": "nodejs18",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm install",
+        "npm run build"
       ]
     }
   ],
