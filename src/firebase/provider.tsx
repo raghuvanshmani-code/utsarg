@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Auth, connectAuthEmulator } from 'firebase/auth';
 import { Firestore, connectFirestoreEmulator } from 'firebase/firestore';
@@ -30,27 +30,29 @@ interface FirebaseProviderProps {
   };
 }
 
+// This flag ensures we only connect to emulators once.
+let emulatorsConnected = false;
+
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, value }) => {
   const { auth, firestore, storage, functions } = value;
 
-  useEffect(() => {
-    // This check is for development mode only.
-    if (process.env.NODE_ENV === 'development') {
-      // Check if emulators are already connected to prevent re-connecting on hot reloads
-      if (auth && !(auth as any).emulatorConfig) {
-        connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-      }
-      if (firestore && !(firestore as any)._settings.host.includes('localhost')) {
-          connectFirestoreEmulator(firestore, 'localhost', 8080);
-      }
-      if (storage && storage?._service?.host && !storage._service.host.includes('localhost')) {
-          connectStorageEmulator(storage, 'localhost', 9199);
-      }
-      if (functions && (!functions.customDomain || !functions.customDomain.includes('localhost'))) {
-          connectFunctionsEmulator(functions, 'localhost', 5001);
-      }
+  // This logic now runs synchronously before the first render completes.
+  // It ensures services are pointed to emulators before any other code can use them.
+  if (process.env.NODE_ENV === 'development' && !emulatorsConnected) {
+    if (auth) {
+      connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     }
-  }, [auth, firestore, storage, functions]);
+    if (firestore) {
+      connectFirestoreEmulator(firestore, 'localhost', 8080);
+    }
+    if (storage) {
+      connectStorageEmulator(storage, 'localhost', 9199);
+    }
+    if (functions) {
+      connectFunctionsEmulator(functions, 'localhost', 5001);
+    }
+    emulatorsConnected = true;
+  }
 
   return (
     <FirebaseContext.Provider value={value}>
