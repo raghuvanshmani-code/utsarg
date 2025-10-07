@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,14 +28,15 @@ const formSchema = z.object({
 });
 
 interface BlogFormProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
   onSubmit: (values: z.infer<typeof formSchema>) => void;
   post: Post | null;
   isSubmitting: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  isDialog?: boolean;
 }
 
-export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }: BlogFormProps) {
+export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, isDialog = false }: BlogFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,23 +51,21 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }:
   });
 
   useEffect(() => {
-    if (isOpen) {
-      if (post) {
-        form.reset({
-          ...post,
-          date: post.date || new Date().toISOString(),
-        });
-      } else {
-        form.reset({
-          title: '',
-          summary: '',
-          author: '',
-          date: new Date().toISOString(),
-          thumbnail: '',
-          bannerImage: '',
-          content: '',
-        });
-      }
+    if (post) {
+      form.reset({
+        ...post,
+        date: post.date || new Date().toISOString(),
+      });
+    } else {
+      form.reset({
+        title: '',
+        summary: '',
+        author: '',
+        date: new Date().toISOString(),
+        thumbnail: '',
+        bannerImage: '',
+        content: '',
+      });
     }
   }, [post, form, isOpen]);
 
@@ -73,139 +73,44 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting }:
   const dialogTitle = post ? 'Edit Post' : 'Add New Post';
   const dialogDescription = post ? 'Make changes to the post details here.' : 'Add a new post to the blog.';
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto pr-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Post Title</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="summary"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Summary</FormLabel>
-                  <FormControl><Textarea {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="author"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Author</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Publication Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(new Date(field.value), "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={new Date(field.value)}
-                        onSelect={(date) => field.onChange(date?.toISOString())}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="thumbnail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Thumbnail Image</FormLabel>
-                  <FormControl>
-                    <ImageUploader
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="bannerImage"
-              render={({ field }) => (
-                 <FormItem>
-                  <FormLabel>Banner Image</FormLabel>
-                  <FormControl>
-                    <ImageUploader
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content (Markdown supported)</FormLabel>
-                  <FormControl><Textarea {...field} rows={10} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6 pb-6">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!post) form.reset(); })} className="space-y-4">
+        <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Post Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="summary" render={({ field }) => (<FormItem><FormLabel>Summary</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Author</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Publication Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="thumbnail" render={({ field }) => (<FormItem><FormLabel>Thumbnail Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="bannerImage" render={({ field }) => (<FormItem><FormLabel>Banner Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>Content (Markdown supported)</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormMessage /></FormItem>)} />
+        
+        {!isDialog && (
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {post ? 'Update Post' : 'Add Post'}
+          </Button>
+        )}
+      </form>
+    </Form>
   );
+
+  if (isDialog && onOpenChange) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader><DialogTitle>{dialogTitle}</DialogTitle><DialogDescription>{dialogDescription}</DialogDescription></DialogHeader>
+          <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!post) form.reset(); })} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return formContent;
 }

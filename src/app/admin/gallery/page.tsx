@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
@@ -8,33 +9,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, PlusCircle, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon, Upload, HeartHandshake, IndianRupee, Users } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon, Upload, HeartHandshake, IndianRupee, Users } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { GalleryForm } from '@/components/admin/gallery-form';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import Image from 'next/image';
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { JsonEntryForm } from '@/components/admin/json-entry-form';
 
 export default function GalleryAdminPage() {
   const { user } = useUser();
@@ -52,11 +40,6 @@ export default function GalleryAdminPage() {
   const handleSignOut = () => {
     getAuth().signOut();
     router.push('/');
-  };
-
-  const handleAddNew = () => {
-    setSelectedItem(null);
-    setIsDialogOpen(true);
   };
 
   const handleEdit = (item: GalleryImage) => {
@@ -80,10 +63,7 @@ export default function GalleryAdminPage() {
         setIsAlertOpen(false);
         setItemToDelete(null);
     }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        });
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
     }).finally(() => {
         setIsSubmitting(false);
@@ -96,38 +76,27 @@ export default function GalleryAdminPage() {
       
       const data = {
         ...values,
-        uploadedBy: user?.uid, // Add user ID
+        uploadedBy: user?.uid,
         updatedAt: serverTimestamp(),
       };
 
       if (selectedItem) {
-          // Update existing item
           const docRef = doc(db, 'gallery', selectedItem.id);
           updateDoc(docRef, data).then(() => {
               toast({ title: "Success", description: "Gallery item updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({
-                  path: docRef.path,
-                  operation: 'update',
-                  requestResourceData: data,
-              });
+              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
           });
       } else {
-          // Add new item
           const collectionRef = collection(db, 'gallery');
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp(), date: new Date().toISOString() }).then(() => {
               toast({ title: "Success", description: "Gallery item added successfully." });
-              setIsDialogOpen(false);
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({
-                  path: collectionRef.path,
-                  operation: 'create',
-                  requestResourceData: data,
-              });
+              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
@@ -135,183 +104,95 @@ export default function GalleryAdminPage() {
       }
   };
 
+  const handleJsonSubmit = async (jsonContent: string) => {
+    if (!db || !user) return;
+    setIsSubmitting(true);
+    try {
+        const items = JSON.parse(jsonContent);
+        if (!Array.isArray(items)) {
+            throw new Error("JSON content must be an array of objects.");
+        }
+        
+        const collectionRef = collection(db, 'gallery');
+        for (const item of items) {
+            await addDoc(collectionRef, { 
+                ...item, 
+                uploadedBy: user.uid,
+                date: new Date().toISOString(),
+                createdAt: serverTimestamp(), 
+                updatedAt: serverTimestamp() 
+            });
+        }
+        toast({ title: "Success", description: `${items.length} gallery items added successfully.` });
+    } catch (e: any) {
+        toast({ variant: "destructive", title: "JSON Error", description: e.message });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Logo />
-          </div>
-        </SidebarHeader>
+        <SidebarHeader><div className="flex items-center gap-2"><Logo /></div></SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}>
-                <Link href="/admin"><Home /><span>Dashboard</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={{children: 'Users'}}>
-                <Link href="/admin/users"><Users /><span>Users</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Clubs'}}>
-                    <Link href="/admin/clubs"><BookOpen /><span>Clubs</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Philanthropy'}}>
-                    <Link href="/admin/philanthropy"><HeartHandshake /><span>Philanthropy</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Finance'}}>
-                    <Link href="/admin/finance"><IndianRupee /><span>Finance</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Events'}}>
-                    <Link href="/admin/events"><Calendar /><span>Events</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive>
-                    <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Blog'}}>
-                    <Link href="/admin/blog"><Newspaper /><span>Blog</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Database'}}>
-                    <Link href="/admin/database"><Database /><span>Database</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Seed Data'}}>
-                    <Link href="/admin/seed"><Upload /><span>Seed Data</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Dashboard'}}><Link href="/admin"><Home /><span>Dashboard</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Users'}}><Link href="/admin/users"><Users /><span>Users</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Clubs'}}><Link href="/admin/clubs"><BookOpen /><span>Clubs</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Philanthropy'}}><Link href="/admin/philanthropy"><HeartHandshake /><span>Philanthropy</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Finance'}}><Link href="/admin/finance"><IndianRupee /><span>Finance</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Events'}}><Link href="/admin/events"><Calendar /><span>Events</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Database'}}><Link href="/admin/database"><Database /><span>Database</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Seed Data'}}><Link href="/admin/seed"><Upload /><span>Seed Data</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-            <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
-                <LogOut className="h-5 w-5" /> 
-                <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
-            </Button>
-        </SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
           <SidebarTrigger className="md:hidden" />
-          <div className="flex-1 flex justify-between items-center">
-            <h1 className="text-lg font-semibold">Gallery Management</h1>
-             <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-            </Button>
-          </div>
-          {user && (
-            <div className="flex items-center gap-2 text-sm">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user.photoURL ?? ''} />
-                <AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback>
-              </Avatar>
-              <span>{user.displayName}</span>
-            </div>
-          )}
+          <div className="flex-1 flex justify-between items-center"><h1 className="text-lg font-semibold">Gallery Management</h1></div>
+          {user && (<div className="flex items-center gap-2 text-sm"><Avatar className="h-8 w-8"><AvatarImage src={user.photoURL ?? ''} /><AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback></Avatar><span>{user.displayName}</span></div>)}
         </header>
-        <main className="flex-1 p-6">
-            {loading ? (
-                <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-            ) : (
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Image</TableHead>
-                        <TableHead>Caption</TableHead>
-                        <TableHead>Tags</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {galleryItems.map((item) => (
-                        <TableRow key={item.id}>
-                            <TableCell>
-                                {item.url && (item.url.startsWith('http://') || item.url.startsWith('https')) ? (
-                                    <Image
-                                    src={item.url}
-                                    alt={item.caption || 'Gallery Image'}
-                                    width={64}
-                                    height={64}
-                                    className="rounded-md object-cover"
-                                    />
-                                ) : (
-                                    <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center">
-                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                    </div>
-                                )}
-                            </TableCell>
-                            <TableCell className="font-medium">{item.caption}</TableCell>
-                            <TableCell>{item.tags?.join(', ')}</TableCell>
-                            <TableCell className="text-right">
-                               <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEdit(item)}>
-                                        <Pencil className="mr-2 h-4 w-4" /> Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                    </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-            )}
+        <main className="flex-1 p-6 space-y-6">
+            <Card>
+                <CardHeader><CardTitle>Add Gallery Items</CardTitle><CardDescription>Add a single item via the form or multiple items via JSON.</CardDescription></CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="manual">
+                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="manual">Manual Entry</TabsTrigger><TabsTrigger value="json">JSON Input</TabsTrigger></TabsList>
+                        <TabsContent value="manual" className="pt-4"><GalleryForm item={null} onSubmit={handleFormSubmit} isSubmitting={isSubmitting} /></TabsContent>
+                        <TabsContent value="json" className="pt-4"><JsonEntryForm entityName="Gallery Item" onSubmit={handleJsonSubmit} isSubmitting={isSubmitting} /></TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader><CardTitle>Manage Gallery</CardTitle></CardHeader>
+                <CardContent>
+                    {loading ? (<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
+                    <Table>
+                        <TableHeader><TableRow><TableHead>Image</TableHead><TableHead>Caption</TableHead><TableHead>Tags</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {galleryItems.map((item) => (<TableRow key={item.id}><TableCell>{item.url && (item.url.startsWith('http://') || item.url.startsWith('https')) ? (<Image src={item.url} alt={item.caption || 'Gallery Image'} width={64} height={64} className="rounded-md object-cover" />) : (<div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>)}</TableCell><TableCell className="font-medium">{item.caption}</TableCell><TableCell>{item.tags?.join(', ')}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(item)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
+                        </TableBody>
+                    </Table>
+                    )}
+                </CardContent>
+            </Card>
         </main>
       </SidebarInset>
 
-      <GalleryForm
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSubmit={handleFormSubmit}
-        item={selectedItem}
-        isSubmitting={isSubmitting}
-       />
+      <GalleryForm isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} onSubmit={handleFormSubmit} item={selectedItem} isSubmitting={isSubmitting} isDialog={true} />
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this item
-              from the gallery.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete this item from the gallery.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Continue</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </SidebarProvider>
   );
 }

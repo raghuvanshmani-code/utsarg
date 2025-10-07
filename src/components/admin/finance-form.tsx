@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,139 +24,66 @@ const formSchema = z.object({
 });
 
 interface FinanceFormProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
   onSubmit: (values: z.infer<typeof formSchema>) => void;
   transaction: FundTransaction | null;
   isSubmitting: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  isDialog?: boolean;
 }
 
-export function FinanceForm({ isOpen, onOpenChange, onSubmit, transaction, isSubmitting }: FinanceFormProps) {
+export function FinanceForm({ isOpen, onOpenChange, onSubmit, transaction, isSubmitting, isDialog = false }: FinanceFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      purpose: '',
-      source: '',
-      amount: 0,
-      date: new Date().toISOString(),
-      signatories: [],
-    }
+    defaultValues: { purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] },
   });
 
   useEffect(() => {
-    if (isOpen) {
-      if (transaction) {
-        form.reset({
-          ...transaction,
-          date: transaction.date || new Date().toISOString(),
-        });
-      } else {
-        form.reset({
-          purpose: '',
-          source: '',
-          amount: 0,
-          date: new Date().toISOString(),
-          signatories: [],
-        });
-      }
+    if (transaction) {
+      form.reset({ ...transaction, date: transaction.date || new Date().toISOString() });
+    } else {
+      form.reset({ purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] });
     }
   }, [transaction, form, isOpen]);
-
 
   const dialogTitle = transaction ? 'Edit Transaction' : 'Add New Transaction';
   const dialogDescription = transaction ? 'Make changes to the transaction details here.' : 'Add a new transaction to the records.';
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto pr-6">
-            <FormField
-              control={form.control}
-              name="purpose"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Purpose</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="source"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Source/Recipient</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (use negative for expenses)</FormLabel>
-                  <FormControl><Input type="number" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Transaction Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(new Date(field.value), "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={new Date(field.value)}
-                        onSelect={(date) => field.onChange(date?.toISOString())}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6 pb-6">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!transaction) form.reset(); })} className="space-y-4">
+        <FormField control={form.control} name="purpose" render={({ field }) => (<FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="source" render={({ field }) => (<FormItem><FormLabel>Source/Recipient</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (use negative for expenses)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Transaction Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+        
+        {!isDialog && (
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {transaction ? 'Update Transaction' : 'Add Transaction'}
+          </Button>
+        )}
+      </form>
+    </Form>
   );
+
+  if (isDialog && onOpenChange) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>{dialogTitle}</DialogTitle><DialogDescription>{dialogDescription}</DialogDescription></DialogHeader>
+          <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!transaction) form.reset(); })} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return formContent;
 }
