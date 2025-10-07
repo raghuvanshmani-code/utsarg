@@ -13,15 +13,17 @@ export function useCollection<T>(pathOrQuery: string | Query | null) {
 
   useEffect(() => {
     if (!db || !pathOrQuery) {
+      setData([]);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     const isQuery = typeof pathOrQuery !== 'string';
-    const query = isQuery ? pathOrQuery : collection(db, pathOrQuery);
+    const queryToSnap = isQuery ? pathOrQuery : collection(db, pathOrQuery);
     
     const unsubscribe = onSnapshot(
-      query,
+      queryToSnap,
       (snapshot: QuerySnapshot<DocumentData>) => {
         const data: T[] = snapshot.docs.map(doc => ({ ...doc.data() as T, id: doc.id }));
         setData(data);
@@ -29,7 +31,7 @@ export function useCollection<T>(pathOrQuery: string | Query | null) {
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: isQuery ? (query as Query).path : pathOrQuery,
+          path: isQuery ? "Complex query" : pathOrQuery,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
