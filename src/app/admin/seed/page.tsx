@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { Loader2, UploadCloud, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, FileJson, AlertTriangle } from 'lucide-react';
+import { Loader2, UploadCloud, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, Upload, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
@@ -19,15 +19,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import Papa from 'papaparse';
 
-type SeedMode = "clubs" | "events" | "volunteers" | "posts" | "gallery" | "finances";
+type SeedData = { [collectionName: string]: any[] };
 
 export default function SeedAdminPage() {
   const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
-  const [mode, setMode] = useState<SeedMode | null>(null);
-  const [docs, setDocs] = useState<any[]>([]);
+  const [seedData, setSeedData] = useState<SeedData | null>(null);
   const [fileName, setFileName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDryRun, setIsDryRun] = useState(true);
@@ -41,19 +40,6 @@ export default function SeedAdminPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const name = file.name.split('.')[0].toLowerCase();
-    const validModes: SeedMode[] = ["clubs", "events", "volunteers", "posts", "gallery", "finances"];
-    
-    if (validModes.includes(name as SeedMode)) {
-        setMode(name as SeedMode);
-    } else {
-        toast({ variant: 'destructive', title: 'Invalid File Name', description: `File name must be one of: ${validModes.join(', ')}` });
-        setMode(null);
-        setDocs([]);
-        setFileName('');
-        return;
-    }
-
     setFileName(file.name);
     const reader = new FileReader();
 
@@ -61,35 +47,32 @@ export default function SeedAdminPage() {
       const content = e.target?.result as string;
       try {
         if (file.type === 'application/json') {
-          const parsedDocs = JSON.parse(content);
-          setDocs(Array.isArray(parsedDocs) ? parsedDocs : [parsedDocs]);
-        } else if (file.type === 'text/csv') {
-            Papa.parse(content, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    setDocs(results.data);
-                }
-            });
+          const parsedData = JSON.parse(content);
+           if (typeof parsedData === 'object' && !Array.isArray(parsedData) && parsedData !== null) {
+            setSeedData(parsedData);
+          } else {
+            throw new Error('JSON file must be an object with collection names as keys.');
+          }
         } else {
-            toast({ variant: 'destructive', title: 'Unsupported file type', description: 'Please upload a JSON or CSV file.' });
+            toast({ variant: 'destructive', title: 'Unsupported file type', description: 'Please upload a single JSON file containing all collections.' });
         }
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Parsing Error', description: 'Could not parse the file. Please ensure it is valid.' });
-        setDocs([]);
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Parsing Error', description: error.message || 'Could not parse the file. Please ensure it is valid.' });
+        setSeedData(null);
       }
     };
     reader.readAsText(file);
   };
 
   const handleSeed = async () => {
-    if (docs.length === 0 || !mode) {
-      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid file with documents to seed.' });
+    if (!seedData || Object.keys(seedData).length === 0) {
+      toast({ variant: 'destructive', title: 'No Data', description: 'Please upload a valid file with data to seed.' });
       return;
     }
     
     if (isDryRun) {
-        toast({ title: 'Dry Run Completed', description: `Simulated writing ${docs.length} documents to '${mode}'. No data was written.` });
+        const collections = Object.keys(seedData).join(', ');
+        toast({ title: 'Dry Run Completed', description: `Simulated writing data to collections: ${collections}. No data was written.` });
         return;
     }
 
@@ -98,11 +81,11 @@ export default function SeedAdminPage() {
     const importSeedDocuments = httpsCallable(functions, 'importSeedDocuments');
 
     try {
-      const result: any = await importSeedDocuments({ mode, docs });
+      const result: any = await importSeedDocuments({ seedData });
       if (result.data.success) {
         toast({
           title: 'Seeding Successful',
-          description: `${result.data.successCount} documents were written to the '${mode}' collection.`,
+          description: `Wrote ${result.data.totalSuccessCount} documents across ${Object.keys(seedData).length} collections.`,
         });
       } else {
         throw new Error(result.data.errors?.[0]?.error || 'An unknown error occurred during seeding.');
@@ -119,7 +102,7 @@ export default function SeedAdminPage() {
     }
   };
 
-  const previewHeaders = docs.length > 0 ? Object.keys(docs[0]) : [];
+  const previewCollections = seedData ? Object.keys(seedData) : [];
 
   return (
     <SidebarProvider>
@@ -158,34 +141,34 @@ export default function SeedAdminPage() {
         <main className="flex-1 p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import Data into Firestore</CardTitle>
-              <CardDescription>Upload a JSON or CSV file to seed a collection. The collection name is determined by the filename (e.g., `clubs.json` or `events.csv`).</CardDescription>
+              <CardTitle>Import All Collections</CardTitle>
+              <CardDescription>Upload a single JSON file. The file should be an object where each key is a collection name (e.g. "clubs") and the value is an array of documents.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <div className="space-y-2">
                   <Label htmlFor="file-upload">Upload Data File</Label>
-                  <Input id="file-upload" type="file" accept=".json,.csv" onChange={handleFileChange} />
+                  <Input id="file-upload" type="file" accept=".json" onChange={handleFileChange} />
                 </div>
               
-              {docs.length > 0 && mode && (
+              {seedData && previewCollections.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Data Preview for `{mode}` collection</CardTitle>
-                        <CardDescription>Found {docs.length} documents in {fileName}.</CardDescription>
+                        <CardTitle>Data Preview</CardTitle>
+                        <CardDescription>Found {previewCollections.length} collections in {fileName}.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-64 overflow-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow>{previewHeaders.map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+                                <TableRow>
+                                  <TableHead>Collection Name</TableHead>
+                                  <TableHead>Documents Found</TableHead>
+                                </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {docs.slice(0, 5).map((doc, i) => (
-                                    <TableRow key={i}>
-                                        {previewHeaders.map(header => (
-                                            <TableCell key={header} className="max-w-xs truncate">
-                                                {typeof doc[header] === 'object' ? JSON.stringify(doc[header]) : String(doc[header])}
-                                            </TableCell>
-                                        ))}
+                                {previewCollections.map((collectionName) => (
+                                    <TableRow key={collectionName}>
+                                        <TableCell className="font-medium">{collectionName}</TableCell>
+                                        <TableCell>{seedData[collectionName].length}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -202,7 +185,7 @@ export default function SeedAdminPage() {
                         <span className="text-xs text-muted-foreground">No data will be written to the database.</span>
                     </Label>
                 </div>
-                <Button onClick={handleSeed} disabled={isProcessing || docs.length === 0} size="lg">
+                <Button onClick={handleSeed} disabled={isProcessing || !seedData} size="lg">
                     {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                     {isDryRun ? 'Perform Dry Run' : 'Seed Database'}
                 </Button>
@@ -224,5 +207,3 @@ export default function SeedAdminPage() {
     </SidebarProvider>
   );
 }
-
-    
