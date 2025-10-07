@@ -60,10 +60,10 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
     const schemas = {
         users: ['uid', 'name', 'email', 'role'],
         clubs: ['name', 'description'],
-        events: ['title', 'description', 'clubId'],
-        gallery: ['title', 'type', 'mediaURL', 'uploadedAt'],
+        events: ['title', 'description'],
+        gallery: ['title', 'type', 'mediaURL'],
         blog: ['title', 'summary', 'author', 'date', 'content'],
-        uploads: ['secure_url', 'public_id', 'uploadedAt'],
+        uploads: ['secure_url', 'public_id'],
     };
 
     const report = {
@@ -77,62 +77,64 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
     let writeCount = 0;
 
     // 3. Process Each Collection
-    for (const collectionName of Object.keys(seedData)) {
-        const docs = seedData[collectionName];
-        if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
-            report.errors.push({ collection: collectionName, id: 'N/A', error: `Data for '${collectionName}' must be an object of documents, not an array or other type.` });
-            report.failedCount += Object.keys(docs || {}).length;
-            continue;
-        }
+    for (const collectionName in seedData) {
+        if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
+            const docs = seedData[collectionName];
+            if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
+                report.errors.push({ collection: collectionName, id: 'N/A', error: `Data for '${collectionName}' must be an object of documents, not an array or other type.` });
+                report.failedCount += Object.keys(docs || {}).length;
+                continue;
+            }
 
-        for (const docId in docs) {
-            if (Object.prototype.hasOwnProperty.call(docs, docId)) {
-                let docData = { ...docs[docId] };
+            for (const docId in docs) {
+                if (Object.prototype.hasOwnProperty.call(docs, docId)) {
+                    let docData = { ...docs[docId] };
 
-                // Validate document shape
-                const requiredFields = schemas[collectionName];
-                if (requiredFields) {
-                    const validationError = validateDocument(docData, requiredFields);
-                    if (validationError) {
-                        report.failedCount++;
-                        report.errors.push({ collection: collectionName, id: docId, error: validationError });
-                        continue; // Skip this document
+                    // Validate document shape
+                    const requiredFields = schemas[collectionName];
+                    if (requiredFields) {
+                        const validationError = validateDocument(docData, requiredFields);
+                        if (validationError) {
+                            report.failedCount++;
+                            report.errors.push({ collection: collectionName, id: docId, error: validationError });
+                            continue; // Skip this document
+                        }
                     }
-                }
-                
-                // Convert date strings to Timestamps and add server timestamps
-                const now = Timestamp.now();
-                docData.createdAt = docData.createdAt ? Timestamp.fromDate(new Date(docData.createdAt)) : now;
-                docData.updatedAt = now;
+                    
+                    // Convert date strings to Timestamps and add server timestamps
+                    const now = Timestamp.now();
+                    docData.createdAt = docData.createdAt ? Timestamp.fromDate(new Date(docData.createdAt)) : now;
+                    docData.updatedAt = now;
 
-                for (const field of dateFields) {
-                    if (docData[field] && typeof docData[field] === 'string' && !field.includes('At')) {
-                         try {
-                           const d = new Date(docData[field]);
-                           if (!isNaN(d)) {
-                            docData[field] = Timestamp.fromDate(d);
-                           }
-                         } catch (e) {
-                           // Ignore if parsing fails, keep original string
-                         }
+                    for (const field of dateFields) {
+                        if (docData[field] && typeof docData[field] === 'string' && !field.includes('At')) {
+                             try {
+                               const d = new Date(docData[field]);
+                               if (!isNaN(d)) {
+                                docData[field] = Timestamp.fromDate(d);
+                               }
+                             } catch (e) {
+                               // Ignore if parsing fails, keep original string
+                             }
+                        }
                     }
-                }
-                
-                const docRef = db.collection(collectionName).doc(docId);
-                batch.set(docRef, docData);
-                writeCount++;
+                    
+                    const docRef = db.collection(collectionName).doc(docId);
+                    batch.set(docRef, docData, { merge: true });
+                    writeCount++;
 
-                // Commit batch if it's full
-                if (writeCount >= MAX_WRITES_PER_BATCH) {
-                    try {
-                        await batch.commit();
-                        report.successCount += writeCount;
-                    } catch (e) {
-                        report.failedCount += writeCount;
-                        report.errors.push({ collection: 'BATCH_COMMIT', id: 'N/A', error: e.message });
-                    } finally {
-                        batch = db.batch(); // Start a new batch
-                        writeCount = 0;
+                    // Commit batch if it's full
+                    if (writeCount >= MAX_WRITES_PER_BATCH) {
+                        try {
+                            await batch.commit();
+                            report.successCount += writeCount;
+                        } catch (e) {
+                            report.failedCount += writeCount;
+                            report.errors.push({ collection: 'BATCH_COMMIT', id: 'N/A', error: e.message });
+                        } finally {
+                            batch = db.batch(); // Start a new batch
+                            writeCount = 0;
+                        }
                     }
                 }
             }
@@ -166,11 +168,13 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
         logId: logRef.id
       };
     } catch (e) {
-        return {
-           status: "Failed to write log",
-           ...report,
-           logId: null
-        }
+        // This error would happen if the 'seeds' collection itself can't be written to.
+        // It should be reported back to the client.
+         throw new functions.https.HttpsError(
+            "internal",
+            `Seeding partially completed but failed to write audit log. Error: ${e.message}`,
+            { report }
+        );
     }
 });
 
