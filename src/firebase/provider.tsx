@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect } from 'react';
@@ -33,18 +34,21 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, va
   const { auth, firestore, storage, functions } = value;
 
   useEffect(() => {
+    // NOTE: This check is for development mode only.
+    // In a production app, you would not include this block.
     if (process.env.NODE_ENV === 'development') {
+      // Check if emulators are already connected to prevent re-connecting on hot reloads
       if (auth && !(auth as any).emulatorConfig) {
-        connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+        connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
       }
-      if (firestore && !(firestore as any)._settings.host.includes('127.0.0.1')) {
-          connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
+      if (firestore && !(firestore as any)._settings.host.includes('localhost')) {
+          connectFirestoreEmulator(firestore, 'localhost', 8080);
       }
-      if (storage && storage?._service?.host && !storage._service.host.includes('127.0.0.1')) {
-          connectStorageEmulator(storage, '127.0.0.1', 9199);
+      if (storage && storage?._service?.host && !storage._service.host.includes('localhost')) {
+          connectStorageEmulator(storage, 'localhost', 9199);
       }
-      if (functions && functions?.customDomain && !functions.customDomain.includes('127.0.0.1')) {
-          connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+      if (functions && functions?.customDomain && !functions.customDomain.includes('localhost')) {
+          connectFunctionsEmulator(functions, 'localhost', 5001);
       }
     }
   }, [auth, firestore, storage, functions]);
