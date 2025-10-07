@@ -2,65 +2,101 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
-// Initialize the Admin SDK only once at the top level.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
 /**
- * A callable function that allows the first user to claim admin privileges.
- * This is a one-time operation, secured by a document in Firestore.
+ * A callable function that allows an admin to bulk-import documents into Firestore.
  */
-exports.makeFirstAdmin = functions.https.onCall(async (data, context) => {
-  // Ensure the user is authenticated.
+exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
+  // 1. Authentication and Authorization Checks
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "The function must be called while authenticated."
     );
   }
+  const isAdmin = context.auth.token.admin === true;
+  if (!isAdmin) {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Only admin users can import data."
+    );
+  }
 
+  // 2. Input Validation
+  const { mode, docs } = data;
+  const validModes = ["clubs", "events", "volunteers", "posts", "gallery", "finances"];
+  if (!validModes.includes(mode)) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      `Invalid mode "${mode}". Must be one of ${validModes.join(", ")}.`
+    );
+  }
+  if (!Array.isArray(docs) || docs.length === 0) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "The 'docs' field must be a non-empty array."
+    );
+  }
+
+  // 3. Firestore Batch Write Logic
   const firestore = admin.firestore();
-  const adminMetaRef = firestore.doc("meta/admin");
+  const collectionRef = firestore.collection(mode);
+  const batch = firestore.batch();
+  const errors = [];
+  let successCount = 0;
 
-  try {
-    // Use a transaction to ensure atomic read/write.
-    const result = await firestore.runTransaction(async (transaction) => {
-      const adminMetaDoc = await transaction.get(adminMetaRef);
-
-      if (adminMetaDoc.exists) {
-        // If the document exists, an admin has already been created.
-        throw new functions.https.HttpsError(
-          "already-exists",
-          "An admin user has already been created."
-        );
+  docs.forEach((docData, index) => {
+    try {
+      if (!docData.id) {
+        // If no ID is provided, Firestore will auto-generate one.
+        const docRef = collectionRef.doc();
+        batch.set(docRef, {
+            ...docData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      } else {
+        // If an ID is provided, use it.
+        const docRef = collectionRef.doc(String(docData.id));
+        batch.set(docRef, {
+            ...docData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }); // Use merge to avoid overwriting existing data completely
       }
 
-      // If we're here, no admin exists. Grant admin claims to the caller.
-      const uid = context.auth.uid;
-      await admin.auth().setCustomUserClaims(uid, { admin: true });
+      // Special logic for volunteers: add them to the club's volunteer_list
+      if (mode === 'volunteers' && docData.club && docData.id) {
+        const clubRef = firestore.collection('clubs').doc(String(docData.club));
+        batch.update(clubRef, {
+          volunteer_list: admin.firestore.FieldValue.arrayUnion(docData.id)
+        });
+      }
 
-      // Create the meta document to block future calls.
-      transaction.set(adminMetaRef, {
-        adminCreated: true,
-        firstAdminUid: uid,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      return { message: "Success! You have been made an admin. Please sign out and sign back in for the changes to take effect." };
-    });
-
-    return result;
-
-  } catch (error) {
-    console.error("Error in makeFirstAdmin function:", error);
-    // Re-throw specific errors or a generic one for others.
-    if (error.code === 'already-exists') {
-      throw error;
+      successCount++;
+    } catch (e) {
+      errors.push({ index, error: e.message });
     }
+  });
+
+  // 4. Commit the Batch and Return Results
+  try {
+    await batch.commit();
+    return {
+      success: true,
+      successCount: successCount,
+      failedCount: errors.length,
+      errors: errors,
+    };
+  } catch (error) {
+    console.error("Batch commit failed:", error);
     throw new functions.https.HttpsError(
       "internal",
-      error.message || "An unexpected error occurred."
+      "Failed to write documents to Firestore.",
+      error.message
     );
   }
 });

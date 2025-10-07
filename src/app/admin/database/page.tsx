@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useUser } from '@/firebase';
 import { clearDatabase } from '@/lib/seed';
-import { Loader2, Trash2, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Database, AlertTriangle, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
@@ -96,7 +96,7 @@ export default function DatabaseAdminPage() {
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip={{children: 'Gallery'}}>
-                    <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>
+                    <Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link>_blank
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -107,6 +107,11 @@ export default function DatabaseAdminPage() {
             <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip={{children: 'Database'}} isActive>
                     <Link href="/admin/database"><Database /><span>Database</span></Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={{children: 'Seed Data'}}>
+                    <Link href="/admin/seed"><Upload /><span>Seed Data</span></Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

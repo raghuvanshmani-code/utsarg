@@ -1,0 +1,15 @@
+
+[
+    {
+      "id": "swaramya",
+      "name": "Swaramya",
+      "description": "The official music club of GSVM, dedicated to promoting all forms of music, from classical and contemporary singing to instrumental performances. We organize events, workshops, and jam sessions.",
+      "short_description": "Music club promoting classical and contemporary singing.",
+      "logo": "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759773291/swaramy_fwpnqe.jpg",
+      "bannerImage": "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759773291/swaramy_banner_q43jlv.jpg",
+      "genres": ["Devotional", "Sufi", "Western", "Patriotic", "Ghazals"],
+      "core_volunteers": ["Vaishnavi Singh", "Ishan Srivastava", "Ashutosh Chaubey"],
+      "members_count": 48,
+      "tags": ["music", "singing", "instrumental", "performance"]
+    }
+]

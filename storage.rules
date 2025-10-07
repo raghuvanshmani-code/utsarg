@@ -1,17 +1,28 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Match the path for user-specific uploads.
-    // Allow read/write access only to the authenticated user who owns the folder.
-    match /userUploads/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check for admin custom claim
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
     }
 
-    // PUBLIC: Allow anyone to read files in the public directory
+    // Public assets: Everyone can read, only admins can write.
     match /public/{allPaths=**} {
-      allow read;
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User-specific uploads: Only the authenticated user or an admin can access.
+    match /userUploads/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
