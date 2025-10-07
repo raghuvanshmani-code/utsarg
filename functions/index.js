@@ -47,36 +47,38 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
   for (const collectionName in seedData) {
       if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
           const docs = seedData[collectionName];
-          if (!Array.isArray(docs)) {
-              errors.push({ collection: collectionName, error: `The value for '${collectionName}' must be an array.` });
+          // **FIX:** The documents are in an object, not an array.
+          if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
+              errors.push({ collection: collectionName, error: `The value for '${collectionName}' must be an object of documents.` });
               continue;
           }
 
           const collectionRef = firestore.collection(collectionName);
           let collectionSuccessCount = 0;
 
-          docs.forEach((docData, index) => {
-              try {
-                  // If doc has an ID, use it for the doc ref. Otherwise, auto-generate.
-                  const docRef = docData.id ? collectionRef.doc(String(docData.id)) : collectionRef.doc();
-                  
-                  // Prepare data for setting, ensuring not to mutate original object
-                  const dataToSet = {
-                      ...docData,
-                      // Firestore Admin SDK uses FieldValue for server-side timestamps
-                      createdAt: docData.createdAt || now,
-                      updatedAt: now
-                  };
-                  
-                  // The 'id' field should not be in the document body itself
-                  delete dataToSet.id;
-
-                  batch.set(docRef, dataToSet, { merge: true });
-                  collectionSuccessCount++;
-              } catch (e) {
-                  errors.push({ collection: collectionName, index, error: e.message });
+          // **FIX:** Iterate over the keys of the documents object.
+          for (const docId in docs) {
+              if (Object.prototype.hasOwnProperty.call(docs, docId)) {
+                  try {
+                      const docData = docs[docId];
+                      const docRef = collectionRef.doc(docId); // Use the key as the document ID
+                      
+                      // Prepare data for setting, ensuring not to mutate original object
+                      const dataToSet = {
+                          ...docData,
+                          // Use the server timestamp for creation and update times.
+                          // The `createdAt` in the JSON will be overwritten if it exists.
+                          createdAt: now,
+                          updatedAt: now
+                      };
+                      
+                      batch.set(docRef, dataToSet, { merge: true });
+                      collectionSuccessCount++;
+                  } catch (e) {
+                      errors.push({ collection: collectionName, docId: docId, error: e.message });
+                  }
               }
-          });
+          }
           totalSuccessCount += collectionSuccessCount;
       }
   }
