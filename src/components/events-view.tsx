@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Event } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type ViewMode = 'calendar' | 'list';
+type ViewMode = 'list' | 'calendar';
 
 function EventCardSkeleton() {
     return (
