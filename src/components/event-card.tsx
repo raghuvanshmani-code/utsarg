@@ -1,3 +1,4 @@
+
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -34,7 +35,7 @@ export function EventCard({ event }: EventCardProps) {
           <div className="text-sm text-muted-foreground space-y-2">
             <div className="flex items-center">
               <Calendar className="h-4 w-4 mr-2" />
-              <span>{format(new Date(event.start_date), 'MMM dd, yyyy')}</span>
+              <span>{format(new Date(event.date), 'MMM dd, yyyy')}</span>
             </div>
             <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-2" />

@@ -1,3 +1,4 @@
+
 export type NavItem = {
   title: string;
   href: string;
@@ -9,26 +10,28 @@ export type Club = {
   name: string;
   logo?: string;
   bannerImage?: string;
-  short_description: string;
-  long_description: string;
-  genres: string[];
-  core_volunteers: string[];
-  volunteer_list: string[];
-  sequence_events: string[];
-  requirements: object;
-  budget: object;
-  gallery: string[];
-  tags: string[];
+  description?: string;
+  short_description?: string;
+  long_description?: string;
+  genres?: string[];
+  core_volunteers?: string[];
+  volunteer_list?: string[];
+  sequence_events?: string[];
+  requirements?: object;
+  budget?: object;
+  gallery?: string[];
+  tags?: string[];
   members_count?: number;
-  created_at: any;
-  updated_at: any;
+  achievements?: string[];
+  created_at?: any;
+  updated_at?: any;
 };
 
 export type Event = {
   id:string;
   clubId: string;
   title: string;
-  start_date: string;
+  date: string;
   end_date: string;
   location: string;
   description: string;
@@ -44,9 +47,9 @@ export type Post = {
   id: string;
   title: string;
   content: string;
-  tags: string[];
-  created_by: string;
-  created_at: any;
+  tags?: string[];
+  created_by?: string;
+  created_at?: any;
   summary: string;
   author: string;
   date: string;
@@ -56,10 +59,10 @@ export type Post = {
 
 export type GalleryImage = {
   id: string;
-  url: string;
-  caption: string;
-  tags: string[];
-  event_id: string;
+  url?: string;
+  caption?: string;
+  tags?: string[];
+  event_id?: string;
   mediaURL?: string;
   title: string;
   type: 'image' | 'video';
