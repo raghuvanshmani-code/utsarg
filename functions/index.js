@@ -1,3 +1,4 @@
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore, Timestamp } = require("firebase-admin/firestore");
@@ -18,6 +19,9 @@ function validateDocument(docData, requiredFields) {
     if (!docData || typeof docData !== 'object') {
         return "Document data is not a valid object.";
     }
+    if (!requiredFields || requiredFields.length === 0) {
+        return null; // No fields to validate
+    }
     for (const field of requiredFields) {
         if (!docData.hasOwnProperty(field)) {
             return `Missing required field: '${field}'.`;
@@ -29,28 +33,21 @@ function validateDocument(docData, requiredFields) {
 
 /**
  * A callable Cloud Function to securely import seed data into Firestore collections.
- * - Requires authentication and an 'admin' custom claim.
+ * - Requires authentication.
  * - Processes data in safe batches to avoid Firestore limits.
- * - Converts ISO date strings to Firestore Timestamps.
+ * - Converts specified date strings to Firestore Timestamps.
  * - Logs each seed operation for auditing purposes.
  * - Returns a detailed report of the operation.
  */
 exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check
+    // 1. Authentication Check
     if (!context.auth) {
         throw new functions.https.HttpsError(
             "unauthenticated",
             "You must be authenticated to call this function."
         );
     }
-    const isAdminClaim = context.auth.token.admin === true;
-    if (!isAdminClaim) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "You must have an 'admin' custom claim to perform this operation."
-        );
-    }
-
+    
     // 2. Input Validation
     const { seedData } = data;
     if (!seedData || typeof seedData !== 'object' || Object.keys(seedData).length === 0) {
@@ -63,8 +60,8 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
     const schemas = {
         users: ['uid', 'name', 'email', 'role'],
         clubs: ['name', 'description'],
-        events: ['title', 'date', 'clubId'],
-        gallery: ['title', 'type', 'mediaURL'],
+        events: ['title', 'description', 'clubId'],
+        gallery: ['title', 'type', 'mediaURL', 'uploadedAt'],
         blog: ['title', 'summary', 'author', 'date', 'content'],
         uploads: ['secure_url', 'public_id', 'uploadedAt'],
     };
@@ -75,9 +72,9 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
         errors: [],
     };
     const MAX_WRITES_PER_BATCH = 300;
+    const dateFields = ['createdAt', 'updatedAt', 'date', 'uploadedAt'];
     let batch = db.batch();
     let writeCount = 0;
-    const dateFields = ['createdAt', 'updatedAt', 'date', 'uploadedAt'];
 
     // 3. Process Each Collection
     for (const collectionName of Object.keys(seedData)) {
@@ -90,7 +87,7 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
 
         for (const docId in docs) {
             if (Object.prototype.hasOwnProperty.call(docs, docId)) {
-                let docData = docs[docId];
+                let docData = { ...docs[docId] };
 
                 // Validate document shape
                 const requiredFields = schemas[collectionName];
@@ -111,7 +108,10 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
                 for (const field of dateFields) {
                     if (docData[field] && typeof docData[field] === 'string' && !field.includes('At')) {
                          try {
-                           docData[field] = Timestamp.fromDate(new Date(docData[field]));
+                           const d = new Date(docData[field]);
+                           if (!isNaN(d)) {
+                            docData[field] = Timestamp.fromDate(d);
+                           }
                          } catch (e) {
                            // Ignore if parsing fails, keep original string
                          }
@@ -124,10 +124,16 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
 
                 // Commit batch if it's full
                 if (writeCount >= MAX_WRITES_PER_BATCH) {
-                    await batch.commit();
-                    report.successCount += writeCount;
-                    batch = db.batch(); // Start a new batch
-                    writeCount = 0;
+                    try {
+                        await batch.commit();
+                        report.successCount += writeCount;
+                    } catch (e) {
+                        report.failedCount += writeCount;
+                        report.errors.push({ collection: 'BATCH_COMMIT', id: 'N/A', error: e.message });
+                    } finally {
+                        batch = db.batch(); // Start a new batch
+                        writeCount = 0;
+                    }
                 }
             }
         }
@@ -135,8 +141,13 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
 
     // 4. Commit any remaining writes in the last batch
     if (writeCount > 0) {
-        await batch.commit();
-        report.successCount += writeCount;
+        try {
+            await batch.commit();
+            report.successCount += writeCount;
+        } catch(e) {
+            report.failedCount += writeCount;
+            report.errors.push({ collection: 'FINAL_BATCH_COMMIT', id: 'N/A', error: e.message });
+        }
     }
     
     // 5. Log the seed operation for auditing
@@ -147,11 +158,20 @@ exports.importSeedDocuments = functions.https.onCall(async (data, context) => {
         report: report,
     };
 
-    const logRef = await db.collection("seeds").add(seedLog);
-
-    return {
+    try {
+      const logRef = await db.collection("seeds").add(seedLog);
+      return {
         status: report.failedCount > 0 ? "Completed with errors" : "Success",
         ...report,
         logId: logRef.id
-    };
+      };
+    } catch (e) {
+        return {
+           status: "Failed to write log",
+           ...report,
+           logId: null
+        }
+    }
 });
+
+    

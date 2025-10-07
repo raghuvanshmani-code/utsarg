@@ -30,7 +30,15 @@
         "genres": { "type": "array", "items": { "type": "string" }, "description": "An array of genres associated with the club." },
         "coreVolunteers": { "type": "array", "items": { "type": "string" }, "description": "An array of user IDs for core volunteers." },
         "membersCount": { "type": "number", "description": "The number of members in the club." },
-        "requirements": { "type": "object", "description": "Requirements for the club (startup, per-event, maintenance)." },
+        "requirements": { 
+          "type": "object", 
+          "description": "Requirements for the club (startup, per-event, maintenance).",
+          "properties": {
+            "startup": { "type": "array", "items": { "type": "string" } },
+            "perEvent": { "type": "array", "items": { "type": "string" } },
+            "maintenance": { "type": "array", "items": { "type": "string" } }
+          }
+        },
         "budgetEstimatePerEvent": { "type": "number", "description": "Estimated budget per event." },
         "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the club was created." },
         "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the club was last updated." }
@@ -44,15 +52,22 @@
       "properties": {
         "title": { "type": "string", "description": "The title of the event." },
         "description": { "type": "string", "description": "A detailed description of the event." },
-        "date": { "type": "string", "format": "date-time", "description": "The date and time of the event." },
+        "date": { "type": ["string", "null"], "format": "date-time", "description": "The date and time of the event." },
         "clubId": { "type": ["string", "null"], "description": "The ID of the club organizing the event, or null." },
         "bannerImage": { "type": "string", "format": "uri", "description": "URL for the event's banner image." },
         "mediaURLs": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "An array of URLs for media associated with the event." },
-        "recurring": { "type": "object", "description": "Details about the event's recurring schedule (e.g., { type: 'daily', time: '18:00' })." },
+        "recurring": { 
+          "type": ["object", "null"], 
+          "description": "Details about the event's recurring schedule (e.g., { type: 'daily', time: '18:00' }).",
+          "properties": {
+            "type": { "type": "string" },
+            "time": { "type": "string" }
+          }
+        },
         "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the event was created." },
         "updatedAt": { "type": "string", "format": "date-time", "description": "The timestamp when the event was last updated." }
       },
-      "required": ["title", "description", "date", "clubId"]
+      "required": ["title", "description", "clubId"]
     },
     "galleryItem": {
       "title": "Gallery Item",
@@ -131,3 +146,5 @@
     "/seeds/{seedId}": { "schema": { "$ref": "#/entities/seed" }, "description": "Audit log for database seed operations." }
   }
 }
+
+    
