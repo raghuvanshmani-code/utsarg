@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Post } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PostDetailsPage({ params }: { params: { slug: string } }) {
+export default function PostDetailsPage({ params: { slug } }: { params: { slug: string } }) {
   // The slug is the document ID in this case
-  const { data: post, loading } = useDoc<Post>(`blog/${params.slug}`);
+  const { data: post, loading } = useDoc<Post>(`blog/${slug}`);
 
   if (loading) {
     return (

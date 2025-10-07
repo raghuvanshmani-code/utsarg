@@ -12,8 +12,8 @@ import type { Event, Club } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
-export default function EventDetailsPage({ params }: { params: { id: string } }) {
-  const { data: event, loading: eventLoading } = useDoc<Event>(`events/${params.id}`);
+export default function EventDetailsPage({ params: { id } }: { params: { id: string } }) {
+  const { data: event, loading: eventLoading } = useDoc<Event>(`events/${id}`);
   const { data: club, loading: clubLoading } = useDoc<Club>(event ? `clubs/${event.clubId}` : '');
 
   if (eventLoading || (event && !club)) {

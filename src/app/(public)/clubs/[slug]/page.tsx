@@ -11,11 +11,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { where } from 'firebase/firestore';
 
 
-export default function ClubDetailsPage({ params }: { params: { slug: string } }) {
-  const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${params.slug}`);
+export default function ClubDetailsPage({ params: { slug } }: { params: { slug: string } }) {
+  const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${slug}`);
   const { data: clubEvents, loading: eventsLoading } = useCollection<Event>(
     'events',
-    where('clubId', '==', params.slug)
+    where('clubId', '==', slug)
   );
 
   if (clubLoading || eventsLoading) {
