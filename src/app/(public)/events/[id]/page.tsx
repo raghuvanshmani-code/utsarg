@@ -14,9 +14,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EventDetailsPage({ params: { id } }: { params: { id: string } }) {
   const { data: event, loading: eventLoading } = useDoc<Event>(`events/${id}`);
-  const { data: club, loading: clubLoading } = useDoc<Club>(event ? `clubs/${event.clubId}` : '');
+  
+  // Conditionally fetch the club only when the event data (and thus event.clubId) is available.
+  const { data: club, loading: clubLoading } = useDoc<Club>(event?.clubId ? `clubs/${event.clubId}` : null);
 
-  if (eventLoading || (event && !club)) {
+  if (eventLoading || (event && !club && !clubLoading)) {
     return (
         <div>
             <Skeleton className="h-[40vh] w-full" />

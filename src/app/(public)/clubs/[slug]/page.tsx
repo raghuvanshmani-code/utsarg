@@ -15,7 +15,7 @@ export default function ClubDetailsPage({ params: { slug } }: { params: { slug: 
   const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${slug}`);
   const { data: clubEvents, loading: eventsLoading } = useCollection<Event>(
     'events',
-    where('clubId', '==', slug)
+    slug ? where('clubId', '==', slug) : where('clubId', '==', 'placeholder-id-to-prevent-error')
   );
 
   if (clubLoading || eventsLoading) {

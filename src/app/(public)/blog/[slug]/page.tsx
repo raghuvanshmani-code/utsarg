@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PostDetailsPage({ params: { slug } }: { params: { slug: string } }) {
   // The slug is the document ID in this case
-  const { data: post, loading } = useDoc<Post>(`blog/${slug}`);
+  const { data: post, loading } = useDoc<Post>(slug ? `blog/${slug}` : null);
 
   if (loading) {
     return (

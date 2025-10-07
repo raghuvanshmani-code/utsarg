@@ -1,18 +1,19 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, DocumentData, DocumentReference } from 'firebase/firestore';
+import { doc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-export function useDoc<T>(path: string) {
+export function useDoc<T>(path: string | null) {
   const db = useFirestore();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!db) {
+    if (!db || !path) {
+      setData(null);
       setLoading(false);
       return;
     }
