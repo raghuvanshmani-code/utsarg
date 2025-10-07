@@ -17,7 +17,7 @@ function ClubCardSkeleton() {
 export function FeaturedClubs() {
   const { data: clubs, loading } = useCollection<Club>(
     'clubs', 
-    orderBy('members_count', 'desc'), 
+    orderBy('name', 'desc'), 
     limit(6)
   );
 
