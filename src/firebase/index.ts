@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getFunctions, Functions } from 'firebase/functions';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
 import { firebaseConfig } from './config';
 
 export function initializeFirebase(): {
@@ -17,6 +17,24 @@ export function initializeFirebase(): {
   const firestore = getFirestore(app);
   const storage = getStorage(app);
   const functions = getFunctions(app);
+
+  if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true' || process.env.USE_EMULATORS === 'true') {
+    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST || process.env.EMULATOR_HOST || 'localhost';
+    
+    // Check if emulators are already connected to prevent errors on hot-reloads
+    if (!(auth as any)._isEmulator) {
+      connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+    }
+    if (!(firestore as any)._isEmulator) {
+      connectFirestoreEmulator(firestore, host, 8080);
+    }
+    if (!(storage as any)._isEmulator) {
+      connectStorageEmulator(storage, host, 9199);
+    }
+    if (!(functions as any)._isEmulator) {
+      connectFunctionsEmulator(functions, host, 5001);
+    }
+  }
 
   return { firebaseApp: app, auth, firestore, storage, functions };
 }
