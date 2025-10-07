@@ -79,6 +79,8 @@
       "enabled": true,
       "host": "localhost"
     },
-    "singleProjectMode": true
+    "singleProjectMode": true,
+    "import": ".firebase/emulators/data",
+    "exportOnExit": true
   }
 }
