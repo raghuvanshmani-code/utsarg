@@ -38,6 +38,7 @@ exports.setUserRole = functions
 
       // 4. Update the user's profile in Firestore to reflect the change
       // This allows the client to see role changes in real-time without refreshing tokens
+      // It also ensures a profile exists if one was missing.
       await db.collection('users').doc(uid).set({ 
         customClaims: newClaims 
       }, { merge: true });
@@ -46,7 +47,7 @@ exports.setUserRole = functions
       return { success: true, message: `Role successfully updated to ${role}.` };
     } catch (error) {
       functions.logger.error(`Error setting user role for UID: ${uid}`, { error: error.message });
-      throw new functions.https.HttpsError('internal', 'An error occurred while setting the user role.', error.message);
+      throw new functions.httpshttps.HttpsError('internal', 'An error occurred while setting the user role.', error.message);
     }
 });
 
@@ -59,6 +60,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
     const { uid, email, displayName, photoURL } = user;
     const userProfileRef = db.collection('users').doc(uid);
 
+    // Using set with merge:true to be safe, though onCreate should be a new doc.
     return userProfileRef.set({
         uid,
         email,
@@ -66,7 +68,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
         photoURL: photoURL || null,
         createdAt: Timestamp.now(),
         customClaims: {} // Initially no claims
-    });
+    }, { merge: true });
 });
 
 
