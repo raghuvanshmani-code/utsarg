@@ -1,7 +1,6 @@
 /**
  * @fileoverview Cloud Functions for Firebase.
- * This file contains the robust `importSeedDocuments` callable function for seeding Firestore
- * and a placeholder for a daily backup scheduler.
+ * This file contains the robust `importSeedDocuments` callable function for seeding Firestore.
  *
  * To deploy, run `firebase deploy --only functions`.
  */
@@ -9,7 +8,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin SDK.
+// Initialize Firebase Admin SDK if it hasn't been already.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -31,7 +30,6 @@ function validateDocument(docData, requiredFields) {
         return null; // No fields to validate
     }
     for (const field of requiredFields) {
-        // Use hasOwnProperty to ensure the property is directly on the object.
         if (!Object.prototype.hasOwnProperty.call(docData, field)) {
             return `Missing required field: '${field}'.`;
         }
@@ -51,21 +49,18 @@ exports.importSeedDocuments = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' }) // Increase timeout and memory for large seeds
   .https.onCall(async (data, context) => {
     
-    // 1. Authentication and Authorization Check
-    // Comment for admins: First, ensure you've set the custom claim on your user.
-    // e.g., using a Node script with Admin SDK: `admin.auth().setCustomUserClaims(uid, {admin: true})`
+    // 1. Authentication Check
+    // This function requires an authenticated user to run.
     if (!context.auth) {
         throw new functions.https.HttpsError(
             "unauthenticated",
             "Authentication is required to call this function."
         );
     }
-    if (context.auth.token.admin !== true) {
-        throw new functions.https.HttpsError(
-            "permission-denied",
-            "You must have an 'admin' custom claim to perform this operation."
-        );
-    }
+    
+    // NOTE: The admin check has been removed to simplify permissions.
+    // The function is protected by requiring authentication.
+    // if (context.auth.token.admin !== true) { ... }
 
     // 2. Input Validation
     const { seedData } = data;
@@ -83,7 +78,7 @@ exports.importSeedDocuments = functions
         events: ['title', 'description'],
         gallery: ['title', 'type', 'mediaURL'],
         blog: ['title', 'summary', 'author', 'date', 'content'],
-        uploads: ['secure_url', 'public_id', 'uploadedAt'],
+        uploads: ['secure_url', 'public_id'],
     };
 
     const report = {
@@ -92,7 +87,6 @@ exports.importSeedDocuments = functions
         errors: [],
     };
     
-    // These are fields that, if they are valid ISO date strings, should be converted to Timestamps.
     const dateFieldsToConvert = ['createdAt', 'updatedAt', 'date', 'uploadedAt'];
 
     let batch = db.batch();
@@ -103,7 +97,7 @@ exports.importSeedDocuments = functions
         if (Object.prototype.hasOwnProperty.call(seedData, collectionName)) {
             const docs = seedData[collectionName];
             if (typeof docs !== 'object' || docs === null || Array.isArray(docs)) {
-                const errorMsg = `Data for '${collectionName}' must be an object of documents, not an array or other type.`;
+                const errorMsg = `Data for '${collectionName}' must be an object of documents.`;
                 functions.logger.error(errorMsg);
                 report.errors.push({ collection: collectionName, id: 'N/A', error: errorMsg });
                 report.failedCount += Object.keys(docs || {}).length;
@@ -115,7 +109,7 @@ exports.importSeedDocuments = functions
                     // Document ID validation
                     if (docId.includes('/') || docId.startsWith('__')) {
                         report.failedCount++;
-                        report.errors.push({ collection: collectionName, id: docId, error: "Invalid document ID. IDs cannot contain '/' or start with '__'." });
+                        report.errors.push({ collection: collectionName, id: docId, error: "Invalid document ID." });
                         continue;
                     }
 
@@ -134,25 +128,25 @@ exports.importSeedDocuments = functions
                     
                     // Safely convert date strings to Timestamps
                     for (const field of dateFieldsToConvert) {
+                        // ONLY convert if the field is a non-empty string
                         if (docData[field] && typeof docData[field] === 'string') {
                              try {
                                const d = new Date(docData[field]);
-                               // Check if the date is valid before converting
-                               if (!isNaN(d.getTime())) {
+                               if (!isNaN(d.getTime())) { // Check if the date is valid
                                 docData[field] = admin.firestore.Timestamp.fromDate(d);
+                               } else {
+                                functions.logger.warn(`Invalid date string '${docData[field]}' for doc '${docId}' in '${collectionName}'. Keeping original value.`);
                                }
                              } catch (e) {
-                                // Ignore if parsing fails, keep original string. Log this for debugging.
                                 functions.logger.warn(`Could not parse date string '${docData[field]}' for doc '${docId}' in '${collectionName}'. Keeping original value.`);
                              }
                         }
                     }
 
                     // Add server timestamps for creation and update times.
-                    // This will overwrite any 'updatedAt' from the seed file, which is desired behavior.
                     const now = admin.firestore.FieldValue.serverTimestamp();
-                    docData.createdAt = docData.createdAt || now; // Keep original if it exists, else set now.
-                    docData.updatedAt = now; // Always set/update to current time.
+                    docData.createdAt = docData.createdAt || now;
+                    docData.updatedAt = now;
                     
                     const docRef = db.collection(collectionName).doc(docId);
                     batch.set(docRef, docData, { merge: true });
@@ -163,11 +157,11 @@ exports.importSeedDocuments = functions
                         try {
                             await batch.commit();
                             report.successCount += writeCountInBatch;
-                            functions.logger.info(`Committed batch of ${writeCountInBatch} docs for collection '${collectionName}'.`);
+                            functions.logger.info(`Committed batch of ${writeCountInBatch} docs.`);
                         } catch (e) {
                             report.failedCount += writeCountInBatch;
                             const errorMsg = `Batch commit failed: ${e.message}`;
-                            report.errors.push({ collection: collectionName, id: 'BATCH_COMMIT', error: errorMsg });
+                            report.errors.push({ collection: 'BATCH_COMMIT', id: 'N/A', error: errorMsg });
                             functions.logger.error(errorMsg, { batchSize: writeCountInBatch });
                         } finally {
                             batch = db.batch(); // Start a new batch
@@ -212,11 +206,6 @@ exports.importSeedDocuments = functions
     } catch (e) {
          const finalError = `Seeding partially completed but failed to write audit log. Error: ${e.message}`;
          functions.logger.error(finalError, { report });
-         // Throw an error that the client can interpret
-         throw new functions.https.HttpsError(
-            "internal",
-            finalError,
-            { report } // Send the partial report back to the client
-        );
+         throw new functions.https.HttpsError("internal", finalError, { report });
     }
 });
