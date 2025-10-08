@@ -32,8 +32,8 @@ export default function PhilanthropyDetailsPage() {
         <div>
             <Skeleton className="h-[40vh] w-full" />
              <div className="container mx-auto px-4 py-12 md:py-16">
-                <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
-                    <div className="lg:col-span-2 space-y-4">
+                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+                    <div className="lg:col-span-1 space-y-4">
                         <Skeleton className="h-8 w-1/3" />
                         <Skeleton className="h-24 w-full" />
                     </div>
@@ -72,9 +72,9 @@ export default function PhilanthropyDetailsPage() {
       </section>
 
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           
-          <div className="lg:col-span-2 space-y-8">
+          <div className="space-y-8">
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><HeartHandshake className="h-6 w-6 text-primary" /> About the Activity</CardTitle>
@@ -101,10 +101,32 @@ export default function PhilanthropyDetailsPage() {
                     </CardContent>
                 </Card>
             )}
+
+            {activity.photos && activity.photos.length > 0 && (
+              <div className="pt-8">
+                <h2 className="text-2xl font-bold text-center mb-8">
+                  <Camera className="inline-block h-6 w-6 mr-2 text-primary" />
+                  Photo Gallery
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {activity.photos.map((photoUrl, index) => (
+                    <div key={index} className="aspect-square relative overflow-hidden rounded-lg shadow-lg group">
+                      <Image
+                        src={photoUrl}
+                        alt={`Photo ${index + 1} from ${activity.name || 'activity'}`}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="lg:col-span-1">
-             <div className="bg-card p-6 rounded-lg shadow-sm space-y-6">
+             <div className="bg-card p-6 rounded-lg shadow-sm space-y-6 sticky top-24">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-semibold">Details</h3>
                 </div>
@@ -150,28 +172,6 @@ export default function PhilanthropyDetailsPage() {
              </div>
           </div>
         </div>
-
-        {activity.photos && activity.photos.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-center mb-8">
-              <Camera className="inline-block h-6 w-6 mr-2 text-primary" />
-              Photo Gallery
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {activity.photos.map((photoUrl, index) => (
-                <div key={index} className="aspect-square relative overflow-hidden rounded-lg shadow-lg group">
-                  <Image
-                    src={photoUrl}
-                    alt={`Photo ${index + 1} from ${activity.name || 'activity'}`}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
