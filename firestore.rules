@@ -1,166 +1,183 @@
 /**
- * @fileoverview Firestore Security Rules for the student society app.
+ * @file Firebase Security Rules for the Student Society App.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure data access based on user roles and ownership.
- * It uses a mixture of owner-only access for user-specific data and public read access with owner-controlled writes for shared content.
- * Data validation is relaxed to enable rapid prototyping but includes critical checks for relational integrity and authorization.
+ * This ruleset prioritizes secure data access based on the principle of least privilege.
+ * User-specific data is protected, and public data is accessible to all.
+ * Data validation is relaxed to facilitate rapid prototyping, focusing on authorization and relational integrity.
  *
  * Data Structure:
- * - `/users/{userId}`: Stores public user profiles, accessible only to the owning user.
- * - `/society/meta`: Singleton document containing society metadata; read-only for all users.
- * - `/clubs/{clubId}`: Stores club information; publicly readable, but write access is restricted to owners (if implemented).
- * - `/volunteers/{volunteerId}`: Stores volunteer profiles; publicly readable, but write access is restricted to owners (if implemented).
- * - `/members/{memberId}`: Stores member profiles; publicly readable, but write access is restricted to owners (if implemented).
- * - `/events/{eventId}`: Stores event details; publicly readable, but write access is restricted to owners (if implemented).
- * - `/gallery/{galleryId}`: Stores media gallery items; publicly readable, but write access is restricted to owners (if implemented).
- * - `/funds/accounting/transactions/{transactionId}`: Logs financial transactions; write access is denied.
- * - `/philanthropy/{activityId}`: Records philanthropic activities; publicly readable, but write access is restricted to owners (if implemented).
+ * The Firestore data is organized into top-level collections: `users`, `society`, `clubs`, `volunteers`, `members`, `events`, `gallery`, `funds`, and `philanthropy`.
+ * User profiles are stored under `/users/{userId}`.
+ * Society metadata is stored in a singleton document at `/society/meta`.
  *
  * Key Security Decisions:
- * - User listing is generally disallowed to protect user privacy.
- * - The `/society/meta` document is read-only for all users.
- * - Ambiguous write permissions default to the most secure option (denied) and include a `// TODO:` comment.
- * - Data validation is limited to relational integrity and authorization checks.
- * - Public read access is granted to several collections to allow for easy data consumption.
+ * - User profiles are only readable and writable by the authenticated user.
+ * - Listing all users is disallowed.
+ * - Society metadata is publicly readable but only writable by an admin (not implemented in this prototype).
+ * - The `blog` collection has public read access but requires authentication for writes.
+ *
+ * Denormalization for Authorization:
+ *  - The current data model doesn't explicitly define any ownership field for `blog` documents. To enable owner-only writes, you should add a field like `authorId` to the `blog` entity and populate it with the user's UID upon creation.
+ *
+ * Structural Segregation:
+ *  - N/A. No clear segregation of private vs. public content is in play.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profiles, allowing each user to read and write their own profile data.
+     * @description Checks if the user is signed in.
+     * @param {string} userId - The user ID to check against the authenticated user's ID.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided user ID.
+     * @param {string} userId - The user ID to check against the authenticated user's ID.
+     * @returns {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided user ID and the resource exists.
+     * Used to protect update and delete operations.
+     * @param {string} userId - The user ID to check against the authenticated user's ID.
+     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description User profile rules. Only the authenticated user can read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user123' creates their profile at /users/user123 with matching uid field.
-     * @allow (get, update, delete) - User with UID 'user123' reads/updates/deletes their profile at /users/user123.
-     * @deny (create, get, update, delete) - User with UID 'user456' attempts to access profile data at /users/user123.
-     * @principle Enforces document ownership for writes.
+     * @allow (get, update, delete) User 'alice' (UID: 'alice_uid') can read/write her own profile at /users/alice_uid.
+     * @allow (create) User 'alice' (UID: 'alice_uid') can create her own profile at /users/alice_uid.
+     * @deny (get, update, delete) User 'bob' (UID: 'bob_uid') cannot read/write alice's profile at /users/alice_uid.
+     * @deny (create) User 'bob' (UID: 'bob_uid') cannot create a profile at /users/alice_uid.
+     * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if false;
-
-      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.uid == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.uid == userId;
+      allow list: if false; // Listing all users is not permitted.
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to the society metadata, making it publicly readable but preventing modifications.
+     * @description Society metadata rules. Publicly readable, but only admins can write (admin check not yet implemented).
      * @path /society/meta
-     * @allow (get, list) - Any user can read the society metadata.
-     * @deny (create, update, delete) - No user can modify the society metadata.
-     * @principle Provides public read access while restricting write access.
+     * @allow (get, list) Any user can read the society metadata.
+     * @deny (create, update, delete) Non-admin users cannot modify the society metadata.
+     * @principle Public read, admin-only write.
      */
     match /society/meta {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if false; // TODO: Implement admin role check.
     }
 
     /**
-     * @description Manages club information, allowing public read access with owner-restricted writes.
+     * @description Club rules.
      * @path /clubs/{clubId}
-     * @allow (get, list) - Any user can read the club information.
-     * @deny (create, update, delete) - No user can create, update, or delete club information without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can read the information of any club.
+     * @deny (create, update, delete) Only club admins should be able to modify a club's profile. Admin check not yet implemented.
+     * @principle Public read, club admin-only write.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if false; // TODO: Implement club admin role check.
     }
 
     /**
-     * @description Manages volunteer profiles, allowing public read access with owner-restricted writes.
+     * @description Volunteer rules.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) - Any user can read the volunteer profiles.
-     * @deny (create, update, delete) - No user can create, update, or delete volunteer profiles without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can read the profile of any volunteer.
+     * @deny (create, update, delete) Only admins should be able to create, modify, or delete volunteer profiles. Admin check not yet implemented.
+     * @principle Public read, admin-only write.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if false; // TODO: Implement admin role check.
     }
 
     /**
-     * @description Manages member profiles, allowing public read access with owner-restricted writes.
+     * @description Member rules.
      * @path /members/{memberId}
-     * @allow (get, list) - Any user can read the member profiles.
-     * @deny (create, update, delete) - No user can create, update, or delete member profiles without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can read the profile of any member.
+     * @deny (create, update, delete) Only admins should be able to create, modify, or delete member profiles. Admin check not yet implemented.
+     * @principle Public read, admin-only write.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if false; // TODO: Implement admin role check.
     }
 
     /**
-     * @description Manages event details, allowing public read access with owner-restricted writes.
+     * @description Event rules.
      * @path /events/{eventId}
-     * @allow (get, list) - Any user can read the event details.
-     * @deny (create, update, delete) - No user can create, update, or delete event details without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can read the details of any event.
+     * @deny (create, update, delete) Only club admins should be able to create, modify, or delete events. Club admin check not yet implemented.
+     * @principle Public read, club admin-only write.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if false; // TODO: Implement club admin role check.
     }
 
     /**
-     * @description Manages media gallery items, allowing public read access with owner-restricted writes.
+     * @description Gallery rules.
      * @path /gallery/{galleryId}
-     * @allow (get, list) - Any user can read the gallery items.
-     * @deny (create, update, delete) - No user can create, update, or delete gallery items without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can view any gallery item.
+     * @deny (create, update, delete) Only authenticated users should be able to upload to or modify the gallery. Admin check not yet implemented.
+     * @principle Public read, authenticated user-only write.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if isSignedIn(); // TODO: Possibly restrict to specific roles or users.
     }
 
     /**
-     * @description Logs financial transactions, denying all access.
+     * @description Fund Transaction rules.
      * @path /funds/accounting/transactions/{transactionId}
-     * @deny (get, list, create, update, delete) - No user can access or modify financial transaction logs.
-     * @principle Restricts all access to sensitive financial data.
+     * @allow (get, list) Any user can see fund transaction records.
+     * @deny (create, update, delete) Only authorized financial officers can add, modify, or delete fund transaction records. Financial officer role check not yet implemented.
+     * @principle Public read, finance officer-only write.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list, create, update, delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Implement financial officer role check.
     }
 
     /**
-     * @description Records philanthropic activities, allowing public read access with owner-restricted writes.
+     * @description Philanthropy Activity rules.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) - Any user can read records of philanthropic activities.
-     * @deny (create, update, delete) - No user can create, update, or delete philanthropy activity records without specific authorization.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get, list) Any user can see details about philanthropic activities.
+     * @deny (create, update, delete) Only admins should be able to create, modify, or delete philanthropy activity records. Admin check not yet implemented.
+     * @principle Public read, admin-only write.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create, update, delete: if false; // TODO: Implement admin role check.
     }
-    
-    /**
-     * @description Blogs are public and can be read by anyone.
-     * @path /blog
-     * @allow (get, list) - Any user can read a blog.
-     * @deny (create, update, delete) - No user can create, update, or delete a blog.
-     * @principle Provides public read access.
-     */
-    match /blog {
-        allow get, list: if true;
-        allow create, update, delete: if false;
+
+     /**
+      * @description Blog rules. Publicly readable, only authenticated users can create/edit/delete.
+      * @path /blog/{blogId}
+      * @allow (get, list) Any user can read the blogs.
+      * @deny (create, update, delete) Only authenticated users can modify the blogs.
+      * @principle Public read, owner-only write.
+      */
+    match /blog/{blogId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn(); // TODO: Add owner validation once the schema is updated with an ownership field.
     }
   }
 }
