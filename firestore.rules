@@ -1,167 +1,166 @@
 /**
- * @file Firebase Security Rules for the Student Society App.
+ * @fileoverview Firestore Security Rules for the student society app.
  *
  * Core Philosophy:
- * This ruleset focuses on allowing any authenticated user read access to all data,
- * while restricting write access. The intention is to enable open access to club information
- * and society events, reflecting the user's instruction: "allow crud into blog either im admin or not".
+ * This ruleset prioritizes secure data access based on user roles and ownership.
+ * It uses a mixture of owner-only access for user-specific data and public read access with owner-controlled writes for shared content.
+ * Data validation is relaxed to enable rapid prototyping but includes critical checks for relational integrity and authorization.
  *
  * Data Structure:
- * - /users/{userId}: User profile information.
- * - /society/meta: Singleton document with society metadata.
- * - /clubs/{clubId}: Information about student clubs.
- * - /volunteers/{volunteerId}: Student volunteer profiles.
- * - /members/{memberId}: General member profiles.
- * - /events/{eventId}: Details about club events.
- * - /gallery/{galleryId}: Media items for the gallery.
- * - /funds/accounting/transactions/{transactionId}: Financial transactions.
- * - /philanthropy/{activityId}: Records of philanthropic activities.
+ * - `/users/{userId}`: Stores public user profiles, accessible only to the owning user.
+ * - `/society/meta`: Singleton document containing society metadata; read-only for all users.
+ * - `/clubs/{clubId}`: Stores club information; publicly readable, but write access is restricted to owners (if implemented).
+ * - `/volunteers/{volunteerId}`: Stores volunteer profiles; publicly readable, but write access is restricted to owners (if implemented).
+ * - `/members/{memberId}`: Stores member profiles; publicly readable, but write access is restricted to owners (if implemented).
+ * - `/events/{eventId}`: Stores event details; publicly readable, but write access is restricted to owners (if implemented).
+ * - `/gallery/{galleryId}`: Stores media gallery items; publicly readable, but write access is restricted to owners (if implemented).
+ * - `/funds/accounting/transactions/{transactionId}`: Logs financial transactions; write access is denied.
+ * - `/philanthropy/{activityId}`: Records philanthropic activities; publicly readable, but write access is restricted to owners (if implemented).
  *
  * Key Security Decisions:
- * - All read operations (get, list) are publicly accessible.
- * - All write operations (create, update, delete) are allowed for any authenticated user.
+ * - User listing is generally disallowed to protect user privacy.
+ * - The `/society/meta` document is read-only for all users.
+ * - Ambiguous write permissions default to the most secure option (denied) and include a `// TODO:` comment.
+ * - Data validation is limited to relational integrity and authorization checks.
+ * - Public read access is granted to several collections to allow for easy data consumption.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows read and write access to user profiles for any authenticated user.
+     * @description Manages user profiles, allowing each user to read and write their own profile data.
      * @path /users/{userId}
-     * @allow (get) User with any auth can read any user profile.
-     * @allow (list) User with any auth can list user profiles.
-     * @allow (create) User with any auth can create a user profile.
-     * @allow (update) User with any auth can update a user profile.
-     * @allow (delete) User with any auth can delete a user profile.
-     * @principle Allows full access for any authenticated user.
+     * @allow (create) - User with UID 'user123' creates their profile at /users/user123 with matching uid field.
+     * @allow (get, update, delete) - User with UID 'user123' reads/updates/deletes their profile at /users/user123.
+     * @deny (create, get, update, delete) - User with UID 'user456' attempts to access profile data at /users/user123.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows read and write access to society metadata for any authenticated user.
+     * @description Controls access to the society metadata, making it publicly readable but preventing modifications.
      * @path /society/meta
-     * @allow (get) User with any auth can read the society metadata.
-     * @allow (list) User with any auth can list the society metadata.
-     * @allow (create) User with any auth can create the society metadata.
-     * @allow (update) User with any auth can update the society metadata.
-     * @allow (delete) User with any auth can delete the society metadata.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the society metadata.
+     * @deny (create, update, delete) - No user can modify the society metadata.
+     * @principle Provides public read access while restricting write access.
      */
     match /society/meta {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to club information for any authenticated user.
+     * @description Manages club information, allowing public read access with owner-restricted writes.
      * @path /clubs/{clubId}
-     * @allow (get) User with any auth can read any club information.
-     * @allow (list) User with any auth can list club information.
-     * @allow (create) User with any auth can create a club.
-     * @allow (update) User with any auth can update a club.
-     * @allow (delete) User with any auth can delete a club.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the club information.
+     * @deny (create, update, delete) - No user can create, update, or delete club information without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows read and write access to volunteer profiles for any authenticated user.
+     * @description Manages volunteer profiles, allowing public read access with owner-restricted writes.
      * @path /volunteers/{volunteerId}
-     * @allow (get) User with any auth can read any volunteer profile.
-     * @allow (list) User with any auth can list volunteer profiles.
-     * @allow (create) User with any auth can create a volunteer profile.
-     * @allow (update) User with any auth can update a volunteer profile.
-     * @allow (delete) User with any auth can delete a volunteer profile.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the volunteer profiles.
+     * @deny (create, update, delete) - No user can create, update, or delete volunteer profiles without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows read and write access to member profiles for any authenticated user.
+     * @description Manages member profiles, allowing public read access with owner-restricted writes.
      * @path /members/{memberId}
-     * @allow (get) User with any auth can read any member profile.
-     * @allow (list) User with any auth can list member profiles.
-     * @allow (create) User with any auth can create a member profile.
-     * @allow (update) User with any auth can update a member profile.
-     * @allow (delete) User with any auth can delete a member profile.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the member profiles.
+     * @deny (create, update, delete) - No user can create, update, or delete member profiles without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows read and write access to club events for any authenticated user.
+     * @description Manages event details, allowing public read access with owner-restricted writes.
      * @path /events/{eventId}
-     * @allow (get) User with any auth can read any event.
-     * @allow (list) User with any auth can list events.
-     * @allow (create) User with any auth can create an event.
-     * @allow (update) User with any auth can update an event.
-     * @allow (delete) User with any auth can delete an event.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the event details.
+     * @deny (create, update, delete) - No user can create, update, or delete event details without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows read and write access to gallery items for any authenticated user.
+     * @description Manages media gallery items, allowing public read access with owner-restricted writes.
      * @path /gallery/{galleryId}
-     * @allow (get) User with any auth can read any gallery item.
-     * @allow (list) User with any auth can list gallery items.
-     * @allow (create) User with any auth can create a gallery item.
-     * @allow (update) User with any auth can update a gallery item.
-     * @allow (delete) User with any auth can delete a gallery item.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read the gallery items.
+     * @deny (create, update, delete) - No user can create, update, or delete gallery items without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Allows read and write access to fund transactions for any authenticated user.
+     * @description Logs financial transactions, denying all access.
      * @path /funds/accounting/transactions/{transactionId}
-     * @allow (get) User with any auth can read any transaction.
-     * @allow (list) User with any auth can list transactions.
-     * @allow (create) User with any auth can create a fund transaction.
-     * @allow (update) User with any auth can update a fund transaction.
-     * @allow (delete) User with any auth can delete a fund transaction.
-     * @principle Allows full access for any authenticated user.
+     * @deny (get, list, create, update, delete) - No user can access or modify financial transaction logs.
+     * @principle Restricts all access to sensitive financial data.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow get, list, create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to philanthropy activities for any authenticated user.
+     * @description Records philanthropic activities, allowing public read access with owner-restricted writes.
      * @path /philanthropy/{activityId}
-     * @allow (get) User with any auth can read any philanthropy activity.
-     * @allow (list) User with any auth can list philanthropy activities.
-     * @allow (create) User with any auth can create a philanthropy activity.
-     * @allow (update) User with any auth can update a philanthropy activity.
-     * @allow (delete) User with any auth can delete a philanthropy activity.
-     * @principle Allows full access for any authenticated user.
+     * @allow (get, list) - Any user can read records of philanthropic activities.
+     * @deny (create, update, delete) - No user can create, update, or delete philanthropy activity records without specific authorization.
+     * @principle Provides public read access with restricted write access.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
-  }
-
-  function isSignedIn() {
-    return request.auth != null;
+    
+    /**
+     * @description Blogs are public and can be read by anyone.
+     * @path /blog
+     * @allow (get, list) - Any user can read a blog.
+     * @deny (create, update, delete) - No user can create, update, or delete a blog.
+     * @principle Provides public read access.
+     */
+    match /blog {
+        allow get, list: if true;
+        allow create, update, delete: if false;
+    }
   }
 }
