@@ -1,59 +1,61 @@
 /**
- * @description This ruleset enforces a strict user-ownership model for user profiles,
- *              allows public read access to most collections, and restricts write access
- *              based on ownership or prevents it entirely for certain collections.
- *              It prioritizes simplicity and security with explicit deny rules.
+ * @fileoverview Firestore Security Rules.
  *
- * @dataStructure
- *              - /users/{userId}: Stores individual user profiles, accessible only by the user.
- *              - /society/meta: Singleton document containing society metadata, publicly readable.
- *              - /clubs/{clubId}: Stores club information, publicly readable.
- *              - /volunteers/{volunteerId}: Stores volunteer profiles, publicly readable.
- *              - /members/{memberId}: Stores member profiles, publicly readable.
- *              - /events/{eventId}: Stores event details, publicly readable.
- *              - /gallery/{galleryId}: Stores gallery media items, publicly readable.
- *              - /funds/accounting/transactions/{transactionId}: Logs financial transactions, write access is denied.
- *              - /philanthropy/{activityId}: Records philanthropic activities, publicly readable.
+ * Core Philosophy:
+ * This ruleset prioritizes secure access control based on user roles and ownership.
+ * It uses a combination of role-based and ownership-based access control mechanisms.
+ * In this Prototyping stage all Rules will be implemented, however, data shape validation is skipped.
  *
- * @keySecurityDecisions
- *              - User profiles are strictly owned by the user; only the authenticated user can read or write their own profile.
- *              - Society metadata is publicly readable but cannot be modified through the client.
- *              - Most collections are publicly readable, allowing for open data consumption.
- *              - Financial transactions are strictly controlled; direct client writes are not permitted.
- *              - Listing of user documents is disallowed for privacy.
- *              - No schema validation is performed beyond ownership checks.
+ * Data Structure:
+ * - /users/{userId}: Stores public user profiles, accessible only to the owning user.
+ * - /society/meta: A singleton document holding society metadata, publicly readable.
+ * - /clubs/{clubId}: Stores club information, publicly readable.
+ * - /volunteers/{volunteerId}: Volunteer profiles, publicly readable.
+ * - /members/{memberId}: Member profiles, publicly readable.
+ * - /events/{eventId}: Event details, publicly readable.
+ * - /gallery/{galleryId}: Public gallery media items.
+ * - /funds/accounting/transactions/{transactionId}: Financial transactions, write-protected (TODO: Add role-based access).
+ * - /philanthropy/{activityId}: Records of philanthropic activities, publicly readable.
  *
- * @denormalizationForAuthorization N/A
- * @structuralSegregation N/A
+ * Key Security Decisions:
+ * - User listing is disabled for security.
+ * - Society metadata is publicly readable.
+ * - Read-only collections (e.g., society metadata) are explicitly marked.
+ * - Ambiguous relationships default to strict owner-only access.
+ * - Data shape validation is skipped in this Prototyping Stage.
+ *
+ * Denormalization for Authorization:
+ * - No denormalization is required in this initial ruleset.
+ *
+ * Structural Segregation:
+ * - All data is stored in top-level collections based on its purpose (user profiles, clubs, etc.).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants the user full ownership over their profile. Only the authenticated user
-     *              can read, create, update, or delete their own profile data.
+     * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) - User with uid 'user_abc' creates a profile document at /users/user_abc with matching uid in the data.
-     * @allow (get, update, delete) - User with uid 'user_abc' reads, updates, or deletes the profile document at /users/user_abc.
-     * @deny (create) - User with uid 'user_abc' attempts to create a profile document at /users/user_xyz.
-     * @deny (update, delete) - User with uid 'user_xyz' attempts to update or delete the profile document at /users/user_abc.
-     * @principle Enforces document ownership for writes, restricts access to a user's own data tree, validates relational integrity between documents.
+     * @allow (create) User with matching ID can create their profile.
+     * @allow (get, update, delete) User with matching ID can read, update, and delete their profile.
+     * @deny (create, get, update, delete) Any other user cannot access this profile.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
+      allow list: if false; // Prevent user enumeration
       allow create: if isOwner(userId) && request.resource.data.uid == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Grants public read access to society metadata while preventing any client-side modifications.
+     * @description Controls access to the society metadata document.
      * @path /society/meta
-     * @allow (get, list) - Any user, authenticated or not, can read the society metadata.
-     * @deny (create, update, delete) - No user can create, update, or delete the society metadata.
-     * @principle Public read access for general information; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read the society metadata.
+     * @deny (create, update, delete) No user can create, update, or delete the society metadata.
+     * @principle Public read access with no write access.
      */
     match /society/meta {
       allow get, list: if true;
@@ -61,11 +63,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read the club data, but prevents any client-side modifications.
+     * @description Controls access to club documents.
      * @path /clubs/{clubId}
-     * @allow (get, list) - Any user, authenticated or not, can read the club data.
-     * @deny (create, update, delete) - No user can create, update, or delete club data.
-     * @principle Public read access for club information; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read club information.
+     * @deny (create, update, delete) No user can create, update, or delete club information.
+     * @principle Public read access with no write access.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
@@ -73,11 +75,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read the volunteer profiles, but prevents any client-side modifications.
+     * @description Controls access to volunteer profiles.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) - Any user, authenticated or not, can read the volunteer profiles.
-     * @deny (create, update, delete) - No user can create, update, or delete volunteer profiles.
-     * @principle Public read access for volunteer profiles; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read volunteer profiles.
+     * @deny (create, update, delete) No user can create, update, or delete volunteer profiles.
+     * @principle Public read access with no write access.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
@@ -85,11 +87,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read the member profiles, but prevents any client-side modifications.
+     * @description Controls access to member profiles.
      * @path /members/{memberId}
-     * @allow (get, list) - Any user, authenticated or not, can read the member profiles.
-     * @deny (create, update, delete) - No user can create, update, or delete member profiles.
-     * @principle Public read access for member profiles; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read member profiles.
+     * @deny (create, update, delete) No user can create, update, or delete member profiles.
+     * @principle Public read access with no write access.
      */
     match /members/{memberId} {
       allow get, list: if true;
@@ -97,11 +99,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read the event details, but prevents any client-side modifications.
+     * @description Controls access to event documents.
      * @path /events/{eventId}
-     * @allow (get, list) - Any user, authenticated or not, can read the event details.
-     * @deny (create, update, delete) - No user can create, update, or delete event details.
-     * @principle Public read access for event details; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read event details.
+     * @deny (create, update, delete) No user can create, update, or delete event details.
+     * @principle Public read access with no write access.
      */
     match /events/{eventId} {
       allow get, list: if true;
@@ -109,11 +111,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read the gallery media items, but prevents any client-side modifications.
+     * @description Controls access to gallery media items.
      * @path /gallery/{galleryId}
-     * @allow (get, list) - Any user, authenticated or not, can read the gallery media items.
-     * @deny (create, update, delete) - No user can create, update, or delete gallery media items.
-     * @principle Public read access for gallery media items; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read gallery items.
+     * @deny (create, update, delete) No user can create, update, or delete gallery items.
+     * @principle Public read access with no write access.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
@@ -121,38 +123,38 @@ service cloud.firestore {
     }
 
     /**
-     * @description Prevents any client-side access to financial transaction logs.
+     * @description Controls access to financial transaction documents.
      * @path /funds/accounting/transactions/{transactionId}
-     * @deny (get, list, create, update, delete) - No user can access the financial transaction logs.
-     * @principle Restricts all access to financial data to prevent unauthorized viewing or modifications.
+     * @deny (get, list, create, update, delete) No user can access financial transaction.
+     * @principle Requires role-based authentication.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list, create, update, delete: if false;
+      allow get, list, create, update, delete: if false; // TODO: Add role-based access
     }
 
     /**
-     * @description Allows anyone to read the philanthropy activity records, but prevents any client-side modifications.
+     * @description Controls access to philanthropic activities.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) - Any user, authenticated or not, can read the philanthropy activity records.
-     * @deny (create, update, delete) - No user can create, update, or delete philanthropy activity records.
-     * @principle Public read access for philanthropy activity records; write access is explicitly denied to prevent unauthorized changes.
+     * @allow (get, list) Any user can read philanthropic activities.
+     * @deny (create, update, delete) No user can create, update, or delete philanthropic activities.
+     * @principle Public read access with no write access.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
       allow create, update, delete: if false;
     }
+  }
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
+  function isOwner(userId) {
+    return isSignedIn() && request.auth.uid == userId;
+  }
 
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
+  function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
   }
 }
