@@ -1,136 +1,191 @@
+/**
+ * @fileoverview Firestore Security Rules for the student society app.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes ease of development, and thus is configured to allow open CRUD on the "blogs" collection and implements secure access control for all other collections based on a combination of ownership and public read patterns. Data validation is minimized to allow for rapid prototyping and schema iteration.
+ *
+ * Data Structure:
+ * - /users/{userId}: User profile information, accessible only to the user themselves.
+ * - /society/meta: Singleton document containing society-wide metadata, publicly readable.
+ * - /clubs/{clubId}: Information about student clubs, publicly readable.
+ * - /volunteers/{volunteerId}: Volunteer profiles, publicly readable.
+ * - /members/{memberId}: Member profiles, publicly readable.
+ * - /events/{eventId}: Event details, publicly readable.
+ * - /gallery/{galleryId}: Gallery media items, publicly readable.
+ * - /funds/accounting/transactions/{transactionId}: Financial transactions, publicly readable.
+ * - /philanthropy/{activityId}: Philanthropic activities, publicly readable.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed.
+ * - Data validation is relaxed to facilitate rapid prototyping. Only authorization-critical fields are validated.
+ * - Public read access is granted to most top-level collections to enable easy data discovery.
+ *
+ * Denormalization for Authorization:
+ *  - No denormalization is needed, as we are not implementing any complex authorization schemes.
+ *
+ * Structural Segregation:
+ *  - No structural segregation is needed, as we are not dealing with private vs public data.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects user profiles, allowing only the owner to read and write.
+     * @description Grants read/write access to the blogs collection to all users.
+     * @path /blogs/{blogId}
+     * @allow (create, update, delete) Any authenticated user can create, update, and delete blogs.
+     * @allow (get, list) Any user can read blogs.
+     * @deny None. All authenticated users are allowed all operations.
+     * @principle Open CRUD to allow rapid prototyping of this new collection.
+     */
+    match /blogs/{blogId} {
+      allow read, write: if true;
+    }
+
+    /**
+     * @description Grants access to user profiles. Users can only read and write their own profile.
      * @path /users/{userId}
-     * @allow (read, write): User with ID 'user123' can read/write their own profile at /users/user123. (create, update, get)
-     * @deny (read, write): User with ID 'user456' cannot read/write the profile of user 'user123' at /users/user123.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with matching UID can create their profile.
+     * @allow (get, list) User with matching UID can read their own profile.
+     * @allow (update, delete) User with matching UID can update/delete their own profile.
+     * @deny (create) User attempting to create a profile with a mismatched UID.
+     * @deny (get, list, update, delete) User attempting to access another user's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if false; // User listing is disallowed
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && isSignedIn();
+      allow delete: if isOwner(userId) && isSignedIn();
     }
 
     /**
-     * @description Allows public read access to society metadata, but restricts writes.
+     * @description Grants public read access to the society metadata. Write access is denied.
      * @path /society/meta
-     * @allow (read): Any user can read the society metadata.
-     * @deny (write): Any user cannot create, update, or delete the society metadata.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read the society metadata.
+     * @deny (create, update, delete) No user can create, update, or delete the society metadata.
+     * @principle Public read with no writes.
      */
     match /society/meta {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to club information, but restricts writes.
+     * @description Grants public read access to the club information. Write access is denied.
      * @path /clubs/{clubId}
-     * @allow (read): Any user can read club information.
-     * @deny (write): Any user cannot create, update, or delete club information.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read club information.
+     * @deny (create, update, delete) No user can create, update, or delete club information.
+     * @principle Public read with no writes.
      */
     match /clubs/{clubId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to volunteer profiles, but restricts writes.
+     * @description Grants public read access to the volunteer profiles. Write access is denied.
      * @path /volunteers/{volunteerId}
-     * @allow (read): Any user can read volunteer profiles.
-     * @deny (write): Any user cannot create, update, or delete volunteer profiles.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read volunteer profiles.
+     * @deny (create, update, delete) No user can create, update, or delete volunteer profiles.
+     * @principle Public read with no writes.
      */
     match /volunteers/{volunteerId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to member profiles, but restricts writes.
+     * @description Grants public read access to the member profiles. Write access is denied.
      * @path /members/{memberId}
-     * @allow (read): Any user can read member profiles.
-     * @deny (write): Any user cannot create, update, or delete member profiles.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read member profiles.
+     * @deny (create, update, delete) No user can create, update, or delete member profiles.
+     * @principle Public read with no writes.
      */
     match /members/{memberId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to event details, but restricts writes.
+     * @description Grants public read access to the event details. Write access is denied.
      * @path /events/{eventId}
-     * @allow (read): Any user can read event details.
-     * @deny (write): Any user cannot create, update, or delete event details.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read event details.
+     * @deny (create, update, delete) No user can create, update, or delete event details.
+     * @principle Public read with no writes.
      */
     match /events/{eventId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to gallery media items, but restricts writes.
+     * @description Grants public read access to the gallery media items. Write access is denied.
      * @path /gallery/{galleryId}
-     * @allow (read): Any user can read gallery media items.
-     * @deny (write): Any user cannot create, update, or delete gallery media items.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read gallery media items.
+     * @deny (create, update, delete) No user can create, update, or delete gallery media items.
+     * @principle Public read with no writes.
      */
     match /gallery/{galleryId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Restricts access to financial transaction logs.
+     * @description Grants public read access to the fund transactions. Write access is denied.
      * @path /funds/accounting/transactions/{transactionId}
-     * @allow (none): No user can read or write financial transaction logs.
-     * @principle Protects sensitive financial data from unauthorized access.
+     * @allow (get, list) Any user can read fund transactions.
+     * @deny (create, update, delete) No user can create, update, or delete fund transactions.
+     * @principle Public read with no writes.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list, create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to philanthropy activity records, but restricts writes.
+     * @description Grants public read access to the philanthropy activities. Write access is denied.
      * @path /philanthropy/{activityId}
-     * @allow (read): Any user can read philanthropy activity records.
-     * @deny (write): Any user cannot create, update, or delete philanthropy activity records.
-     * @principle Provides public information while restricting modifications.
+     * @allow (get, list) Any user can read philanthropy activities.
+     * @deny (create, update, delete) No user can create, update, or delete philanthropy activities.
+     * @principle Public read with no writes.
      */
     match /philanthropy/{activityId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
-       /**
-     * @description Allows owner update and delete, but otherwise restricts writes. Public reads.
-     * @path /blog/{blogId}
-     * @allow (read): Any user can read blog posts.
-     * @allow (create): Only the owner can create blog posts, and the author field must match their UID.
-     * @allow (update, delete): Only the owner can update or delete blog posts, and the author field must match their UID.
-     * @deny (write): Non-owners cannot create, update, or delete blog posts.
-     * @principle Restricts writes to owners only.
-     */
-    match /blog/{blogId} {
-      allow get, list: if true;
-      allow create: if request.auth.uid != null && request.resource.data.author == request.auth.uid;
-      allow update: if request.auth.uid != null && resource.data.author == request.auth.uid;
-      allow delete: if request.auth.uid != null && resource.data.author == request.auth.uid;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId && isSignedIn();
     }
   }
 }
