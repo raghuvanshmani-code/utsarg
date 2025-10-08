@@ -56,7 +56,7 @@ export default function PhilanthropyDetailsPage() {
         {activity.imageUrl && (
           <Image
             src={activity.imageUrl}
-            alt={`${activity.name} banner`}
+            alt={`${activity.name || formatActivityType(activity.type)} banner`}
             fill
             className="object-cover"
             priority
