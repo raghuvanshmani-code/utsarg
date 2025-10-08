@@ -76,12 +76,16 @@ export type UserImage = {
 
 export type PhilanthropyActivity = {
     id: string;
+    name: string;
     type: string;
     description: string;
     date: string;
-    volunteers: string[];
-    photos: string[];
+    volunteers?: string[];
+    photos?: string[];
     imageUrl?: string;
+    frequency?: string;
+    fundHandling?: string;
+    objectives?: string[];
 };
 
 export type FundTransaction = {
