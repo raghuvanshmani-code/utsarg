@@ -57,7 +57,7 @@ export default function PhilanthropyDetailsPage() {
         {activity.imageUrl && (
           <Image
             src={activity.imageUrl}
-            alt={`${activity.name || formatActivityType(activity.type)} banner`}
+            alt={activity.name || formatActivityType(activity.type)}
             fill
             className="object-cover"
             priority
@@ -73,7 +73,7 @@ export default function PhilanthropyDetailsPage() {
       </section>
 
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
           
           <div className="space-y-8">
              <Card>
@@ -93,8 +93,8 @@ export default function PhilanthropyDetailsPage() {
                     <CardContent>
                         <ul className="space-y-3">
                         {activity.objectives.map((objective, index) => (
-                            <li key={index} className="flex items-center gap-3">
-                                <BadgeCheck className="h-5 w-5 text-green-500" />
+                            <li key={index} className="flex items-start gap-3">
+                                <BadgeCheck className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                                 <span className="text-muted-foreground">{objective}</span>
                             </li>
                         ))}

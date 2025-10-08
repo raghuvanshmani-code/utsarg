@@ -43,7 +43,7 @@ export default function PhilanthropyPage() {
                 title="Philanthropic Activities"
                 subtitle="Giving back to the community is at the heart of what we do."
             />
-            <div className="container mx-auto px-4 py-12 md:py-16 space-y-12">
+            <div className="container mx-auto px-4 py-12 md:py-16 space-y-16">
                 
                 <div>
                     {loading ? (
@@ -65,7 +65,7 @@ export default function PhilanthropyPage() {
                                                 <Card className="flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 h-full">
                                                     {activity.imageUrl && (
                                                         <div className="aspect-video relative overflow-hidden">
-                                                            <Image src={activity.imageUrl} alt={activity.type} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                                                            <Image src={activity.imageUrl} alt={activity.name || formatActivityType(activity.type)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                                                         </div>
 
                                                     )}
@@ -75,7 +75,7 @@ export default function PhilanthropyPage() {
                                                                 <HeartHandshake className="h-6 w-6 text-primary" />
                                                             </div>
                                                             <div>
-                                                                <CardTitle>{formatActivityType(activity.type)}</CardTitle>
+                                                                <CardTitle>{activity.name || formatActivityType(activity.type)}</CardTitle>
                                                                 {activity.date && !isNaN(new Date(activity.date).getTime()) && (
                                                                     <div className="flex items-center text-sm text-muted-foreground mt-2">
                                                                         <Calendar className="h-4 w-4 mr-2" />
@@ -105,23 +105,23 @@ export default function PhilanthropyPage() {
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
-                            <CarouselPrevious className="ml-12 md:flex hidden" />
-                            <CarouselNext className="mr-12 md:flex hidden" />
+                            <CarouselPrevious className="ml-12" />
+                            <CarouselNext className="mr-12" />
                         </Carousel>
                     )}
                 </div>
 
                 <div className="space-y-12">
                   <Separator />
-                  <Card className="bg-card text-center" data-scroll>
+                  <Card className="bg-card text-center border-0 shadow-none" data-scroll>
                       <CardHeader>
                           <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
                               <Gift className="h-8 w-8 text-primary" />
                           </div>
-                          <CardTitle className="text-2xl">Support Our Cause</CardTitle>
+                          <CardTitle className="text-2xl mt-4">Support Our Cause</CardTitle>
                       </CardHeader>
                       <CardContent>
-                          <p className="text-muted-foreground mb-6">
+                          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                               Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
                           </p>
                           <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full w-full max-w-xs mx-auto">
