@@ -1,119 +1,146 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset allows full read and write access to all data for administrative purposes, effectively bypassing authentication and authorization checks. This is **ONLY** appropriate for prototyping or internal testing environments where security is not a primary concern. **DO NOT USE IN PRODUCTION**.
- * @dataStructure All data is stored in top-level collections such as /users/{userId}, /clubs/{clubId}, etc.
- * @keySecurityDecision All read and write operations are allowed without authentication.
+ * @description This ruleset enforces a strict user-ownership model for user profiles,
+ *              allows public read access for general content, and restricts write access
+ *              to authorized users or owners of the data.
+ * @dataStructure
+ *  - /users/{userId}: User profiles, accessible only to the owning user.
+ *  - /society/meta: A singleton document containing public society metadata.
+ *  - /clubs/{clubId}: Public club information, writable by authorized users.
+ *  - /volunteers/{volunteerId}: Public volunteer profiles.
+ *  - /members/{memberId}: Public member profiles.
+ *  - /events/{eventId}: Public event details.
+ *  - /gallery/{galleryId}: Public gallery media.
+ *  - /funds/accounting/transactions/{transactionId}: Financial transactions, access is not granted.
+ *  - /philanthropy/{activityId}: Public philanthropy activity records.
+ *
+ * @keySecurityDecisions
+ *  - User profiles are private and only accessible to the owning user.
+ *  - Society metadata is public but can only be modified through the Firebase Console or a trusted backend.
+ *  - Public listing is enabled for general content collections like clubs, volunteers, members, events, gallery items and philanthropy activities.
+ *  - No write operations are allowed on the `funds/accounting/transactions` collection in this prototype.
+ *
+ * @denormalizationForAuthorization
+ *  - The `events` documents includes a `clubId` field to link it to a `club` document. This simplifies club-related event queries and management.
+ *  - The `galleryItem` document has `uploadedBy` to track and potentially manage access based on uploader.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows read and write access to all user profiles.
+     * @description Allows a user to read and write their own profile data.
      * @path /users/{userId}
-     * @allow (read, write) Any user can read or modify any user profile.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list, create, update, delete) if request.auth.uid == userId
+     * @deny (get, list, create, update, delete) if request.auth.uid != userId
+     * @principle Enforces document ownership for writes. Restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows read and write access to the society metadata document.
+     * @description Allows anyone to read the society metadata, but prevents client-side modification.
      * @path /society/meta
-     * @allow (read, write) Any user can read or modify the society metadata.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /society/meta {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all club documents.
+     * @description Allows anyone to read club information, but restricts creation, updates, and deletions.
      * @path /clubs/{clubId}
-     * @allow (read, write) Any user can read or modify any club document.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all volunteer profiles.
+     * @description Allows anyone to read volunteer profiles, but restricts creation, updates, and deletions.
      * @path /volunteers/{volunteerId}
-     * @allow (read, write) Any user can read or modify any volunteer profile.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all member profiles.
+     * @description Allows anyone to read member profiles, but restricts creation, updates, and deletions.
      * @path /members/{memberId}
-     * @allow (read, write) Any user can read or modify any member profile.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all event documents.
+     * @description Allows anyone to read event details, but restricts creation, updates, and deletions.
      * @path /events/{eventId}
-     * @allow (read, write) Any user can read or modify any event document.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all gallery items.
+     * @description Allows anyone to read gallery media items, but restricts creation, updates, and deletions.
      * @path /gallery/{galleryId}
-     * @allow (read, write) Any user can read or modify any gallery item.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all fund transaction documents.
+     * @description Explicitly denies all access to financial transaction data.
      * @path /funds/accounting/transactions/{transactionId}
-     * @allow (read, write) Any user can read or modify any transaction document.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @deny (get, list, create, update, delete) always
+     * @principle Restricts access to sensitive data.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get, list, create, update, delete: if false;
     }
 
     /**
-     * @description Allows read and write access to all philanthropy activity documents.
+     * @description Allows anyone to read philanthropy activity records, but restricts creation, updates, and deletions.
      * @path /philanthropy/{activityId}
-     * @allow (read, write) Any user can read or modify any philanthropy activity document.
-     * @deny (none) There are no restrictions.
-     * @principle Allows full read and write access.
+     * @allow (get, list) if true
+     * @deny (create, update, delete) if false
+     * @principle Provides public read access to general content.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if false;
     }
   }
 }
