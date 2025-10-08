@@ -6,9 +6,10 @@ import type { PhilanthropyActivity } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { HeartHandshake, Calendar, ArrowRight, Users } from 'lucide-react';
+import { HeartHandshake, Calendar, ArrowRight, Users, Gift } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 function PhilanthropySkeleton() {
     return (
@@ -93,6 +94,19 @@ export default function PhilanthropyPage() {
                     </div>
                 )}
             </div>
+            
+            <section className="py-16 md:py-24 bg-card" data-scroll>
+                <div className="container mx-auto text-center">
+                    <Gift className="h-12 w-12 mx-auto text-primary mb-4" />
+                    <h2 className="text-3xl font-bold mb-4">Support Our Cause</h2>
+                    <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-8">
+                        Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
+                    </p>
+                    <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full">
+                         Donate Now
+                    </Button>
+                </div>
+            </section>
         </div>
     );
 }
