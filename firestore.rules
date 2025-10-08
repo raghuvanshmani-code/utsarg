@@ -1,146 +1,156 @@
 /**
- * @description This ruleset enforces a strict user-ownership model for user profiles,
- *              allows public read access for general content, and restricts write access
- *              to authorized users or owners of the data.
- * @dataStructure
- *  - /users/{userId}: User profiles, accessible only to the owning user.
- *  - /society/meta: A singleton document containing public society metadata.
- *  - /clubs/{clubId}: Public club information, writable by authorized users.
- *  - /volunteers/{volunteerId}: Public volunteer profiles.
- *  - /members/{memberId}: Public member profiles.
- *  - /events/{eventId}: Public event details.
- *  - /gallery/{galleryId}: Public gallery media.
- *  - /funds/accounting/transactions/{transactionId}: Financial transactions, access is not granted.
- *  - /philanthropy/{activityId}: Public philanthropy activity records.
+ * @file Firestore Security Rules
+ * @description This ruleset allows anyone to create, update, and delete data.
  *
- * @keySecurityDecisions
- *  - User profiles are private and only accessible to the owning user.
- *  - Society metadata is public but can only be modified through the Firebase Console or a trusted backend.
- *  - Public listing is enabled for general content collections like clubs, volunteers, members, events, gallery items and philanthropy activities.
- *  - No write operations are allowed on the `funds/accounting/transactions` collection in this prototype.
+ * Core Philosophy:
+ *   This configuration is for prototyping purposes, allowing completely open access to the database.
+ *   This is NOT suitable for production environments.
  *
- * @denormalizationForAuthorization
- *  - The `events` documents includes a `clubId` field to link it to a `club` document. This simplifies club-related event queries and management.
- *  - The `galleryItem` document has `uploadedBy` to track and potentially manage access based on uploader.
+ * Data Structure:
+ *   The database contains collections for users, society metadata, clubs, volunteers, members,
+ *   events, gallery items, fund transactions, and philanthropy activities.
+ *
+ * Key Security Decisions:
+ *   All read and write access is granted to all users, regardless of authentication state.
+ *   This bypasses all authentication and authorization checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows a user to read and write their own profile data.
+     * @description Allows anyone to create, read, update, and delete user profiles.
      * @path /users/{userId}
-     * @allow (get, list, create, update, delete) if request.auth.uid == userId
-     * @deny (get, list, create, update, delete) if request.auth.uid != userId
-     * @principle Enforces document ownership for writes. Restricts access to a user's own data tree.
+     * @allow (create) Any user can create a profile with any data.
+     * @allow (get) Any user can read any profile.
+     * @allow (update) Any user can update any profile with any data.
+     * @allow (delete) Any user can delete any profile.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read the society metadata, but prevents client-side modification.
+     * @description Allows anyone to create, read, update, and delete society metadata.
      * @path /society/meta
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create the metadata document with any data.
+     * @allow (get) Any user can read the metadata document.
+     * @allow (update) Any user can update the metadata document with any data.
+     * @allow (delete) Any user can delete the metadata document.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /society/meta {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read club information, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete club data.
      * @path /clubs/{clubId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create a club with any data.
+     * @allow (get) Any user can read any club's data.
+     * @allow (update) Any user can update any club's data with any data.
+     * @allow (delete) Any user can delete any club.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read volunteer profiles, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete volunteer profiles.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create a volunteer profile with any data.
+     * @allow (get) Any user can read any volunteer's profile.
+     * @allow (update) Any user can update any volunteer's profile with any data.
+     * @allow (delete) Any user can delete any volunteer's profile.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read member profiles, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete member profiles.
      * @path /members/{memberId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create a member profile with any data.
+     * @allow (get) Any user can read any member's profile.
+     * @allow (update) Any user can update any member's profile with any data.
+     * @allow (delete) Any user can delete any member's profile.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read event details, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete event data.
      * @path /events/{eventId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create an event with any data.
+     * @allow (get) Any user can read any event's data.
+     * @allow (update) Any user can update any event's data with any data.
+     * @allow (delete) Any user can delete any event.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read gallery media items, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete gallery items.
      * @path /gallery/{galleryId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create a gallery item with any data.
+     * @allow (get) Any user can read any gallery item.
+     * @allow (update) Any user can update any gallery item with any data.
+     * @allow (delete) Any user can delete any gallery item.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Explicitly denies all access to financial transaction data.
+     * @description Allows anyone to create, read, update, and delete fund transactions.
      * @path /funds/accounting/transactions/{transactionId}
-     * @deny (get, list, create, update, delete) always
-     * @principle Restricts access to sensitive data.
+     * @allow (create) Any user can create a transaction with any data.
+     * @allow (get) Any user can read any transaction's data.
+     * @allow (update) Any user can update any transaction's data with any data.
+     * @allow (delete) Any user can delete any transaction.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list, create, update, delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Allows anyone to read philanthropy activity records, but restricts creation, updates, and deletions.
+     * @description Allows anyone to create, read, update, and delete philanthropy activities.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) if false
-     * @principle Provides public read access to general content.
+     * @allow (create) Any user can create an activity with any data.
+     * @allow (get) Any user can read any activity's data.
+     * @allow (update) Any user can update any activity's data with any data.
+     * @allow (delete) Any user can delete any activity.
+     * @deny (none) There are no restrictions.
+     * @principle Open access for prototyping.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if true;
     }
   }
 }
