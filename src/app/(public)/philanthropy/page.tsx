@@ -6,7 +6,7 @@ import type { PhilanthropyActivity } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { HeartHandshake, Users, Calendar, ArrowRight } from 'lucide-react';
+import { HeartHandshake, Calendar, ArrowRight, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -26,7 +26,7 @@ function PhilanthropySkeleton() {
 function formatActivityType(type: string): string {
     if (!type) return "Philanthropic Activity";
     return type
-        .split('_')
+        .split(/_|-/)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
@@ -76,8 +76,14 @@ export default function PhilanthropyPage() {
                                 <CardContent className="flex-grow">
                                      <p className="text-sm text-muted-foreground line-clamp-3">{activity.description}</p>
                                 </CardContent>
-                                <CardFooter>
-                                    <span className="text-sm text-accent font-semibold flex items-center">
+                                <CardFooter className="flex justify-between items-center">
+                                    {activity.volunteers && activity.volunteers.length > 0 && (
+                                        <div className="flex items-center text-sm text-muted-foreground">
+                                            <Users className="h-4 w-4 mr-2" />
+                                            <span>{activity.volunteers.length} Volunteers</span>
+                                        </div>
+                                    )}
+                                    <span className="text-sm text-accent font-semibold flex items-center ml-auto">
                                         Learn More <ArrowRight className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
                                     </span>
                                 </CardFooter>

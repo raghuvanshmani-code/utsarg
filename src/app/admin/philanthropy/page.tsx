@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { PhilanthropyActivity } from '@/lib/types';
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -88,11 +88,12 @@ export default function PhilanthropyAdminPage() {
               setIsSubmitting(false);
           });
       } else {
-          const collectionRef = collection(db, 'philanthropy');
-          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
+          const docId = values.type.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const docRef = doc(db, 'philanthropy', docId);
+          setDoc(docRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Activity added successfully." });
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
+              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: data });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
@@ -104,14 +105,20 @@ export default function PhilanthropyAdminPage() {
     if (!db) return;
     setIsSubmitting(true);
     try {
-        const items = JSON.parse(jsonContent);
+        const items: Partial<PhilanthropyActivity & { id: string }>[] = JSON.parse(jsonContent);
         if (!Array.isArray(items)) {
             throw new Error("JSON content must be an array of objects.");
         }
         
         const collectionRef = collection(db, 'philanthropy');
         for (const item of items) {
-            await addDoc(collectionRef, { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            const docId = item.id || item.type?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            if (!docId) {
+                console.warn("Skipping item due to missing id/type:", item);
+                continue;
+            }
+            const docRef = doc(collectionRef, docId);
+            await setDoc(docRef, { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
         toast({ title: "Success", description: `${items.length} activities added successfully.` });
     } catch (e: any) {
@@ -149,7 +156,7 @@ export default function PhilanthropyAdminPage() {
         </header>
         <main className="flex-1 p-6 space-y-6">
             <Card>
-                <CardHeader><CardTitle>Add Activities</CardTitle><CardDescription>Add a single activity via the form or multiple activities via JSON.</CardDescription></CardHeader>
+                <CardHeader><CardTitle>Add Activities</CardTitle><CardDescription>Add a single activity via the form or multiple activities via JSON. Provide an 'id' in the JSON for a clean URL.</CardDescription></CardHeader>
                 <CardContent>
                     <Tabs defaultValue="manual">
                         <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="manual">Manual Entry</TabsTrigger><TabsTrigger value="json">JSON Input</TabsTrigger></TabsList>

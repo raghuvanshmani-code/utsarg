@@ -8,14 +8,13 @@ import { format } from 'date-fns';
 import { useDoc } from '@/firebase';
 import type { PhilanthropyActivity } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 // Function to format the activity type into a readable title
 function formatActivityType(type: string): string {
+    if (!type) return "Philanthropic Activity";
     return type
-        .split('_')
+        .split(/_|-/)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
@@ -88,18 +87,20 @@ export default function PhilanthropyDetailsPage({ params: { id } }: { params: { 
                 <Separator />
                 <ul className="space-y-4 text-muted-foreground">
                   {activity.date && !isNaN(new Date(activity.date).getTime()) && (
-                    <li className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-3 text-primary" />
+                    <li className="flex items-start">
+                      <Calendar className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
                       <div>
-                        <strong>Date:</strong> {format(new Date(activity.date), 'EEEE, MMMM do, yyyy')}
+                        <strong>Date:</strong><br/>
+                        {format(new Date(activity.date), 'EEEE, MMMM do, yyyy')}
                       </div>
                     </li>
                   )}
                   {activity.volunteers && activity.volunteers.length > 0 && (
-                    <li className="flex items-center">
-                      <Users className="h-5 w-5 mr-3 text-primary" />
+                    <li className="flex items-start">
+                      <Users className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
                       <div>
-                        <strong>Volunteers:</strong> {activity.volunteers.length} participated
+                        <strong>Volunteers:</strong><br/>
+                         {activity.volunteers.length} members participated
                       </div>
                     </li>
                   )}
@@ -133,4 +134,3 @@ export default function PhilanthropyDetailsPage({ params: { id } }: { params: { 
     </div>
   );
 }
-
