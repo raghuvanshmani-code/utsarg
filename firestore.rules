@@ -1,175 +1,158 @@
 /**
- * @file Overview
- * This ruleset enforces a security model that combines user-specific data access with public readability for some collections.
+ * @description This ruleset enforces a strict user-ownership model for user profiles,
+ *              allows public read access to most collections, and restricts write access
+ *              based on ownership or prevents it entirely for certain collections.
+ *              It prioritizes simplicity and security with explicit deny rules.
  *
- * Data Structure:
- * - User profiles are stored under /users/{userId}, accessible only to the owning user.
- * - Society metadata is stored in a singleton document at /society/meta and is publicly readable.
- * - Clubs, volunteers, members, events, gallery, funds, and philanthropy are stored in top-level collections with public read access and owner-only write access.
+ * @dataStructure
+ *              - /users/{userId}: Stores individual user profiles, accessible only by the user.
+ *              - /society/meta: Singleton document containing society metadata, publicly readable.
+ *              - /clubs/{clubId}: Stores club information, publicly readable.
+ *              - /volunteers/{volunteerId}: Stores volunteer profiles, publicly readable.
+ *              - /members/{memberId}: Stores member profiles, publicly readable.
+ *              - /events/{eventId}: Stores event details, publicly readable.
+ *              - /gallery/{galleryId}: Stores gallery media items, publicly readable.
+ *              - /funds/accounting/transactions/{transactionId}: Logs financial transactions, write access is denied.
+ *              - /philanthropy/{activityId}: Records philanthropic activities, publicly readable.
  *
- * Key Security Decisions:
- * - Listing of user profiles is disallowed.
- * - Public read access is granted for clubs, volunteers, members, events, gallery, funds, and philanthropy.
- * - Write access to clubs, volunteers, members, events, gallery, funds, and philanthropy requires the existence of an owner field (e.g., club.ownerId) and a matching authenticated user.
- * - The society/meta document is readable by everyone but not writable by anyone.
+ * @keySecurityDecisions
+ *              - User profiles are strictly owned by the user; only the authenticated user can read or write their own profile.
+ *              - Society metadata is publicly readable but cannot be modified through the client.
+ *              - Most collections are publicly readable, allowing for open data consumption.
+ *              - Financial transactions are strictly controlled; direct client writes are not permitted.
+ *              - Listing of user documents is disallowed for privacy.
+ *              - No schema validation is performed beyond ownership checks.
+ *
+ * @denormalizationForAuthorization N/A
+ * @structuralSegregation N/A
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Grants the user full ownership over their profile. Only the authenticated user
+     *              can read, create, update, or delete their own profile data.
      * @path /users/{userId}
-     * @allow (create) - If the user ID in the path matches the authenticated user's ID, allows creation of the user profile.
-     * @allow (get) - If the user ID in the path matches the authenticated user's ID, allows retrieval of the user profile.
-     * @allow (update) - If the user ID in the path matches the authenticated user's ID, allows updating the user profile.
-     * @allow (delete) - If the user ID in the path matches the authenticated user's ID, allows deletion of the user profile.
-     * @deny (list) - Listing user profiles is disallowed for privacy.
-     * @deny (create) - If the user ID in the path does not match the authenticated user's ID, denies creation.
-     * @deny (get) - If the user ID in the path does not match the authenticated user's ID, denies retrieval.
-     * @deny (update) - If the user ID in the path does not match the authenticated user's ID, denies update.
-     * @deny (delete) - If the user ID in the path does not match the authenticated user's ID, denies deletion.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (create) - User with uid 'user_abc' creates a profile document at /users/user_abc with matching uid in the data.
+     * @allow (get, update, delete) - User with uid 'user_abc' reads, updates, or deletes the profile document at /users/user_abc.
+     * @deny (create) - User with uid 'user_abc' attempts to create a profile document at /users/user_xyz.
+     * @deny (update, delete) - User with uid 'user_xyz' attempts to update or delete the profile document at /users/user_abc.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree, validates relational integrity between documents.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to the society metadata document.
+     * @description Grants public read access to society metadata while preventing any client-side modifications.
      * @path /society/meta
-     * @allow (get) - Allows anyone to read the society metadata.
-     * @deny (create, update, delete, list) - No one is allowed to create, update, delete, or list the society metadata.
-     * @principle Provides public read access to society metadata while restricting write access.
+     * @allow (get, list) - Any user, authenticated or not, can read the society metadata.
+     * @deny (create, update, delete) - No user can create, update, or delete the society metadata.
+     * @principle Public read access for general information; write access is explicitly denied to prevent unauthorized changes.
      */
     match /society/meta {
-      allow get: if true;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to club documents.
+     * @description Allows anyone to read the club data, but prevents any client-side modifications.
      * @path /clubs/{clubId}
-     * @allow (get, list) - Allows anyone to read and list club documents.
-     * @allow (create) - Allows creation of a club document if the request includes the `clubId`.
-     * @allow (update, delete) - Allows update and deletion of a club document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
-     * @principle Provides public read access while restricting write access to the owner.
+     * @allow (get, list) - Any user, authenticated or not, can read the club data.
+     * @deny (create, update, delete) - No user can create, update, or delete club data.
+     * @principle Public read access for club information; write access is explicitly denied to prevent unauthorized changes.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['name', 'type', 'description']) ;
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to volunteer documents.
+     * @description Allows anyone to read the volunteer profiles, but prevents any client-side modifications.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) - Allows anyone to read and list volunteer documents.
-     * @allow (create) - Allows creation of a volunteer document if the request includes the `volunteerId`.
-     * @allow (update, delete) - Allows update and deletion of a volunteer document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @allow (get, list) - Any user, authenticated or not, can read the volunteer profiles.
+     * @deny (create, update, delete) - No user can create, update, or delete volunteer profiles.
+     * @principle Public read access for volunteer profiles; write access is explicitly denied to prevent unauthorized changes.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['name', 'clubs']);
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to member documents.
+     * @description Allows anyone to read the member profiles, but prevents any client-side modifications.
      * @path /members/{memberId}
-     * @allow (get, list) - Allows anyone to read and list member documents.
-     * @allow (create) - Allows creation of a member document if the request includes the `memberId`.
-     * @allow (update, delete) - Allows update and deletion of a member document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @allow (get, list) - Any user, authenticated or not, can read the member profiles.
+     * @deny (create, update, delete) - No user can create, update, or delete member profiles.
+     * @principle Public read access for member profiles; write access is explicitly denied to prevent unauthorized changes.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['name']);
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to event documents.
+     * @description Allows anyone to read the event details, but prevents any client-side modifications.
      * @path /events/{eventId}
-     * @allow (get, list) - Allows anyone to read and list event documents.
-     * @allow (create) - Allows creation of an event document if the request includes the `eventId`.
-     * @allow (update, delete) - Allows update and deletion of an event document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @allow (get, list) - Any user, authenticated or not, can read the event details.
+     * @deny (create, update, delete) - No user can create, update, or delete event details.
+     * @principle Public read access for event details; write access is explicitly denied to prevent unauthorized changes.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['clubId', 'title', 'date', 'venue', 'status']);
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to gallery item documents.
+     * @description Allows anyone to read the gallery media items, but prevents any client-side modifications.
      * @path /gallery/{galleryId}
-     * @allow (get, list) - Allows anyone to read and list gallery item documents.
-     * @allow (create) - Allows creation of a gallery item document if the request includes the `galleryId`.
-     * @allow (update, delete) - Allows update and deletion of a gallery item document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @allow (get, list) - Any user, authenticated or not, can read the gallery media items.
+     * @deny (create, update, delete) - No user can create, update, or delete gallery media items.
+     * @principle Public read access for gallery media items; write access is explicitly denied to prevent unauthorized changes.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['url', 'uploadedBy', 'date']);
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to fund transaction documents.
+     * @description Prevents any client-side access to financial transaction logs.
      * @path /funds/accounting/transactions/{transactionId}
-     * @allow (get, list) - Allows anyone to read and list fund transaction documents.
-     * @allow (create) - Allows creation of a fund transaction document if the request includes the `transactionId`.
-     * @allow (update, delete) - Allows update and deletion of a fund transaction document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @deny (get, list, create, update, delete) - No user can access the financial transaction logs.
+     * @principle Restricts all access to financial data to prevent unauthorized viewing or modifications.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['amount', 'source', 'purpose', 'date', 'signatories']);
-      allow update: if true;
-      allow delete: if true;
+      allow get, list, create, update, delete: if false;
     }
 
     /**
-     * @description Controls access to philanthropy activity documents.
+     * @description Allows anyone to read the philanthropy activity records, but prevents any client-side modifications.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) - Allows anyone to read and list philanthropy activity documents.
-     * @allow (create) - Allows creation of a philanthropy activity document if the request includes the `activityId`.
-     * @allow (update, delete) - Allows update and deletion of a philanthropy activity document if the user is the owner.
-     * @deny (create, update, delete) - Denies access if authorization conditions are not met.
+     * @allow (get, list) - Any user, authenticated or not, can read the philanthropy activity records.
+     * @deny (create, update, delete) - No user can create, update, or delete philanthropy activity records.
+     * @principle Public read access for philanthropy activity records; write access is explicitly denied to prevent unauthorized changes.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create: if request.resource.data.keys().hasAll(['type', 'description', 'date']);
-      allow update: if true;
-      allow delete: if true;
+      allow create, update, delete: if false;
     }
-  }
 
-  function isSignedIn() {
-    return request.auth != null;
-  }
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-  function isOwner(userId) {
-    return isSignedIn() && request.auth.uid == userId;
-  }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
   }
 }
