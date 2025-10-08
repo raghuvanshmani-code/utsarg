@@ -11,6 +11,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Separator } from '@/components/ui/separator';
 
 function PhilanthropySkeleton() {
     return (
@@ -56,9 +57,9 @@ export default function PhilanthropyPage() {
                             opts={{ align: "start" }}
                             className="w-full"
                         >
-                            <CarouselContent className="-ml-2">
+                            <CarouselContent className="-ml-2 md:-ml-4">
                                 {activities.map((activity) => (
-                                    <CarouselItem key={activity.id} className="basis-5/6 md:basis-1/2 lg:basis-1/3 pl-2">
+                                    <CarouselItem key={activity.id} className="basis-5/6 md:basis-1/2 lg:basis-1/3 pl-2 md:pl-4">
                                         <div className="p-1 h-full">
                                             <Link href={`/philanthropy/${activity.id}`} className="group block h-full">
                                                 <Card className="flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 h-full">
@@ -104,29 +105,31 @@ export default function PhilanthropyPage() {
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
-                            <CarouselPrevious className="ml-12" />
-                            <CarouselNext className="mr-12" />
+                            <CarouselPrevious className="ml-12 md:flex hidden" />
+                            <CarouselNext className="mr-12 md:flex hidden" />
                         </Carousel>
                     )}
                 </div>
 
-                <Card className="bg-card text-center" data-scroll>
-                    <CardHeader>
-                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                            <Gift className="h-8 w-8 text-primary" />
-                        </div>
-                        <CardTitle className="text-2xl">Support Our Cause</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground mb-6">
-                            Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
-                        </p>
-                        <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full w-full max-w-xs mx-auto">
-                                Donate Now
-                        </Button>
-                    </CardContent>
-                </Card>
-
+                <div className="space-y-12">
+                  <Separator />
+                  <Card className="bg-card text-center" data-scroll>
+                      <CardHeader>
+                          <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                              <Gift className="h-8 w-8 text-primary" />
+                          </div>
+                          <CardTitle className="text-2xl">Support Our Cause</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground mb-6">
+                              Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
+                          </p>
+                          <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full w-full max-w-xs mx-auto">
+                                  Donate Now
+                          </Button>
+                      </CardContent>
+                  </Card>
+                </div>
             </div>
         </div>
     );
