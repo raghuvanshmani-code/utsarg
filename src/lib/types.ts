@@ -1,3 +1,4 @@
+
 export type NavItem = {
   title: string;
   href: string;
@@ -80,6 +81,7 @@ export type PhilanthropyActivity = {
     date: string;
     volunteers: string[];
     photos: string[];
+    imageUrl?: string;
 };
 
 export type FundTransaction = {
@@ -89,4 +91,5 @@ export type FundTransaction = {
     purpose: string;
     date: string;
     signatories: string[];
+    imageUrl?: string;
 };

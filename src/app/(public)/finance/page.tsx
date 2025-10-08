@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, FileImage } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 function FinanceSkeleton() {
     return (
@@ -43,6 +45,7 @@ export default function FinancePage() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>Purpose</TableHead>
                                         <TableHead>Source</TableHead>
+                                        <TableHead>Receipt</TableHead>
                                         <TableHead className="text-right">Amount</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -52,6 +55,17 @@ export default function FinancePage() {
                                             <TableCell>{format(new Date(tx.date), 'MMM dd, yyyy')}</TableCell>
                                             <TableCell className="font-medium">{tx.purpose}</TableCell>
                                             <TableCell className="text-muted-foreground">{tx.source}</TableCell>
+                                            <TableCell>
+                                                {tx.imageUrl ? (
+                                                    <Button asChild variant="outline" size="sm">
+                                                        <Link href={tx.imageUrl} target="_blank" rel="noopener noreferrer">
+                                                           <FileImage className="h-4 w-4 mr-2" /> View
+                                                        </Link>
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-muted-foreground text-xs">N/A</span>
+                                                )}
+                                            </TableCell>
                                             <TableCell className={`text-right font-semibold ${tx.amount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                                 <div className="flex items-center justify-end">
                                                     {tx.amount >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownLeft className="h-4 w-4 mr-1" />}

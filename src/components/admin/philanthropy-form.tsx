@@ -21,7 +21,7 @@ const formSchema = z.object({
   type: z.string().min(2, { message: "Type must be at least 2 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  photos: z.array(z.string()).optional(),
+  imageUrl: z.string().optional(),
   volunteers: z.array(z.string()).optional(),
 });
 
@@ -39,17 +39,20 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { type: '', description: '', date: new Date().toISOString(), photos: [], volunteers: [] },
+    defaultValues: { type: '', description: '', date: new Date().toISOString(), imageUrl: '', volunteers: [] },
   });
 
   useEffect(() => {
     setIsClient(true);
-    if (activity) {
-      form.reset({ ...activity, date: activity.date || new Date().toISOString() });
-    } else {
-      form.reset({ type: '', description: '', date: new Date().toISOString(), photos: [], volunteers: [] });
+    if (isOpen) {
+      if (activity) {
+        form.reset({ ...activity, date: activity.date || new Date().toISOString() });
+      } else {
+        form.reset({ type: '', description: '', date: new Date().toISOString(), imageUrl: '', volunteers: [] });
+      }
     }
   }, [activity, form, isOpen]);
+
 
   if (!isClient) {
     return null;
@@ -63,8 +66,8 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
       <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!activity) form.reset(); })} className="space-y-4">
         <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Activity Type</FormLabel><FormControl><Input placeholder="e.g., Blood Donation Camp" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="photos.0" render={({ field }) => (<FormItem><FormLabel>Photo</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem><FormLabel>Image (Optional)</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
           <Button type="submit" disabled={isSubmitting}>

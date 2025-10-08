@@ -41,6 +41,11 @@ export default function PhilanthropyPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {activities.map((activity) => (
                             <Card key={activity.id}>
+                                {activity.imageUrl && (
+                                     <div className="aspect-video relative overflow-hidden rounded-t-lg">
+                                        <Image src={activity.imageUrl} alt={activity.type} fill className="object-cover" />
+                                    </div>
+                                )}
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         <div className="bg-primary/10 p-3 rounded-full">
@@ -54,11 +59,7 @@ export default function PhilanthropyPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-muted-foreground mb-4">{activity.description}</p>
-                                    {activity.photos && activity.photos.length > 0 && (
-                                        <div className="aspect-video relative overflow-hidden rounded-lg mb-4">
-                                            <Image src={activity.photos[0]} alt={activity.type} fill className="object-cover" />
-                                        </div>
-                                    )}
+                                    
                                     {activity.volunteers && activity.volunteers.length > 0 && (
                                         <div className="flex items-center text-sm text-muted-foreground">
                                             <Users className="h-4 w-4 mr-2" />

@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
+import { ImageUploader } from '../image-uploader';
 
 const formSchema = z.object({
   purpose: z.string().min(2, { message: "Purpose must be at least 2 characters." }),
@@ -21,6 +22,7 @@ const formSchema = z.object({
   amount: z.coerce.number(),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   signatories: z.array(z.string()).optional(), // Making optional for simplicity
+  imageUrl: z.string().optional(),
 });
 
 interface FinanceFormProps {
@@ -37,15 +39,17 @@ export function FinanceForm({ isOpen, onOpenChange, onSubmit, transaction, isSub
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] },
+    defaultValues: { purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [], imageUrl: '' },
   });
 
   useEffect(() => {
     setIsClient(true);
-    if (transaction) {
-      form.reset({ ...transaction, date: transaction.date || new Date().toISOString() });
-    } else {
-      form.reset({ purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [] });
+    if (isOpen) {
+        if (transaction) {
+            form.reset({ ...transaction, date: transaction.date || new Date().toISOString() });
+        } else {
+            form.reset({ purpose: '', source: '', amount: 0, date: new Date().toISOString(), signatories: [], imageUrl: '' });
+        }
     }
   }, [transaction, form, isOpen]);
 
@@ -62,7 +66,8 @@ export function FinanceForm({ isOpen, onOpenChange, onSubmit, transaction, isSub
         <FormField control={form.control} name="purpose" render={({ field }) => (<FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="source" render={({ field }) => (<FormItem><FormLabel>Source/Recipient</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (use negative for expenses)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Transaction Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Transaction Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem><FormLabel>Receipt/Image (Optional)</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
           <Button type="submit" disabled={isSubmitting}>
