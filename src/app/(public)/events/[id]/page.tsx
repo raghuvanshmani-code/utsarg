@@ -17,7 +17,7 @@ export default function EventDetailsPage() {
   const params = useParams();
   const id = params.id as string;
   
-  const { data: event, loading: eventLoading } = useDoc<Event>(`events/${id}`);
+  const { data: event, loading: eventLoading } = useDoc<Event>(id ? `events/${id}` : null);
   
   // Conditionally fetch the club only when the event data (and thus event.clubId) is available.
   const { data: club, loading: clubLoading } = useDoc<Club>(event?.clubId ? `clubs/${event.clubId}` : null);
@@ -82,12 +82,14 @@ export default function EventDetailsPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">Details</h3>
                   <ul className="space-y-4 text-muted-foreground">
-                    <li className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-3 text-primary" />
-                      <div>
-                        <strong>Date:</strong> {format(new Date(event.date), 'EEEE, MMMM do, yyyy')}
-                      </div>
-                    </li>
+                    {event.date && !isNaN(new Date(event.date).getTime()) &&
+                      <li className="flex items-center">
+                        <Calendar className="h-5 w-5 mr-3 text-primary" />
+                        <div>
+                          <strong>Date:</strong> {format(new Date(event.date), 'EEEE, MMMM do, yyyy')}
+                        </div>
+                      </li>
+                    }
                     <li className="flex items-center">
                       <MapPin className="h-5 w-5 mr-3 text-primary" />
                       <div>

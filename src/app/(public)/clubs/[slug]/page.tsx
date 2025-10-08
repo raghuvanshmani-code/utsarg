@@ -36,7 +36,7 @@ export default function ClubDetailsPage() {
   const params = useParams();
   const slug = params.slug as string;
 
-  const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${slug}`);
+  const { data: club, loading: clubLoading } = useDoc<Club>(slug ? `clubs/${slug}` : null);
 
   if (clubLoading) {
     return (

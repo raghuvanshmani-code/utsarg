@@ -63,7 +63,9 @@ export default function PostDetailsPage() {
             </h1>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground mb-6">
               <span className="flex items-center"><User className="h-4 w-4 mr-2" /> {post.author}</span>
-              <span className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> {format(new Date(post.date), 'MMMM do, yyyy')}</span>
+              {post.date && !isNaN(new Date(post.date).getTime()) &&
+                <span className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> {format(new Date(post.date), 'MMMM do, yyyy')}</span>
+              }
             </div>
 
             <article

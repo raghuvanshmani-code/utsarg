@@ -24,7 +24,7 @@ export default function PhilanthropyDetailsPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data: activity, loading } = useDoc<PhilanthropyActivity>(`philanthropy/${id}`);
+  const { data: activity, loading } = useDoc<PhilanthropyActivity>(id ? `philanthropy/${id}` : null);
 
   if (loading) {
     return (
