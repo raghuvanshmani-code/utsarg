@@ -1,7 +1,8 @@
 
 'use client';
 import Image from 'next/image';
-import { notFound, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Calendar, Users, HeartHandshake, Camera, Target, Repeat, PiggyBank, BadgeCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
