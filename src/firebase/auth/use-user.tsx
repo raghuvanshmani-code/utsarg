@@ -12,33 +12,24 @@ export const useUser = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Anyone can access admin pages now
+    setIsAdmin(true);
+    setLoading(false);
+
     if (!auth) {
-      setLoading(false);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true); // Set loading to true while we check claims
       if (user) {
         setUser(user);
-        try {
-          // Force a token refresh to get the latest custom claims.
-          const idTokenResult = await user.getIdTokenResult(true);
-          setIsAdmin(!!idTokenResult.claims.admin);
-        } catch (error) {
-          console.error("Error fetching custom claims:", error);
-          setIsAdmin(false);
-        }
       } else {
         setUser(null);
-        setIsAdmin(false);
       }
-      // Only set loading to false after user and claims have been processed.
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  return { user, auth, loading, isAdmin };
+  return { user, auth, loading, isAdmin: true };
 };

@@ -76,7 +76,7 @@ export default function GalleryAdminPage() {
       
       const data = {
         ...values,
-        uploadedBy: user?.uid,
+        uploadedBy: user?.uid ?? 'anonymous',
         updatedAt: serverTimestamp(),
       };
 
@@ -105,7 +105,7 @@ export default function GalleryAdminPage() {
   };
 
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db || !user) return;
+    if (!db) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
@@ -117,7 +117,7 @@ export default function GalleryAdminPage() {
         for (const item of items) {
             await addDoc(collectionRef, { 
                 ...item, 
-                uploadedBy: user.uid,
+                uploadedBy: user?.uid ?? 'anonymous',
                 date: new Date().toISOString(),
                 createdAt: serverTimestamp(), 
                 updatedAt: serverTimestamp() 
