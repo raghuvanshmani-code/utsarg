@@ -70,7 +70,7 @@ export default function PhilanthropyPage() {
 
                                                     )}
                                                     <CardHeader>
-                                                        <div className="flex items-start gap-4">
+                                                        <div className="flex items-center gap-4">
                                                             <div className="bg-primary/10 p-3 rounded-full mt-1">
                                                                 <HeartHandshake className="h-6 w-6 text-primary" />
                                                             </div>
