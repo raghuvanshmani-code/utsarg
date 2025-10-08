@@ -1,6 +1,7 @@
+
 'use client';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Calendar, User, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -9,8 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Post } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PostDetailsPage({ params: { slug } }: { params: { slug: string } }) {
-  // The slug is the document ID in this case
+export default function PostDetailsPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+
   const { data: post, loading } = useDoc<Post>(slug ? `blog/${slug}` : null);
 
   if (loading) {

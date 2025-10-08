@@ -1,6 +1,7 @@
+
 'use client';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Users, UserCheck, Paintbrush, Mic, Palette, Drama, BookOpen, IndianRupee, HandCoins } from 'lucide-react';
 
 import { useDoc } from '@/firebase';
@@ -31,7 +32,10 @@ const getIconForActivity = (activity: string) => {
     return Paintbrush;
 }
 
-export default function ClubDetailsPage({ params: { slug } }: { params: { slug: string } }) {
+export default function ClubDetailsPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+
   const { data: club, loading: clubLoading } = useDoc<Club>(`clubs/${slug}`);
 
   if (clubLoading) {

@@ -1,6 +1,7 @@
+
 'use client';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Calendar, MapPin, Tag, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -12,7 +13,10 @@ import type { Event, Club } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
-export default function EventDetailsPage({ params: { id } }: { params: { id: string } }) {
+export default function EventDetailsPage() {
+  const params = useParams();
+  const id = params.id as string;
+  
   const { data: event, loading: eventLoading } = useDoc<Event>(`events/${id}`);
   
   // Conditionally fetch the club only when the event data (and thus event.clubId) is available.
@@ -87,7 +91,7 @@ export default function EventDetailsPage({ params: { id } }: { params: { id: str
                     <li className="flex items-center">
                       <MapPin className="h-5 w-5 mr-3 text-primary" />
                       <div>
-                        <strong>Location:</strong> {event.location}
+                        <strong>Location:</strong> {event.venue}
                       </div>
                     </li>
                     <li className="flex items-center">

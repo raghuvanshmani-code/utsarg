@@ -1,7 +1,7 @@
 
 'use client';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Calendar, Users, HeartHandshake, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -20,7 +20,10 @@ function formatActivityType(type: string): string {
 }
 
 
-export default function PhilanthropyDetailsPage({ params: { id } }: { params: { id: string } }) {
+export default function PhilanthropyDetailsPage() {
+  const params = useParams();
+  const id = params.id as string;
+
   const { data: activity, loading } = useDoc<PhilanthropyActivity>(`philanthropy/${id}`);
 
   if (loading) {
