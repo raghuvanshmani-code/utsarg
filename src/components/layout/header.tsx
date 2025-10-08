@@ -21,7 +21,6 @@ const mainNavItems = [
     { title: 'About', href: '/about' },
     { title: 'Clubs', href: '/clubs' },
     { title: 'Philanthropy', href: '/philanthropy' },
-    { title: 'Finance', href: '/finance' },
     { title: 'Events', href: '/events' },
     { title: 'Gallery', href: '/gallery' },
     { title: 'Blog', href: '/blog' },

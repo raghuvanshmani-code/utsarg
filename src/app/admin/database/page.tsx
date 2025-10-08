@@ -57,11 +57,6 @@ export default function DatabaseAdminPage() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: 'Finance'}}>
-                    <Link href="/admin/finance"><IndianRupee /><span>Finance</span></Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip={{children: 'Events'}}>
                     <Link href="/admin/events"><Calendar /><span>Events</span></Link>
                 </SidebarMenuButton>
