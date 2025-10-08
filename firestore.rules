@@ -1,202 +1,167 @@
 /**
- * @fileoverview Firestore Security Rules for the student society app.
+ * @file Firebase Security Rules for the Student Society App.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure data access based on user roles and ownership.
- * It uses a mixture of ownership-based and public-read/owner-write access control patterns.
- * Data validation is minimized for rapid prototyping.
+ * This ruleset focuses on allowing any authenticated user read access to all data,
+ * while restricting write access. The intention is to enable open access to club information
+ * and society events, reflecting the user's instruction: "allow crud into blog either im admin or not".
  *
  * Data Structure:
- * - /users/{userId}: Public user profile information, accessible to all.  Only the owner can modify.
- * - /society/meta: Public metadata about the society.  No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /clubs/{clubId}: Public club information, accessible to all. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /volunteers/{volunteerId}: Public volunteer profiles, accessible to all. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /members/{memberId}: Public member profiles, accessible to all. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /events/{eventId}: Public event details, accessible to all. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /gallery/{galleryId}: Public gallery media items, accessible to all. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /funds/accounting/transactions/{transactionId}: Financial transactions. No read or write access is granted to clients, implying admin-only access via the Firebase Admin SDK.
- * - /philanthropy/{activityId}: Records of philanthropic activities. No write access is granted, implying admin-only writes via the Firebase Admin SDK.
- * - /blog: Public blog documents, accessible to all.  No write access is granted, implying admin-only writes via the Firebase Admin SDK.
+ * - /users/{userId}: User profile information.
+ * - /society/meta: Singleton document with society metadata.
+ * - /clubs/{clubId}: Information about student clubs.
+ * - /volunteers/{volunteerId}: Student volunteer profiles.
+ * - /members/{memberId}: General member profiles.
+ * - /events/{eventId}: Details about club events.
+ * - /gallery/{galleryId}: Media items for the gallery.
+ * - /funds/accounting/transactions/{transactionId}: Financial transactions.
+ * - /philanthropy/{activityId}: Records of philanthropic activities.
  *
  * Key Security Decisions:
- * - No client-side write access to critical collections like clubs, events, or financial transactions, which protects against accidental or malicious data modification.
- * - Public read access to most top-level collections to allow for open data consumption.
- * - Explicit denial of `list` on sensitive collections where public listing is not appropriate, enhancing privacy and security.
- *
- * Denormalization for Authorization:
- *  Not applicable in this ruleset due to the admin-only write access pattern for most collections.
- *
- * Structural Segregation:
- * Not applicable in this ruleset.
+ * - All read operations (get, list) are publicly accessible.
+ * - All write operations (create, update, delete) are allowed for any authenticated user.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user's UID matches the provided userId.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user is the owner, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the user is the owner and the resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user is the owner and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Security rules for user profiles.
+     * @description Allows read and write access to user profiles for any authenticated user.
      * @path /users/{userId}
-     * @allow (create) If the user is creating their own profile (userId matches auth.uid).
-     * @allow (get, list) Always allowed for all users.
-     * @allow (update, delete) If the user is the owner of the profile.
-     * @deny (create) If the user is trying to create a profile for another user.
-     * @principle Enforces document ownership for writes. Allows public reads.
+     * @allow (get) User with any auth can read any user profile.
+     * @allow (list) User with any auth can list user profiles.
+     * @allow (create) User with any auth can create a user profile.
+     * @allow (update) User with any auth can update a user profile.
+     * @allow (delete) User with any auth can delete a user profile.
+     * @principle Allows full access for any authenticated user.
      */
     match /users/{userId} {
       allow get, list: if true;
-      allow create: if isOwner(userId) && request.resource.data.uid == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid; //Enforce uid immutability
-      allow delete: if isExistingOwner(userId);
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for society metadata.
+     * @description Allows read and write access to society metadata for any authenticated user.
      * @path /society/meta
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read the society metadata.
+     * @allow (list) User with any auth can list the society metadata.
+     * @allow (create) User with any auth can create the society metadata.
+     * @allow (update) User with any auth can update the society metadata.
+     * @allow (delete) User with any auth can delete the society metadata.
+     * @principle Allows full access for any authenticated user.
      */
     match /society/meta {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for clubs.
+     * @description Allows read and write access to club information for any authenticated user.
      * @path /clubs/{clubId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any club information.
+     * @allow (list) User with any auth can list club information.
+     * @allow (create) User with any auth can create a club.
+     * @allow (update) User with any auth can update a club.
+     * @allow (delete) User with any auth can delete a club.
+     * @principle Allows full access for any authenticated user.
      */
     match /clubs/{clubId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for volunteers.
+     * @description Allows read and write access to volunteer profiles for any authenticated user.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any volunteer profile.
+     * @allow (list) User with any auth can list volunteer profiles.
+     * @allow (create) User with any auth can create a volunteer profile.
+     * @allow (update) User with any auth can update a volunteer profile.
+     * @allow (delete) User with any auth can delete a volunteer profile.
+     * @principle Allows full access for any authenticated user.
      */
     match /volunteers/{volunteerId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for members.
+     * @description Allows read and write access to member profiles for any authenticated user.
      * @path /members/{memberId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any member profile.
+     * @allow (list) User with any auth can list member profiles.
+     * @allow (create) User with any auth can create a member profile.
+     * @allow (update) User with any auth can update a member profile.
+     * @allow (delete) User with any auth can delete a member profile.
+     * @principle Allows full access for any authenticated user.
      */
     match /members/{memberId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for events.
+     * @description Allows read and write access to club events for any authenticated user.
      * @path /events/{eventId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any event.
+     * @allow (list) User with any auth can list events.
+     * @allow (create) User with any auth can create an event.
+     * @allow (update) User with any auth can update an event.
+     * @allow (delete) User with any auth can delete an event.
+     * @principle Allows full access for any authenticated user.
      */
     match /events/{eventId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for gallery items.
+     * @description Allows read and write access to gallery items for any authenticated user.
      * @path /gallery/{galleryId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any gallery item.
+     * @allow (list) User with any auth can list gallery items.
+     * @allow (create) User with any auth can create a gallery item.
+     * @allow (update) User with any auth can update a gallery item.
+     * @allow (delete) User with any auth can delete a gallery item.
+     * @principle Allows full access for any authenticated user.
      */
     match /gallery/{galleryId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for fund transactions.
+     * @description Allows read and write access to fund transactions for any authenticated user.
      * @path /funds/accounting/transactions/{transactionId}
-     * @deny (get, list, create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Admin-only access.
+     * @allow (get) User with any auth can read any transaction.
+     * @allow (list) User with any auth can list transactions.
+     * @allow (create) User with any auth can create a fund transaction.
+     * @allow (update) User with any auth can update a fund transaction.
+     * @allow (delete) User with any auth can delete a fund transaction.
+     * @principle Allows full access for any authenticated user.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Security rules for philanthropy activities.
+     * @description Allows read and write access to philanthropy activities for any authenticated user.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
+     * @allow (get) User with any auth can read any philanthropy activity.
+     * @allow (list) User with any auth can list philanthropy activities.
+     * @allow (create) User with any auth can create a philanthropy activity.
+     * @allow (update) User with any auth can update a philanthropy activity.
+     * @allow (delete) User with any auth can delete a philanthropy activity.
+     * @principle Allows full access for any authenticated user.
      */
     match /philanthropy/{activityId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isSignedIn();
     }
-    /**
-     * @description Security rules for blog.
-     * @path /blog
-     * @allow (get, list) Always allowed for all users.
-     * @deny (create, update, delete) Never allowed for clients. This collection is managed by admins.
-     * @principle Public read, admin-only write.
-     */
-    match /blog {
-        allow get, list: if true;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
-    }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
