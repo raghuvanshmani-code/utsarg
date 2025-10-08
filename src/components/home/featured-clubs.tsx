@@ -1,3 +1,4 @@
+
 'use client';
 import { useCollection } from '@/firebase';
 import type { Club } from '@/lib/types';
@@ -38,17 +39,17 @@ export function FeaturedClubs() {
                     opts={{ align: "start", loop: true }}
                     className="w-full"
                 >
-                    <CarouselContent>
+                    <CarouselContent className="-ml-2">
                     {clubs.map((club) => (
-                        <CarouselItem key={club.id} className="md:basis-1/2 lg:basis-1/3">
+                        <CarouselItem key={club.id} className="basis-5/6 md:basis-1/2 lg:basis-1/3 pl-2">
                         <div className="p-1">
                             <ClubCard club={club} className="h-full bg-background" />
                         </div>
                         </CarouselItem>
                     ))}
                     </CarouselContent>
-                    <CarouselPrevious className="hidden md:inline-flex" />
-                    <CarouselNext className="hidden md:inline-flex" />
+                    <CarouselPrevious className="ml-12" />
+                    <CarouselNext className="mr-12" />
                 </Carousel>
             )}
         </div>

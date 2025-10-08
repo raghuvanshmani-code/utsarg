@@ -44,23 +44,6 @@ export default function PhilanthropyPage() {
             />
             <div className="container mx-auto px-4 py-12 md:py-16 space-y-12">
                 
-                <Card className="bg-card text-center" data-scroll>
-                    <CardHeader>
-                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                            <Gift className="h-8 w-8 text-primary" />
-                        </div>
-                        <CardTitle className="text-2xl">Support Our Cause</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground mb-6">
-                            Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
-                        </p>
-                        <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full w-full max-w-xs mx-auto">
-                                Donate Now
-                        </Button>
-                    </CardContent>
-                </Card>
-
                 <div>
                     {loading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -73,9 +56,9 @@ export default function PhilanthropyPage() {
                             opts={{ align: "start" }}
                             className="w-full"
                         >
-                            <CarouselContent>
+                            <CarouselContent className="-ml-2">
                                 {activities.map((activity) => (
-                                    <CarouselItem key={activity.id} className="md:basis-1/2 lg:basis-1/3">
+                                    <CarouselItem key={activity.id} className="basis-5/6 md:basis-1/2 lg:basis-1/3 pl-2">
                                         <div className="p-1 h-full">
                                             <Link href={`/philanthropy/${activity.id}`} className="group block h-full">
                                                 <Card className="flex flex-col overflow-hidden rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:border-accent hover:-translate-y-1 h-full">
@@ -121,11 +104,29 @@ export default function PhilanthropyPage() {
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
-                            <CarouselPrevious className="hidden md:inline-flex" />
-                            <CarouselNext className="hidden md:inline-flex" />
+                            <CarouselPrevious className="ml-12" />
+                            <CarouselNext className="mr-12" />
                         </Carousel>
                     )}
                 </div>
+
+                <Card className="bg-card text-center" data-scroll>
+                    <CardHeader>
+                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                            <Gift className="h-8 w-8 text-primary" />
+                        </div>
+                        <CardTitle className="text-2xl">Support Our Cause</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground mb-6">
+                            Your generous donations help us fund our philanthropic activities, from organizing health camps to supporting local communities. Every contribution, big or small, makes a significant impact.
+                        </p>
+                        <Button size="lg" variant="accent" className="transform transition-transform hover:scale-105 rounded-full w-full max-w-xs mx-auto">
+                                Donate Now
+                        </Button>
+                    </CardContent>
+                </Card>
+
             </div>
         </div>
     );
