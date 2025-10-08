@@ -53,7 +53,9 @@ export default function PhilanthropyPage() {
                                         </div>
                                         <div>
                                             <CardTitle>{activity.type}</CardTitle>
-                                            <p className="text-sm text-muted-foreground">{format(new Date(activity.date), 'MMMM dd, yyyy')}</p>
+                                            {activity.date && !isNaN(new Date(activity.date).getTime()) ? (
+                                                <p className="text-sm text-muted-foreground">{format(new Date(activity.date), 'MMMM dd, yyyy')}</p>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </CardHeader>
