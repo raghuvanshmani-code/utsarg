@@ -1,8 +1,6 @@
-
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,14 +8,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/layout/logo';
 import { Loader2 } from 'lucide-react';
+import { useAdminAuth } from '../auth-provider';
 
-const ADMIN_PASSWORD = 'admin123';
-const APPROVED_ADMIN_EMAILS = ['raghuvanshmani876@gmail.com'];
+// Hardcoded list of approved usernames as requested
+const APPROVED_ADMIN_USERNAMES = ['raghuvanshmani@utsarg', 'rohanmishra@utsarg'];
+// Password is read from environment variables
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  const { login } = useAdminAuth();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,29 +26,20 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const isEmailApproved = APPROVED_ADMIN_EMAILS.includes(email.toLowerCase());
+    const isUsernameApproved = APPROVED_ADMIN_USERNAMES.includes(username);
 
-    if (password === ADMIN_PASSWORD && isEmailApproved) {
+    if (password === ADMIN_PASSWORD && isUsernameApproved) {
       toast({
         title: 'Success',
-        description: 'Login successful. Redirecting to dashboard...',
+        description: 'Login successful.',
       });
-      // On successful login, we redirect to the main admin dashboard.
-      // The user will remain on the dashboard until they close the tab or navigate away.
-      // If they reload, they will be prompted to log in again.
-      router.push('/admin');
-    } else if (password === ADMIN_PASSWORD && !isEmailApproved) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'You are not authorized to access this panel.',
-      });
-      setIsSubmitting(false);
+      // Set authenticated state in the provider
+      login();
     } else {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Incorrect email or password. Please try again.',
+        description: 'Incorrect username or password. Please try again.',
       });
       setIsSubmitting(false);
     }
@@ -66,14 +58,14 @@ export default function AdminLoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
-                    placeholder="admin@example.com"
+                    placeholder="Enter your username"
                 />
             </div>
             <div className="space-y-2">
