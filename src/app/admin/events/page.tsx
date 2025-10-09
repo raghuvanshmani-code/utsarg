@@ -21,6 +21,8 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // Function to remove undefined values from an object
 const sanitizeData = (obj: any) => {
@@ -72,8 +74,8 @@ export default function EventsAdminPage() {
         setIsAlertOpen(false);
         setEventToDelete(null);
     }).catch(serverError => {
-        console.error("Error deleting document: ", serverError);
-        toast({ variant: 'destructive', title: "Error", description: serverError.message });
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
     }).finally(() => {
         setIsSubmitting(false);
     });
@@ -92,8 +94,8 @@ export default function EventsAdminPage() {
               toast({ title: "Success", description: "Event updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
-              console.error("Error updating document: ", serverError);
-              toast({ variant: 'destructive', title: "Error", description: serverError.message });
+              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
+              errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -102,8 +104,8 @@ export default function EventsAdminPage() {
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Event added successfully." });
           }).catch(serverError => {
-              console.error("Error adding document: ", serverError);
-              toast({ variant: 'destructive', title: "Error", description: serverError.message });
+              const permissionError = new FirestorePermissionError({ path: 'events', operation: 'create', requestResourceData: data });
+              errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -126,7 +128,12 @@ export default function EventsAdminPage() {
         }
         toast({ title: "Success", description: `${items.length} events added successfully.` });
     } catch (e: any) {
-        toast({ variant: "destructive", title: "JSON Error", description: e.message });
+        if (e.message.includes('permission-denied')) {
+             const permissionError = new FirestorePermissionError({ path: 'events', operation: 'create', requestResourceData: JSON.parse(jsonContent) });
+             errorEmitter.emit('permission-error', permissionError);
+        } else {
+            toast({ variant: "destructive", title: "JSON Error", description: e.message });
+        }
     } finally {
         setIsSubmitting(false);
     }
