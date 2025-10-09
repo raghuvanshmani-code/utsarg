@@ -12,7 +12,7 @@ import { Logo } from '@/components/layout/logo';
 import { Loader2 } from 'lucide-react';
 
 const ADMIN_PASSWORD_SESSION_KEY = 'admin-authenticated';
-const ADMIN_PASSWORD = 'admin123'; // This is a hardcoded password.
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
 export default function AdminLoginPage() {
   const router = useRouter();
