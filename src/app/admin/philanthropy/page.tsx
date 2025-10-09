@@ -24,6 +24,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
 
+// Function to remove undefined values from an object
+const sanitizeData = (obj: any) => {
+  const newObj: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+};
+
 export default function PhilanthropyAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -74,7 +85,8 @@ export default function PhilanthropyAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
-      const data = { ...values, updatedAt: serverTimestamp() };
+      const sanitizedValues = sanitizeData(values);
+      const data = { ...sanitizedValues, updatedAt: serverTimestamp() };
 
       if (selectedActivity) {
           const docRef = doc(db, 'philanthropy', selectedActivity.id);
@@ -112,13 +124,14 @@ export default function PhilanthropyAdminPage() {
         
         const collectionRef = collection(db, 'philanthropy');
         for (const item of items) {
-            const docId = item.id || item.type?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const sanitizedItem = sanitizeData(item);
+            const docId = sanitizedItem.id || sanitizedItem.type?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             if (!docId) {
                 console.warn("Skipping item due to missing id/type:", item);
                 continue;
             }
             const docRef = doc(collectionRef, docId);
-            await setDoc(docRef, { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            await setDoc(docRef, { ...sanitizedItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
         toast({ title: "Success", description: `${items.length} activities added successfully.` });
     } catch (e: any) {
@@ -189,3 +202,5 @@ export default function PhilanthropyAdminPage() {
     </SidebarProvider>
   );
 }
+
+    

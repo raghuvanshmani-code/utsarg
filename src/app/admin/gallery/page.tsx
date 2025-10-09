@@ -24,6 +24,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
 
+// Function to remove undefined values from an object
+const sanitizeData = (obj: any) => {
+  const newObj: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+};
+
 export default function GalleryAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -74,8 +85,9 @@ export default function GalleryAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
+      const sanitizedValues = sanitizeData(values);
       const data = {
-        ...values,
+        ...sanitizedValues,
         uploadedBy: user?.uid ?? 'anonymous',
         updatedAt: serverTimestamp(),
       };
@@ -115,8 +127,9 @@ export default function GalleryAdminPage() {
         
         const collectionRef = collection(db, 'gallery');
         for (const item of items) {
+            const sanitizedItem = sanitizeData(item);
             await addDoc(collectionRef, { 
-                ...item, 
+                ...sanitizedItem, 
                 uploadedBy: user?.uid ?? 'anonymous',
                 date: new Date().toISOString(),
                 createdAt: serverTimestamp(), 
@@ -192,3 +205,5 @@ export default function GalleryAdminPage() {
     </SidebarProvider>
   );
 }
+
+    

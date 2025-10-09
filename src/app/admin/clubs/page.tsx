@@ -23,6 +23,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
 
+// Function to remove undefined values from an object
+const sanitizeData = (obj: any) => {
+  const newObj: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+};
+
 export default function ClubsAdminPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -73,7 +84,8 @@ export default function ClubsAdminPage() {
       if (!db) return;
       setIsSubmitting(true);
       
-      const data = { ...values, updatedAt: serverTimestamp() };
+      const sanitizedValues = sanitizeData(values);
+      const data = { ...sanitizedValues, updatedAt: serverTimestamp() };
 
       if (selectedClub) {
           const docRef = doc(db, 'clubs', selectedClub.id);
@@ -110,7 +122,8 @@ export default function ClubsAdminPage() {
         
         const collectionRef = collection(db, 'clubs');
         for (const item of items) {
-            await addDoc(collectionRef, { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            const sanitizedItem = sanitizeData(item);
+            await addDoc(collectionRef, { ...sanitizedItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
         toast({ title: "Success", description: `${items.length} clubs added successfully.` });
     } catch (e: any) {
@@ -181,3 +194,5 @@ export default function ClubsAdminPage() {
     </SidebarProvider>
   );
 }
+
+    
