@@ -17,8 +17,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EventForm } from '@/components/admin/event-form';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -74,8 +72,8 @@ export default function EventsAdminPage() {
         setIsAlertOpen(false);
         setEventToDelete(null);
     }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error deleting document: ", serverError);
+        toast({ variant: 'destructive', title: "Error", description: serverError.message });
     }).finally(() => {
         setIsSubmitting(false);
     });
@@ -94,8 +92,8 @@ export default function EventsAdminPage() {
               toast({ title: "Success", description: "Event updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error updating document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -104,8 +102,8 @@ export default function EventsAdminPage() {
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Event added successfully." });
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error adding document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -195,5 +193,3 @@ export default function EventsAdminPage() {
     </SidebarProvider>
   );
 }
-
-    

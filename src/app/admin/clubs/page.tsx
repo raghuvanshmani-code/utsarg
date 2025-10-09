@@ -17,8 +17,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ClubForm } from '@/components/admin/club-form';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
@@ -73,8 +71,8 @@ export default function ClubsAdminPage() {
         setIsAlertOpen(false);
         setClubToDelete(null);
     }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error deleting document: ", serverError);
+        toast({ variant: 'destructive', title: "Error", description: serverError.message });
     }).finally(() => {
         setIsSubmitting(false);
     });
@@ -93,8 +91,8 @@ export default function ClubsAdminPage() {
               toast({ title: "Success", description: "Club updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error updating document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -103,8 +101,8 @@ export default function ClubsAdminPage() {
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Club added successfully." });
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error adding document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -194,5 +192,3 @@ export default function ClubsAdminPage() {
     </SidebarProvider>
   );
 }
-
-    

@@ -16,8 +16,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BlogForm } from '@/components/admin/blog-form';
@@ -74,8 +72,8 @@ export default function BlogAdminPage() {
         setIsAlertOpen(false);
         setPostToDelete(null);
     }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error deleting document: ", serverError);
+        toast({ variant: 'destructive', title: "Error", description: serverError.message });
     }).finally(() => {
         setIsSubmitting(false);
     });
@@ -94,8 +92,8 @@ export default function BlogAdminPage() {
               toast({ title: "Success", description: "Post updated successfully." });
               setIsDialogOpen(false);
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error updating document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -104,8 +102,8 @@ export default function BlogAdminPage() {
           addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Post added successfully." });
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
+              console.error("Error adding document: ", serverError);
+              toast({ variant: 'destructive', title: "Error", description: serverError.message });
           }).finally(() => {
               setIsSubmitting(false);
           });
@@ -195,5 +193,3 @@ export default function BlogAdminPage() {
     </SidebarProvider>
   );
 }
-
-    
