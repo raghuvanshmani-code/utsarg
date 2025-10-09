@@ -8,19 +8,22 @@ import { useAuth } from '../provider';
 export const useUser = () => {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!auth) {
+      setLoading(false);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  // Grant admin access to everyone and remove loading state.
-  return { user, auth, loading: false, isAdmin: true };
+  // Grant admin access to everyone to match the open Firestore rules.
+  return { user, auth, loading, isAdmin: true };
 };
