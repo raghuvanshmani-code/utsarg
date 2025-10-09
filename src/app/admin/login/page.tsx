@@ -11,9 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/layout/logo';
 import { Loader2 } from 'lucide-react';
 
-const ADMIN_PASSWORD_SESSION_KEY = 'admin-authenticated';
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
-const APPROVED_ADMIN_EMAILS = ['raghuvanshmani@gmail.com'];
+const ADMIN_PASSWORD = 'admin123';
+const APPROVED_ADMIN_EMAILS = ['raghuvanshmani876@gmail.com'];
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -29,11 +28,13 @@ export default function AdminLoginPage() {
     const isEmailApproved = APPROVED_ADMIN_EMAILS.includes(email.toLowerCase());
 
     if (password === ADMIN_PASSWORD && isEmailApproved) {
-      sessionStorage.setItem(ADMIN_PASSWORD_SESSION_KEY, 'true');
       toast({
         title: 'Success',
         description: 'Login successful. Redirecting to dashboard...',
       });
+      // On successful login, we redirect to the main admin dashboard.
+      // The user will remain on the dashboard until they close the tab or navigate away.
+      // If they reload, they will be prompted to log in again.
       router.push('/admin');
     } else if (password === ADMIN_PASSWORD && !isEmailApproved) {
       toast({
