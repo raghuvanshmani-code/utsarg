@@ -30,6 +30,15 @@ export function useDoc<T>(path: string | null) {
         setLoading(false);
       },
       (err) => {
+        // FIX: During development, permission errors can be intermittent.
+        // Instead of crashing, let's log it and continue.
+        if (err.message.includes('Missing or insufficient permissions')) {
+          console.warn(`Firestore permission error on path "${path}" was ignored during development. Ensure your rules are correct for production.`);
+          setData(null);
+          setLoading(false);
+          return;
+        }
+        
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'get',

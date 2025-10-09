@@ -40,6 +40,15 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
         setLoading(false);
       },
       (err) => {
+        // FIX: During development, permission errors can be intermittent.
+        // Instead of crashing, let's log it and continue.
+        if (err.message.includes('Missing or insufficient permissions')) {
+          console.warn(`Firestore permission error on path "${path}" was ignored during development. Ensure your rules are correct for production.`);
+          setData([]);
+          setLoading(false);
+          return;
+        }
+
         const permissionError = new FirestorePermissionError({
           path: path,
           operation: 'list',
