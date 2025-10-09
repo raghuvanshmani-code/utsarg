@@ -1,15 +1,13 @@
 
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { GalleryImage } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon, HeartHandshake } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon, HeartHandshake, ShieldQuestion } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,8 +19,9 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useAdminAuth } from '../auth-provider';
+import { createAdminLog } from '@/lib/admin-logs';
+import { AdminHeader } from '@/components/admin/admin-header';
 
 // Function to remove undefined values from an object
 const sanitizeData = (obj: any) => {
@@ -36,7 +35,7 @@ const sanitizeData = (obj: any) => {
 };
 
 export default function GalleryAdminPage() {
-  const { user } = useUser();
+  const { username, logout } = useAdminAuth();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -48,11 +47,6 @@ export default function GalleryAdminPage() {
   const [itemToDelete, setItemToDelete] = useState<GalleryImage | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignOut = () => {
-    getAuth().signOut();
-    router.push('/');
-  };
-
   const handleEdit = (item: GalleryImage) => {
     setSelectedItem(item);
     setIsDialogOpen(true);
@@ -63,61 +57,78 @@ export default function GalleryAdminPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (!itemToDelete || !db) return;
+  const confirmDelete = async () => {
+    if (!itemToDelete || !db || !username) return;
     
     setIsSubmitting(true);
     const docRef = doc(db, 'gallery', itemToDelete.id);
     
-    deleteDoc(docRef).then(() => {
+    try {
+        await deleteDoc(docRef);
+        await createAdminLog(db, {
+            username,
+            action: 'delete',
+            collection: 'gallery',
+            docId: itemToDelete.id,
+            details: `Deleted gallery item: ${itemToDelete.caption || itemToDelete.id}`
+        });
         toast({ title: "Success", description: "Gallery item deleted successfully." });
+    } catch(e) {
+        console.error("Delete error:", e);
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete gallery item." });
+    } finally {
         setIsAlertOpen(false);
         setItemToDelete(null);
-    }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
         setIsSubmitting(false);
-    });
+    }
   };
 
-  const handleFormSubmit = (values: any) => {
-      if (!db) return;
+  const handleFormSubmit = async (values: any) => {
+      if (!db || !username) return;
       setIsSubmitting(true);
       
       const sanitizedValues = sanitizeData(values);
       const data = {
         ...sanitizedValues,
-        uploadedBy: user?.uid ?? 'anonymous',
+        uploadedBy: username,
         updatedAt: serverTimestamp(),
       };
 
-      if (selectedItem) {
-          const docRef = doc(db, 'gallery', selectedItem.id);
-          updateDoc(docRef, data).then(() => {
-              toast({ title: "Success", description: "Gallery item updated successfully." });
-              setIsDialogOpen(false);
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
-      } else {
-          const collectionRef = collection(db, 'gallery');
-          addDoc(collectionRef, { ...data, createdAt: serverTimestamp(), date: new Date().toISOString() }).then(() => {
-              toast({ title: "Success", description: "Gallery item added successfully." });
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: 'gallery', operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
+      try {
+        if (selectedItem) {
+            const docRef = doc(db, 'gallery', selectedItem.id);
+            await updateDoc(docRef, data);
+            await createAdminLog(db, {
+                username,
+                action: 'update',
+                collection: 'gallery',
+                docId: selectedItem.id,
+                details: `Updated gallery item: ${values.caption || selectedItem.id}`
+            });
+            toast({ title: "Success", description: "Gallery item updated successfully." });
+            setIsDialogOpen(false);
+        } else {
+            const collectionRef = collection(db, 'gallery');
+            const newDoc = await addDoc(collectionRef, { ...data, createdAt: serverTimestamp(), date: new Date().toISOString() });
+            await createAdminLog(db, {
+                username,
+                action: 'create',
+                collection: 'gallery',
+                docId: newDoc.id,
+                details: `Created gallery item: ${values.caption || newDoc.id}`
+            });
+            toast({ title: "Success", description: "Gallery item added successfully." });
+        }
+      } catch(e) {
+        console.error("Form submit error:", e);
+        toast({ variant: "destructive", title: "Error", description: "An error occurred." });
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db) return;
+    if (!db || !username) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
@@ -130,20 +141,22 @@ export default function GalleryAdminPage() {
             const sanitizedItem = sanitizeData(item);
             await addDoc(collectionRef, { 
                 ...sanitizedItem, 
-                uploadedBy: user?.uid ?? 'anonymous',
+                uploadedBy: username,
                 date: new Date().toISOString(),
                 createdAt: serverTimestamp(), 
                 updatedAt: serverTimestamp() 
             });
         }
+        await createAdminLog(db, {
+            username,
+            action: 'json-batch-import',
+            collection: 'gallery',
+            details: `Added ${items.length} gallery items via JSON.`
+        });
         toast({ title: "Success", description: `${items.length} gallery items added successfully.` });
     } catch (e: any) {
-        if (e.message.includes('permission-denied')) {
-             const permissionError = new FirestorePermissionError({ path: 'gallery', operation: 'create', requestResourceData: JSON.parse(jsonContent) });
-             errorEmitter.emit('permission-error', permissionError);
-        } else {
-            toast({ variant: "destructive", title: "JSON Error", description: e.message });
-        }
+        console.error("JSON submit error:", e);
+        toast({ variant: "destructive", title: "JSON Error", description: e.message });
     } finally {
         setIsSubmitting(false);
     }
@@ -161,16 +174,13 @@ export default function GalleryAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Events'}}><Link href="/admin/events"><Calendar /><span>Events</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1 flex justify-between items-center"><h1 className="text-lg font-semibold">Gallery Management</h1></div>
-          {user && (<div className="flex items-center gap-2 text-sm"><Avatar className="h-8 w-8"><AvatarImage src={user.photoURL ?? ''} /><AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback></Avatar><span>{user.displayName}</span></div>)}
-        </header>
+        <AdminHeader title="Gallery Management" />
         <main className="flex-1 p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Gallery Items</CardTitle><CardDescription>Add a single item via the form or multiple items via JSON.</CardDescription></CardHeader>

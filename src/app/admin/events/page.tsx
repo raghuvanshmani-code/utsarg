@@ -1,15 +1,13 @@
 
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Event } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake, ShieldQuestion } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,8 +19,9 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useAdminAuth } from '../auth-provider';
+import { createAdminLog } from '@/lib/admin-logs';
+import { AdminHeader } from '@/components/admin/admin-header';
 
 // Function to remove undefined values from an object
 const sanitizeData = (obj: any) => {
@@ -36,7 +35,7 @@ const sanitizeData = (obj: any) => {
 };
 
 export default function EventsAdminPage() {
-  const { user } = useUser();
+  const { username, logout } = useAdminAuth();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -48,11 +47,6 @@ export default function EventsAdminPage() {
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignOut = () => {
-    getAuth().signOut();
-    router.push('/');
-  };
-
   const handleEdit = (event: Event) => {
     setSelectedEvent(event);
     setIsDialogOpen(true);
@@ -63,57 +57,74 @@ export default function EventsAdminPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (!eventToDelete || !db) return;
+  const confirmDelete = async () => {
+    if (!eventToDelete || !db || !username) return;
     
     setIsSubmitting(true);
     const docRef = doc(db, 'events', eventToDelete.id);
     
-    deleteDoc(docRef).then(() => {
+    try {
+        await deleteDoc(docRef);
+        await createAdminLog(db, {
+            username,
+            action: 'delete',
+            collection: 'events',
+            docId: eventToDelete.id,
+            details: `Deleted event: ${eventToDelete.title}`
+        });
         toast({ title: "Success", description: "Event deleted successfully." });
+    } catch(e) {
+        console.error("Delete error:", e);
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete event." });
+    } finally {
         setIsAlertOpen(false);
         setEventToDelete(null);
-    }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
         setIsSubmitting(false);
-    });
+    }
   };
 
-  const handleFormSubmit = (values: any) => {
-      if (!db) return;
+  const handleFormSubmit = async (values: any) => {
+      if (!db || !username) return;
       setIsSubmitting(true);
       
       const sanitizedValues = sanitizeData(values);
       const data = { ...sanitizedValues, updatedAt: serverTimestamp() };
 
-      if (selectedEvent) {
-          const docRef = doc(db, 'events', selectedEvent.id);
-          updateDoc(docRef, data).then(() => {
-              toast({ title: "Success", description: "Event updated successfully." });
-              setIsDialogOpen(false);
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
-      } else {
-          const collectionRef = collection(db, 'events');
-          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
-              toast({ title: "Success", description: "Event added successfully." });
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: 'events', operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
+      try {
+        if (selectedEvent) {
+            const docRef = doc(db, 'events', selectedEvent.id);
+            await updateDoc(docRef, data);
+            await createAdminLog(db, {
+                username,
+                action: 'update',
+                collection: 'events',
+                docId: selectedEvent.id,
+                details: `Updated event: ${values.title}`
+            });
+            toast({ title: "Success", description: "Event updated successfully." });
+            setIsDialogOpen(false);
+        } else {
+            const collectionRef = collection(db, 'events');
+            const newDoc = await addDoc(collectionRef, { ...data, createdAt: serverTimestamp() });
+            await createAdminLog(db, {
+                username,
+                action: 'create',
+                collection: 'events',
+                docId: newDoc.id,
+                details: `Created event: ${values.title}`
+            });
+            toast({ title: "Success", description: "Event added successfully." });
+        }
+      } catch(e) {
+        console.error("Form submit error:", e);
+        toast({ variant: "destructive", title: "Error", description: "An error occurred." });
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db) return;
+    if (!db || !username) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
@@ -126,14 +137,17 @@ export default function EventsAdminPage() {
             const sanitizedItem = sanitizeData(item);
             await addDoc(collectionRef, { ...sanitizedItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
+        
+        await createAdminLog(db, {
+            username,
+            action: 'json-batch-import',
+            collection: 'events',
+            details: `Added ${items.length} events via JSON.`
+        });
         toast({ title: "Success", description: `${items.length} events added successfully.` });
     } catch (e: any) {
-        if (e.message.includes('permission-denied')) {
-             const permissionError = new FirestorePermissionError({ path: 'events', operation: 'create', requestResourceData: JSON.parse(jsonContent) });
-             errorEmitter.emit('permission-error', permissionError);
-        } else {
-            toast({ variant: "destructive", title: "JSON Error", description: e.message });
-        }
+        console.error("JSON submit error:", e);
+        toast({ variant: "destructive", title: "JSON Error", description: e.message });
     } finally {
         setIsSubmitting(false);
     }
@@ -151,16 +165,13 @@ export default function EventsAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Events'}} isActive><Link href="/admin/events"><Calendar /><span>Events</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1 flex justify-between items-center"><h1 className="text-lg font-semibold">Events Management</h1></div>
-          {user && (<div className="flex items-center gap-2 text-sm"><Avatar className="h-8 w-8"><AvatarImage src={user.photoURL ?? ''} /><AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback></Avatar><span>{user.displayName}</span></div>)}
-        </header>
+        <AdminHeader title="Events Management" />
         <main className="flex-1 p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Events</CardTitle><CardDescription>Add a single event via the form or multiple events via JSON.</CardDescription></CardHeader>
