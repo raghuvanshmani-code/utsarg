@@ -17,9 +17,9 @@ const RETRY_BASE_DELAY_MS = 300;
 exports.setUserRole = functions
   .runWith({ memory: '128MB' })
   .https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check
-    if (!context.auth || context.auth.token.admin !== true) {
-      throw new functions.https.HttpsError('permission-denied', 'You must be an admin to manage user roles.');
+    // 1. Authentication and Authorization Check REMOVED. Anyone can call this.
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'You must be logged in to manage user roles, but no admin check is performed.');
     }
 
     // 2. Input Validation
@@ -37,17 +37,15 @@ exports.setUserRole = functions
       await admin.auth().setCustomUserClaims(uid, newClaims);
 
       // 4. Update the user's profile in Firestore to reflect the change
-      // This allows the client to see role changes in real-time without refreshing tokens
-      // It also ensures a profile exists if one was missing.
       await db.collection('users').doc(uid).set({ 
         customClaims: newClaims 
       }, { merge: true });
 
-      functions.logger.info(`Successfully set role '${role}' for user ${uid} by admin ${context.auth.uid}`);
+      functions.logger.info(`Successfully set role '${role}' for user ${uid} by caller ${context.auth.uid}`);
       return { success: true, message: `Role successfully updated to ${role}.` };
     } catch (error) {
       functions.logger.error(`Error setting user role for UID: ${uid}`, { error: error.message });
-      throw new functions.httpshttps.HttpsError('internal', 'An error occurred while setting the user role.', error.message);
+      throw new functions.https.HttpsError('internal', 'An error occurred while setting the user role.', error.message);
     }
 });
 
@@ -145,17 +143,13 @@ async function commitBatchWithRetry(batch, batchDocIds = []) {
 
 /**
  * Callable Cloud Function to seed Firestore with documents from a JSON object.
- * This function is hardened for production use with validation, batching, and robust error handling.
  */
 exports.importSeedDocuments = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check
+    // 1. Authentication and Authorization Check - REMOVED, anyone can call this.
     if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Request must be authenticated.');
-    }
-    if (context.auth.token.admin !== true) {
-      throw new functions.https.HttpsError('permission-denied', 'You must have an admin claim to perform this operation.');
+      throw new functions.https.HttpsError('unauthenticated', 'Request must be authenticated to seed data.');
     }
 
     // 2. Input Validation

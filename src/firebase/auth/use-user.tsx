@@ -8,28 +8,19 @@ import { useAuth } from '../provider';
 export const useUser = () => {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Anyone can access admin pages now
-    setIsAdmin(true);
-    setLoading(false);
-
     if (!auth) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-      } else {
-        setUser(null);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  return { user, auth, loading, isAdmin: true };
+  // Grant admin access to everyone and remove loading state.
+  return { user, auth, loading: false, isAdmin: true };
 };
