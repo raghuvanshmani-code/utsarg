@@ -1,61 +1,81 @@
 /**
- * @fileoverview Firestore Security Rules.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for user profiles,
+ *              allows public read access to club, event, gallery, and philanthropy data,
+ *              and restricts write access to owners or authorized users. The society
+ *              metadata document is read-only for all users but cannot be modified through the client.
  *
- * Core Philosophy:
- * This ruleset prioritizes secure access control based on user roles and ownership.
- * It uses a combination of role-based and ownership-based access control mechanisms.
- * In this Prototyping stage all Rules will be implemented, however, data shape validation is skipped.
+ * @dataStructure
+ *  - /users/{userId}: User profile information.
+ *  - /society/meta: Society-wide metadata.
+ *  - /clubs/{clubId}: Information about individual clubs.
+ *  - /volunteers/{volunteerId}: Volunteer profiles.
+ *  - /members/{memberId}: General member profiles.
+ *  - /events/{eventId}: Club event details.
+ *  - /gallery/{galleryId}: Media items for the gallery.
+ *  - /funds/accounting/transactions/{transactionId}: Financial transactions.
+ *  - /philanthropy/{activityId}: Philanthropic activity records.
  *
- * Data Structure:
- * - /users/{userId}: Stores public user profiles, accessible only to the owning user.
- * - /society/meta: A singleton document holding society metadata, publicly readable.
- * - /clubs/{clubId}: Stores club information, publicly readable.
- * - /volunteers/{volunteerId}: Volunteer profiles, publicly readable.
- * - /members/{memberId}: Member profiles, publicly readable.
- * - /events/{eventId}: Event details, publicly readable.
- * - /gallery/{galleryId}: Public gallery media items.
- * - /funds/accounting/transactions/{transactionId}: Financial transactions, write-protected (TODO: Add role-based access).
- * - /philanthropy/{activityId}: Records of philanthropic activities, publicly readable.
+ * @keySecurityDecisions
+ *  - User profiles are strictly owned by the user with matching UID.
+ *  - The /society/meta document is publicly readable, but not writable through the client.
+ *  - Public read access to clubs, events, gallery items and philanthropy activities is granted for all users.
+ *  - Write access to clubs, events, gallery items and philanthropy activities is restricted to authenticated users.
  *
- * Key Security Decisions:
- * - User listing is disabled for security.
- * - Society metadata is publicly readable.
- * - Read-only collections (e.g., society metadata) are explicitly marked.
- * - Ambiguous relationships default to strict owner-only access.
- * - Data shape validation is skipped in this Prototyping Stage.
+ * @denormalizationForAuthorization
+ *  - For public read collections, documents should contain an `ownerId` or `authorId` field
+ *    to enable owner-only writes.  However, these are not yet implemented (see TODOs).
  *
- * Denormalization for Authorization:
- * - No denormalization is required in this initial ruleset.
- *
- * Structural Segregation:
- * - All data is stored in top-level collections based on its purpose (user profiles, clubs, etc.).
+ * @structuralSegregation
+ *  - Public vs. private data is managed through different top-level collections
+ *    (e.g., user profiles in `/users/{userId}` vs. public gallery items in `/gallery/{galleryId}`).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Manages access to user profile documents. Only the authenticated user can read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with matching ID can create their profile.
-     * @allow (get, update, delete) User with matching ID can read, update, and delete their profile.
-     * @deny (create, get, update, delete) Any other user cannot access this profile.
-     * @principle Enforces document ownership for writes and reads.
+     * @allow (create) - Authenticated user creates their own profile.
+     *   - `request.auth.uid` = "user123", Document ID = "user123"
+     * @allow (get, list) - Authenticated user reads their own profile.
+     *   - `request.auth.uid` = "user123", Document ID = "user123"
+     * @allow (update, delete) - Authenticated user updates/deletes their own profile.
+     *   - `request.auth.uid` = "user123", Document ID = "user123"
+     * @deny (create) - Authenticated user attempts to create a profile with a mismatched ID.
+     *   - `request.auth.uid` = "user123", Document ID = "user456"
+     * @deny (get, list) - Authenticated user attempts to read another user's profile.
+     *   - `request.auth.uid` = "user123", Document ID = "user456"
+     * @deny (update, delete) - Authenticated user attempts to update/delete another user's profile.
+     *   - `request.auth.uid` = "user123", Document ID = "user456"
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Prevent user enumeration
-      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
+      allow get, list: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to the society metadata document.
+     * @description Controls read access to the society metadata. Anyone can read, but only the backend can write.
      * @path /society/meta
-     * @allow (get, list) Any user can read the society metadata.
-     * @deny (create, update, delete) No user can create, update, or delete the society metadata.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the society metadata.
+     *   - No authentication required.
+     * @deny (create, update, delete) - No client-side writes are allowed.
+     *   - All write requests are denied.
+     * @principle Provides public read access but restricts write access.
      */
     match /society/meta {
       allow get, list: if true;
@@ -63,98 +83,178 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to club documents.
+     * @description Manages access to club documents. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /clubs/{clubId}
-     * @allow (get, list) Any user can read club information.
-     * @deny (create, update, delete) No user can create, update, or delete club information.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the club information.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new club document.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a club document (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a club.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a club.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /clubs/{clubId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to volunteer profiles.
+     * @description Manages access to volunteer profiles. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) Any user can read volunteer profiles.
-     * @deny (create, update, delete) No user can create, update, or delete volunteer profiles.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the volunteer profiles.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new volunteer profile.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a volunteer profile (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a volunteer.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a volunteer.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /volunteers/{volunteerId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to member profiles.
+     * @description Manages access to member profiles. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /members/{memberId}
-     * @allow (get, list) Any user can read member profiles.
-     * @deny (create, update, delete) No user can create, update, or delete member profiles.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the member profiles.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new member profile.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a member profile (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a member.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a member.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /members/{memberId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to event documents.
+     * @description Manages access to event documents. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /events/{eventId}
-     * @allow (get, list) Any user can read event details.
-     * @deny (create, update, delete) No user can create, update, or delete event details.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the event details.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new event document.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete an event document (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create an event.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete an event.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /events/{eventId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to gallery media items.
+     * @description Manages access to gallery items. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /gallery/{galleryId}
-     * @allow (get, list) Any user can read gallery items.
-     * @deny (create, update, delete) No user can create, update, or delete gallery items.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the gallery items.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new gallery item.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a gallery item (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a gallery item.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a gallery item.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /gallery/{galleryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to financial transaction documents.
+     * @description Manages access to fund transactions. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /funds/accounting/transactions/{transactionId}
-     * @deny (get, list, create, update, delete) No user can access financial transaction.
-     * @principle Requires role-based authentication.
+     * @allow (get, list) - Any user can read the fund transactions.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new fund transaction.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a fund transaction (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a fund transaction.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a fund transaction.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /funds/accounting/transactions/{transactionId} {
-      allow get, list, create, update, delete: if false; // TODO: Add role-based access
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Controls access to philanthropic activities.
+     * @description Manages access to philanthropy activities. Allows public read access, but restricts write access to authenticated users (TODO: owner-only writes).
      * @path /philanthropy/{activityId}
-     * @allow (get, list) Any user can read philanthropic activities.
-     * @deny (create, update, delete) No user can create, update, or delete philanthropic activities.
-     * @principle Public read access with no write access.
+     * @allow (get, list) - Any user can read the philanthropy activities.
+     *   - No authentication required.
+     * @allow (create) - Authenticated user can create a new philanthropy activity.
+     *   - `request.auth.uid` is authenticated.
+     * @allow (update, delete) - Authenticated user can update/delete a philanthropy activity (TODO: owner-only).
+     *   - `request.auth.uid` is authenticated.
+     * @deny (create) - Unauthenticated user attempts to create a philanthropy activity.
+     *   - `request.auth == null`
+     * @deny (update, delete) - Unauthenticated user attempts to update/delete a philanthropy activity.
+     *   - `request.auth == null`
+     * @principle Provides public read access but requires authentication for writes.
      */
     match /philanthropy/{activityId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return isSignedIn() && request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
   }
 }
