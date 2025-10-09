@@ -3,7 +3,7 @@
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, HeartHandshake, ShieldQuestion } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, HeartHandshake, ShieldQuestion, Settings } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { useAdminAuth } from "./auth-provider";
@@ -55,6 +55,11 @@ export default function AdminDashboard() {
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip={{children: 'System Logs'}}>
                           <Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip={{children: 'Settings'}}>
+                          <Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
               </SidebarMenu>

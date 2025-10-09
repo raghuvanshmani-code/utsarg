@@ -7,7 +7,7 @@ import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from '
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake, ShieldQuestion } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake, ShieldQuestion, Settings } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -73,9 +73,9 @@ export default function EventsAdminPage() {
             details: `Deleted event: ${eventToDelete.title}`
         });
         toast({ title: "Success", description: "Event deleted successfully." });
-    } catch(e) {
+    } catch(e: any) {
         console.error("Delete error:", e);
-        toast({ variant: "destructive", title: "Error", description: "Failed to delete event." });
+        toast({ variant: "destructive", title: "Error", description: e.message || "Failed to delete event." });
     } finally {
         setIsAlertOpen(false);
         setEventToDelete(null);
@@ -115,9 +115,9 @@ export default function EventsAdminPage() {
             });
             toast({ title: "Success", description: "Event added successfully." });
         }
-      } catch(e) {
+      } catch(e: any) {
         console.error("Form submit error:", e);
-        toast({ variant: "destructive", title: "Error", description: "An error occurred." });
+        toast({ variant: "destructive", title: "Error", description: e.message || "An error occurred." });
       } finally {
           setIsSubmitting(false);
       }
@@ -166,6 +166,7 @@ export default function EventsAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}}><Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>

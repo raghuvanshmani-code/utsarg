@@ -5,10 +5,41 @@ admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp } = admin.firestore;
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const MAX_BATCH_SIZE = 400;
 const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 300;
+
+/**
+ * Callable Cloud Function to deploy Firestore security rules.
+ */
+exports.deployRules = functions.https.onCall(async (data, context) => {
+  // Authentication check: Ensure the user is authenticated.
+  // For a real app, you'd also check for an admin custom claim.
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be logged in to deploy rules.');
+  }
+
+  try {
+    const rulesPath = path.join(__dirname, '..', 'firestore.rules');
+    const rulesContent = fs.readFileSync(rulesPath, 'utf8');
+
+    if (!rulesContent) {
+        throw new functions.https.HttpsError('not-found', 'firestore.rules file is empty or could not be found.');
+    }
+
+    await admin.securityRules().releaseFirestoreRulesetFromSource(rulesContent);
+    
+    functions.logger.info(`Successfully deployed Firestore rules by user: ${context.auth.uid}`);
+    return { success: true };
+  } catch (error) {
+    functions.logger.error('Error deploying Firestore rules:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to deploy rules.', error.message);
+  }
+});
+
 
 /**
  * Callable Cloud Function to set custom claims on a user.
