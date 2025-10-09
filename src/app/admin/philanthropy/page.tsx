@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { PhilanthropyActivity } from '@/lib/types';
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -100,12 +100,11 @@ export default function PhilanthropyAdminPage() {
               setIsSubmitting(false);
           });
       } else {
-          const docId = values.type.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-          const docRef = doc(db, 'philanthropy', docId);
-          setDoc(docRef, { ...data, createdAt: serverTimestamp() }).then(() => {
+          const collectionRef = collection(db, 'philanthropy');
+          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
               toast({ title: "Success", description: "Activity added successfully." });
           }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: `philanthropy/${docId}`, operation: 'create', requestResourceData: data });
+              const permissionError = new FirestorePermissionError({ path: 'philanthropy', operation: 'create', requestResourceData: data });
               errorEmitter.emit('permission-error', permissionError);
           }).finally(() => {
               setIsSubmitting(false);
@@ -125,13 +124,7 @@ export default function PhilanthropyAdminPage() {
         const collectionRef = collection(db, 'philanthropy');
         for (const item of items) {
             const sanitizedItem = sanitizeData(item);
-            const docId = sanitizedItem.id || sanitizedItem.type?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            if (!docId) {
-                console.warn("Skipping item due to missing id/type:", item);
-                continue;
-            }
-            const docRef = doc(collectionRef, docId);
-            await setDoc(docRef, { ...sanitizedItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            await addDoc(collectionRef, { ...sanitizedItem, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
         toast({ title: "Success", description: `${items.length} activities added successfully.` });
     } catch (e: any) {
