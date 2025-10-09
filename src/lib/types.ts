@@ -1,4 +1,5 @@
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -96,4 +97,14 @@ export type FundTransaction = {
     date: string;
     signatories: string[];
     imageUrl?: string;
+};
+
+export type AdminLog = {
+    id: string;
+    username: string;
+    action: 'create' | 'update' | 'delete' | 'json-batch-import';
+    collection: string;
+    docId?: string;
+    details: string;
+    timestamp: { seconds: number; nanoseconds: number; };
 };

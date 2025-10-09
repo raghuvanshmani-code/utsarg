@@ -1,34 +1,212 @@
 /**
- * @file Firebase Security Rules
- * @version 2
+ * @fileoverview Firestore Security Rules for the Student Society App.
  *
- * @description This ruleset prioritizes ease of data access for prototyping purposes.
- * All reads and writes are currently permitted, which allows for rapid iteration
- * and development without strict authorization checks.
+ * Core Philosophy:
+ * This ruleset prioritizes secure data access by enforcing strict ownership for user-specific data
+ * and leveraging custom claims for administrative roles. It avoids complex queries in the rules by
+ * assuming a degree of client-side data validation, focusing on authorization. Data shape validation is relaxed to prioritize rapid iteration.
  *
- * @security-warning THIS RULES SET IS INSECURE AND SHOULD NOT BE USED IN PRODUCTION.
- * ALL READS AND WRITES ARE OPEN TO ALL USERS. THIS IS INTENDED FOR DEVELOPMENT AND TESTING ONLY.
+ * Data Structure:
+ * - `/users/{userId}`: User profiles, accessible only to the owning user and admins.
+ * - `/society/meta`: Public metadata about the society.
+ * - `/clubs/{clubId}`: Club data, publicly readable, writable by admins only.
+ * - `/volunteers/{volunteerId}`: Volunteer profiles, publicly readable, writable by admins only.
+ * - `/members/{memberId}`: Member profiles, publicly readable, writable by admins only.
+ * - `/events/{eventId}`: Event data, publicly readable, writable by admins only.
+ * - `/gallery/{galleryId}`: Gallery items, publicly readable, writable by admins only.
+ * - `/funds/accounting/transactions/{transactionId}`: Financial transaction logs, readable only by admins.
+ * - `/philanthropy/{activityId}`: Philanthropy activity records, publicly readable, writable by admins only.
+ * - `/adminLogs/{logId}`: Logs of admin activity, readable only by admins.
  *
- * @next-steps Before deploying to production, replace `allow read, write: if true;`
- * with fine-grained authorization logic based on user roles and data ownership.
- * Consider implementing the following:
- *   - User authentication and authorization using Firebase Authentication.
- *   - Role-based access control (RBAC) to restrict access based on user roles.
- *   - Data validation to ensure data integrity and prevent malicious input.
+ * Key Security Decisions:
+ * - User profiles are private, accessible only to the user themselves and admins.
+ * - Society metadata is public.
+ * - Other top-level collections are publicly readable, but writable only by admins.
+ * - No user listing is allowed for `users` collection.
+ * - Admin status is determined by a custom claim on the user's auth token.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description This rule allows read and write access to all documents.
-     * @path /{document=**}
-     * @allow (read, write) Any authenticated user.
-     * @deny (none) No restrictions are applied.
-     * @principle Unrestricted access for prototyping.
+     * @description Checks if the user is signed in.
+     * @param userId The user ID to check against.
+     * @return True if the user is signed in, false otherwise.
      */
-    match /{document=**} {
-      allow read, write: if true;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document.
+     * @param userId The user ID to check against.
+     * @return True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the existing document.
+     * @param userId The user ID to check against.
+     * @return True if the user is the owner and the document exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the 'admin' custom claim.
+     * @return True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    /**
+     * @description Stores public-facing user profiles.
+     * @path /users/{userId}
+     * @allow (create) - User with matching UID can create their own profile.
+     * @allow (get, update, delete) - User with matching UID can read, update, and delete their own profile. Admins can also get, update and delete.
+     * @deny (list) - Listing users is not allowed.
+     * @deny (create) - Non-authenticated user cannot create user
+     * @deny (update, delete) - Non-authenticated user cannot update/delete user
+     * @deny (create) - Users cannot create profiles for other users.
+     * @principle Enforces document ownership for writes, restricts listing of users, allows admin override.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Singleton document for society-wide metadata.
+     * @path /society/meta
+     * @allow (get, list) - Anyone can read the society metadata.
+     * @allow (create, update, delete) - Only admins can modify the society metadata.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /society/meta {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Stores information about individual student clubs.
+     * @path /clubs/{clubId}
+     * @allow (get, list) - Anyone can read the club information.
+     * @allow (create, update, delete) - Only admins can create, update, or delete club information.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /clubs/{clubId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Profiles for student volunteers.
+     * @path /volunteers/{volunteerId}
+     * @allow (get, list) - Anyone can read the volunteer profiles.
+     * @allow (create, update, delete) - Only admins can create, update, or delete volunteer profiles.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /volunteers/{volunteerId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Profiles for general members.
+     * @path /members/{memberId}
+     * @allow (get, list) - Anyone can read the member profiles.
+     * @allow (create, update, delete) - Only admins can create, update, or delete member profiles.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /members/{memberId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Details about club events.
+     * @path /events/{eventId}
+     * @allow (get, list) - Anyone can read the event details.
+     * @allow (create, update, delete) - Only admins can create, update, or delete event details.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /events/{eventId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Collection of all media items for the main gallery.
+     * @path /gallery/{galleryId}
+     * @allow (get, list) - Anyone can read the gallery items.
+     * @allow (create, update, delete) - Only admins can create, update, or delete gallery items.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /gallery/{galleryId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Logs all financial transactions.
+     * @path /funds/accounting/transactions/{transactionId}
+     * @allow (get, list) - Only admins can read financial transactions.
+     * @allow create, update, delete: if false;
+     * @principle Restricts access to financial transaction logs to admins only.
+     */
+    match /funds/accounting/transactions/{transactionId} {
+      allow get, list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Records of philanthropic activities.
+     * @path /philanthropy/{activityId}
+     * @allow (get, list) - Anyone can read the philanthropic activity records.
+     * @allow (create, update, delete) - Only admins can create, update, or delete philanthropic activity records.
+     * @principle Allows public read access, restricts write access to admins.
+     */
+    match /philanthropy/{activityId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Logs of admin activity. Only readable by admins.
+     * @path /adminLogs/{logId}
+     * @allow (get, list) - Only admins can read these logs.
+     * @allow create, update, delete: if false;
+     * @principle Restricts access to admin logs to admins only.
+     */
+    match /adminLogs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

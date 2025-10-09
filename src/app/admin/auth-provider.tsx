@@ -6,7 +6,8 @@ import AdminLoginPage from './login/page';
 
 interface AdminAuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  username: string | null;
+  login: (username: string) => void;
   logout: () => void;
 }
 
@@ -14,12 +15,19 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
 
-  const login = () => setIsAuthenticated(true);
-  const logout = () => setIsAuthenticated(false);
+  const login = (user: string) => {
+    setUsername(user);
+    setIsAuthenticated(true);
+  };
+  const logout = () => {
+    setUsername(null);
+    setIsAuthenticated(false);
+  };
 
   return (
-    <AdminAuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AdminAuthContext.Provider value={{ isAuthenticated, username, login, logout }}>
       {isAuthenticated ? children : <AdminLoginPage />}
     </AdminAuthContext.Provider>
   );

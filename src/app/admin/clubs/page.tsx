@@ -1,15 +1,13 @@
 
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Club } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake, ShieldQuestion } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,14 +15,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ClubForm } from '@/components/admin/club-form';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
+import { useAdminAuth } from '../auth-provider';
+import { createAdminLog } from '@/lib/admin-logs';
+import { AdminHeader } from '@/components/admin/admin-header';
 
 export default function ClubsAdminPage() {
-  const { user } = useUser();
+  const { username, logout } = useAdminAuth();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -36,11 +35,6 @@ export default function ClubsAdminPage() {
   const [clubToDelete, setClubToDelete] = useState<Club | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignOut = () => {
-    getAuth().signOut();
-    router.push('/');
-  };
-
   const handleEdit = (club: Club) => {
     setSelectedClub(club);
     setIsDialogOpen(true);
@@ -51,56 +45,71 @@ export default function ClubsAdminPage() {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (!clubToDelete || !db) return;
+  const confirmDelete = async () => {
+    if (!clubToDelete || !db || !username) return;
     
     setIsSubmitting(true);
     const docRef = doc(db, 'clubs', clubToDelete.id);
     
-    deleteDoc(docRef).then(() => {
+    try {
+        await deleteDoc(docRef);
+        await createAdminLog(db, {
+            username,
+            action: 'delete',
+            collection: 'clubs',
+            docId: clubToDelete.id,
+            details: `Deleted club: ${clubToDelete.name}`
+        });
         toast({ title: "Success", description: "Club deleted successfully." });
+    } catch(e) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete club." });
+    } finally {
         setIsAlertOpen(false);
         setClubToDelete(null);
-    }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
         setIsSubmitting(false);
-    });
+    }
   };
 
-  const handleFormSubmit = (values: any) => {
-      if (!db) return;
+  const handleFormSubmit = async (values: any) => {
+      if (!db || !username) return;
       setIsSubmitting(true);
       
       const data = { ...values, updatedAt: serverTimestamp() };
 
-      if (selectedClub) {
-          const docRef = doc(db, 'clubs', selectedClub.id);
-          updateDoc(docRef, data).then(() => {
-              toast({ title: "Success", description: "Club updated successfully." });
-              setIsDialogOpen(false);
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
-      } else {
-          const collectionRef = collection(db, 'clubs');
-          addDoc(collectionRef, { ...data, createdAt: serverTimestamp() }).then(() => {
-              toast({ title: "Success", description: "Club added successfully." });
-          }).catch(serverError => {
-              const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: data });
-              errorEmitter.emit('permission-error', permissionError);
-          }).finally(() => {
-              setIsSubmitting(false);
-          });
+      try {
+        if (selectedClub) {
+            const docRef = doc(db, 'clubs', selectedClub.id);
+            await updateDoc(docRef, data);
+            await createAdminLog(db, {
+                username,
+                action: 'update',
+                collection: 'clubs',
+                docId: selectedClub.id,
+                details: `Updated club: ${values.name}`
+            });
+            toast({ title: "Success", description: "Club updated successfully." });
+            setIsDialogOpen(false);
+        } else {
+            const collectionRef = collection(db, 'clubs');
+            const newDoc = await addDoc(collectionRef, { ...data, createdAt: serverTimestamp() });
+            await createAdminLog(db, {
+                username,
+                action: 'create',
+                collection: 'clubs',
+                docId: newDoc.id,
+                details: `Created club: ${values.name}`
+            });
+            toast({ title: "Success", description: "Club added successfully." });
+        }
+      } catch (e) {
+        toast({ variant: "destructive", title: "Error", description: "An error occurred." });
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db) return;
+    if (!db || !username) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
@@ -112,6 +121,13 @@ export default function ClubsAdminPage() {
         for (const item of items) {
             await addDoc(collectionRef, { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         }
+
+        await createAdminLog(db, {
+            username,
+            action: 'json-batch-import',
+            collection: 'clubs',
+            details: `Added ${items.length} clubs via JSON.`
+        });
         toast({ title: "Success", description: `${items.length} clubs added successfully.` });
     } catch (e: any) {
         toast({ variant: "destructive", title: "JSON Error", description: e.message });
@@ -132,16 +148,13 @@ export default function ClubsAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Events'}}><Link href="/admin/events"><Calendar /><span>Events</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={handleSignOut} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1 flex justify-between items-center"><h1 className="text-lg font-semibold">Clubs Management</h1></div>
-          {user && (<div className="flex items-center gap-2 text-sm"><Avatar className="h-8 w-8"><AvatarImage src={user.photoURL ?? ''} /><AvatarFallback>{user.displayName?.charAt(0) ?? 'A'}</AvatarFallback></Avatar><span>{user.displayName}</span></div>)}
-        </header>
+        <AdminHeader title="Clubs Management" />
         <main className="flex-1 p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Clubs</CardTitle><CardDescription>Add a single club via the form or multiple clubs via JSON.</CardDescription></CardHeader>

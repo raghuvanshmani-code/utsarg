@@ -147,6 +147,20 @@
         "photos": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Links to photos from the activity." }
       },
       "required": ["type", "description", "date"]
+    },
+    "adminLog": {
+      "title": "Admin Activity Log",
+      "description": "Records create, update, and delete actions performed in the admin panel.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "description": "The username of the admin who performed the action." },
+        "action": { "type": "string", "enum": ["create", "update", "delete", "json-batch-import"], "description": "The type of action performed." },
+        "collection": { "type": "string", "description": "The Firestore collection that was modified." },
+        "docId": { "type": "string", "description": "The ID of the document that was affected." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the action occurred." },
+        "details": { "type": "string", "description": "A short description of the change, e.g., the document's title or name." }
+      },
+      "required": ["username", "action", "collection", "timestamp"]
     }
   },
   "auth": {
@@ -161,6 +175,7 @@
     "/events/{eventId}": { "schema": { "$ref": "#/entities/event" }, "description": "Details about club events." },
     "/gallery/{galleryId}": { "schema": { "$ref": "#/entities/galleryItem" }, "description": "Collection of all media items for the main gallery." },
     "/funds/accounting/transactions/{transactionId}": { "schema": { "$ref": "#/entities/fundTransaction" }, "description": "Logs all financial transactions." },
-    "/philanthropy/{activityId}": { "schema": { "$ref": "#/entities/philanthropyActivity" }, "description": "Records of philanthropic activities." }
+    "/philanthropy/{activityId}": { "schema": { "$ref": "#/entities/philanthropyActivity" }, "description": "Records of philanthropic activities." },
+    "/admin_logs/{logId}": { "schema": { "$ref": "#/entities/adminLog" }, "description": "Logs all admin panel activities for auditing." }
   }
 }
