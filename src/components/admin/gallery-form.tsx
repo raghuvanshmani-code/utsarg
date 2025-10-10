@@ -42,12 +42,17 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
     }
   }, [item, form, isOpen]);
 
+  const handleSave = form.handleSubmit(data => {
+    onSubmit(data);
+    if (!item) form.reset();
+  });
+
   const dialogTitle = item ? 'Edit Gallery Item' : 'Add New Gallery Item';
   const dialogDescription = item ? 'Make changes to the item details here.' : 'Add a new item to the gallery.';
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!item) form.reset(); })} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <FormField control={form.control} name="caption" render={({ field }) => (<FormItem><FormLabel>Caption</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="url" render={({ field }) => (<FormItem><FormLabel>Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
@@ -69,7 +74,7 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
           <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!item) form.reset(); })} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>

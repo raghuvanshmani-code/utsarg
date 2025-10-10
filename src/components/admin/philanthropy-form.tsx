@@ -53,6 +53,10 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
     }
   }, [activity, form, isOpen]);
 
+  const handleSave = form.handleSubmit(data => {
+    onSubmit(data);
+    if (!activity) form.reset();
+  });
 
   if (!isClient) {
     return null;
@@ -63,7 +67,7 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!activity) form.reset(); })} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Activity Type</FormLabel><FormControl><Input placeholder="e.g., Blood Donation Camp" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
@@ -87,7 +91,7 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
           <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!activity) form.reset(); })} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>

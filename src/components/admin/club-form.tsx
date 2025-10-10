@@ -44,12 +44,17 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting, i
     }
   }, [club, form, isOpen]);
 
+  const handleSave = form.handleSubmit(data => {
+    onSubmit(data);
+    if (!club) form.reset();
+  });
+
   const dialogTitle = club ? 'Edit Club' : 'Add New Club';
   const dialogDescription = club ? 'Make changes to the club details here.' : 'Add a new club to the list.';
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!club) form.reset(); })} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Club Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="logo" render={({ field }) => (<FormItem><FormLabel>Logo Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
@@ -73,7 +78,7 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting, i
           <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!club) form.reset(); })} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>

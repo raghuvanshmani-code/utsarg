@@ -55,6 +55,11 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
     }
   }, [event, form, isOpen]);
 
+  const handleSave = form.handleSubmit(data => {
+    onSubmit(data);
+    if (!event) form.reset();
+  });
+
   if (!isClient) {
     return null;
   }
@@ -64,7 +69,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!event) form.reset(); })} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -90,7 +95,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
           <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!event) form.reset(); })} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>

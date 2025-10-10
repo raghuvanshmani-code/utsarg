@@ -71,6 +71,12 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
       });
     }
   }, [post, form, isOpen]);
+  
+  const handleSave = form.handleSubmit((data) => {
+    onSubmit(data);
+    if (!post) form.reset();
+  });
+
 
   if (!isClient) {
     return null;
@@ -81,7 +87,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(data => { onSubmit(data); if (!post) form.reset(); })} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-4">
         <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Post Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="summary" render={({ field }) => (<FormItem><FormLabel>Summary</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Author</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -108,7 +114,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
           <div className="max-h-[80vh] overflow-y-auto pr-6 -mr-6">{formContent}</div>
           <DialogFooter className="pt-4">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
-            <Button type="button" onClick={form.handleSubmit(data => { onSubmit(data); if (!post) form.reset(); })} disabled={isSubmitting}>
+            <Button type="button" onClick={handleSave} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
