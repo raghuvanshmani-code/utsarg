@@ -1,12 +1,10 @@
-
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { GalleryImage } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, Image as ImageIcon, HeartHandshake, ShieldQuestion, Settings } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
@@ -19,25 +17,23 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
-import { useAdminAuth } from '../auth-provider';
 import { createAdminLog } from '@/lib/admin-logs';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { getAuth } from 'firebase/auth';
 
-// Function to remove undefined values from an object
-const sanitizeData = (obj: any) => {
-  const newObj: any = {};
-  for (const key in obj) {
-    if (obj[key] !== undefined) {
-      newObj[key] = obj[key];
+const sanitizeData = (data: any) => {
+  const sanitized: { [key: string]: any } = {};
+  for (const key in data) {
+    if (data[key] !== undefined) {
+      sanitized[key] = data[key];
     }
   }
-  return newObj;
+  return sanitized;
 };
 
 export default function GalleryAdminPage() {
-  const { username, logout } = useAdminAuth();
+  const { user } = useUser();
   const db = useFirestore();
-  const router = useRouter();
   const { toast } = useToast();
 
   const { data: galleryItems, loading } = useCollection<GalleryImage>('gallery');
@@ -46,6 +42,8 @@ export default function GalleryAdminPage() {
   const [selectedItem, setSelectedItem] = useState<GalleryImage | null>(null);
   const [itemToDelete, setItemToDelete] = useState<GalleryImage | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogout = () => getAuth().signOut();
 
   const handleEdit = (item: GalleryImage) => {
     setSelectedItem(item);
@@ -58,7 +56,7 @@ export default function GalleryAdminPage() {
   };
 
   const confirmDelete = async () => {
-    if (!itemToDelete || !db || !username) return;
+    if (!itemToDelete || !db || !user) return;
     
     setIsSubmitting(true);
     const docRef = doc(db, 'gallery', itemToDelete.id);
@@ -66,7 +64,7 @@ export default function GalleryAdminPage() {
     try {
         await deleteDoc(docRef);
         await createAdminLog(db, {
-            username,
+            username: user.displayName || user.email || 'Unknown Admin',
             action: 'delete',
             collection: 'gallery',
             docId: itemToDelete.id,
@@ -74,8 +72,8 @@ export default function GalleryAdminPage() {
         });
         toast({ title: "Success", description: "Gallery item deleted successfully." });
     } catch(e: any) {
-        console.error("Delete error:", e);
         toast({ variant: "destructive", title: "Error", description: e.message || "Failed to delete gallery item." });
+        console.error("Delete error:", e);
     } finally {
         setIsAlertOpen(false);
         setItemToDelete(null);
@@ -84,34 +82,32 @@ export default function GalleryAdminPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-      if (!db || !username) return;
+      if (!db || !user) return;
       setIsSubmitting(true);
       
-      const sanitizedValues = sanitizeData(values);
-      const data = {
-        ...sanitizedValues,
-        uploadedBy: username,
+      const data = sanitizeData({
+        ...values,
+        uploadedBy: user.uid,
         updatedAt: serverTimestamp(),
-      };
+      });
 
       try {
         if (selectedItem) {
             const docRef = doc(db, 'gallery', selectedItem.id);
             await updateDoc(docRef, data);
             await createAdminLog(db, {
-                username,
+                username: user.displayName || user.email || 'Unknown Admin',
                 action: 'update',
                 collection: 'gallery',
                 docId: selectedItem.id,
                 details: `Updated gallery item: ${values.caption || selectedItem.id}`
             });
             toast({ title: "Success", description: "Gallery item updated successfully." });
-            setIsDialogOpen(false);
         } else {
             const collectionRef = collection(db, 'gallery');
             const newDoc = await addDoc(collectionRef, { ...data, createdAt: serverTimestamp(), date: new Date().toISOString() });
             await createAdminLog(db, {
-                username,
+                username: user.displayName || user.email || 'Unknown Admin',
                 action: 'create',
                 collection: 'gallery',
                 docId: newDoc.id,
@@ -119,44 +115,44 @@ export default function GalleryAdminPage() {
             });
             toast({ title: "Success", description: "Gallery item added successfully." });
         }
+        setIsDialogOpen(false);
+        setSelectedItem(null);
       } catch(e: any) {
-        console.error("Form submit error:", e);
         toast({ variant: "destructive", title: "Error", description: e.message || "An error occurred." });
+        console.error("Form submit error:", e);
       } finally {
           setIsSubmitting(false);
       }
   };
 
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db || !username) return;
+    if (!db || !user) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
-        if (!Array.isArray(items)) {
-            throw new Error("JSON content must be an array of objects.");
-        }
+        if (!Array.isArray(items)) throw new Error("JSON content must be an array of objects.");
         
         const collectionRef = collection(db, 'gallery');
         for (const item of items) {
             const sanitizedItem = sanitizeData(item);
             await addDoc(collectionRef, { 
                 ...sanitizedItem, 
-                uploadedBy: username,
+                uploadedBy: user.uid,
                 date: new Date().toISOString(),
                 createdAt: serverTimestamp(), 
                 updatedAt: serverTimestamp() 
             });
         }
         await createAdminLog(db, {
-            username,
+            username: user.displayName || user.email || 'Unknown Admin',
             action: 'json-batch-import',
             collection: 'gallery',
             details: `Added ${items.length} gallery items via JSON.`
         });
         toast({ title: "Success", description: `${items.length} gallery items added successfully.` });
     } catch (e: any) {
-        console.error("JSON submit error:", e);
         toast({ variant: "destructive", title: "JSON Error", description: e.message });
+        console.error("JSON submit error:", e);
     } finally {
         setIsSubmitting(false);
     }
@@ -175,10 +171,10 @@ export default function GalleryAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}} isActive><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}}><Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}}><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Gallery Management" />
@@ -195,13 +191,19 @@ export default function GalleryAdminPage() {
             </Card>
 
             <Card>
-                <CardHeader><CardTitle>Manage Gallery</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Manage Gallery</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardDescription>Edit or delete existing gallery images.</CardDescription>
+                    <Button onClick={() => { setSelectedItem(null); setIsDialogOpen(true); }}>Add New Item</Button>
+                  </div>
+                </CardHeader>
                 <CardContent>
-                    {loading ? (<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
+                    {loading ? (<div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
                     <Table>
-                        <TableHeader><TableRow><TableHead>Image</TableHead><TableHead>Caption</TableHead><TableHead>Tags</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Image</TableHead><TableHead>Caption</TableHead><TableHead className="hidden md:table-cell">Tags</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                         <TableBody>
-                            {galleryItems.map((item) => (<TableRow key={item.id}><TableCell>{item.url && (item.url.startsWith('http://') || item.url.startsWith('https://')) ? (<Image src={item.url} alt={item.caption || 'Gallery Image'} width={64} height={64} className="rounded-md object-cover" />) : (<div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>)}</TableCell><TableCell className="font-medium">{item.caption}</TableCell><TableCell>{item.tags?.join(', ')}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(item)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
+                            {galleryItems.map((item) => (<TableRow key={item.id}><TableCell>{item.url && (item.url.startsWith('http')) ? (<Image src={item.url} alt={item.caption || 'Gallery Image'} width={64} height={64} className="rounded-md object-cover" />) : (<div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center"><ImageIcon className="h-6 w-6 text-muted-foreground" /></div>)}</TableCell><TableCell className="font-medium max-w-xs truncate">{item.caption}</TableCell><TableCell className="hidden md:table-cell">{item.tags?.join(', ')}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(item)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(item)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
                         </TableBody>
                     </Table>
                     )}

@@ -15,7 +15,9 @@ export default function AdminLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head />
+      <head>
+        <title>UTSARG Admin</title>
+      </head>
       <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
         <FirebaseClientProvider>
           <AdminAuthProvider>

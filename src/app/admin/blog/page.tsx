@@ -1,12 +1,10 @@
-
 'use client';
 import { useState } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { Post } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, MoreHorizontal, Pencil, Trash2, Loader2, HeartHandshake, ShieldQuestion, Settings } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
@@ -19,25 +17,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BlogForm } from '@/components/admin/blog-form';
 import { JsonEntryForm } from '@/components/admin/json-entry-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAdminAuth } from '../auth-provider';
 import { createAdminLog } from '@/lib/admin-logs';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { getAuth } from 'firebase/auth';
 
-// Function to remove undefined values from an object
-const sanitizeData = (obj: any) => {
-  const newObj: any = {};
-  for (const key in obj) {
-    if (obj[key] !== undefined) {
-      newObj[key] = obj[key];
+const sanitizeData = (data: any) => {
+  const sanitized: { [key: string]: any } = {};
+  for (const key in data) {
+    if (data[key] !== undefined) {
+      sanitized[key] = data[key];
     }
   }
-  return newObj;
+  return sanitized;
 };
 
 export default function BlogAdminPage() {
-  const { username, logout } = useAdminAuth();
+  const { user } = useUser();
   const db = useFirestore();
-  const router = useRouter();
   const { toast } = useToast();
 
   const { data: posts, loading } = useCollection<Post>('blog');
@@ -46,6 +42,8 @@ export default function BlogAdminPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogout = () => getAuth().signOut();
 
   const handleEdit = (post: Post) => {
     setSelectedPost(post);
@@ -58,7 +56,7 @@ export default function BlogAdminPage() {
   };
 
   const confirmDelete = async () => {
-    if (!postToDelete || !db || !username) return;
+    if (!postToDelete || !db || !user) return;
     
     setIsSubmitting(true);
     const docRef = doc(db, 'blog', postToDelete.id);
@@ -66,7 +64,7 @@ export default function BlogAdminPage() {
     try {
         await deleteDoc(docRef);
         await createAdminLog(db, {
-            username,
+            username: user.displayName || user.email || 'Unknown Admin',
             action: 'delete',
             collection: 'blog',
             docId: postToDelete.id,
@@ -74,8 +72,8 @@ export default function BlogAdminPage() {
         });
         toast({ title: "Success", description: "Post deleted successfully." });
     } catch(e: any) {
-        console.error("Delete error:", e);
         toast({ variant: "destructive", title: "Error", description: e.message || "Failed to delete post." });
+        console.error("Delete error:", e);
     } finally {
         setIsAlertOpen(false);
         setPostToDelete(null);
@@ -84,30 +82,28 @@ export default function BlogAdminPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-      if (!db || !username) return;
+      if (!db || !user) return;
       setIsSubmitting(true);
       
-      const sanitizedValues = sanitizeData(values);
-      const data = { ...sanitizedValues, updatedAt: serverTimestamp() };
+      const data = sanitizeData({ ...values, updatedAt: serverTimestamp() });
 
       try {
         if (selectedPost) {
             const docRef = doc(db, 'blog', selectedPost.id);
             await updateDoc(docRef, data);
             await createAdminLog(db, {
-                username,
+                username: user.displayName || user.email || 'Unknown Admin',
                 action: 'update',
                 collection: 'blog',
                 docId: selectedPost.id,
                 details: `Updated post: ${values.title}`
             });
             toast({ title: "Success", description: "Post updated successfully." });
-            setIsDialogOpen(false);
         } else {
             const collectionRef = collection(db, 'blog');
             const newDoc = await addDoc(collectionRef, { ...data, createdAt: serverTimestamp() });
              await createAdminLog(db, {
-                username,
+                username: user.displayName || user.email || 'Unknown Admin',
                 action: 'create',
                 collection: 'blog',
                 docId: newDoc.id,
@@ -115,22 +111,22 @@ export default function BlogAdminPage() {
             });
             toast({ title: "Success", description: "Post added successfully." });
         }
+        setIsDialogOpen(false);
+        setSelectedPost(null);
       } catch (e: any) {
-        console.error("Form submit error:", e);
         toast({ variant: "destructive", title: "Error", description: e.message || "An error occurred." });
+        console.error("Form submit error:", e);
       } finally {
         setIsSubmitting(false);
       }
   };
   
   const handleJsonSubmit = async (jsonContent: string) => {
-    if (!db || !username) return;
+    if (!db || !user) return;
     setIsSubmitting(true);
     try {
         const items = JSON.parse(jsonContent);
-        if (!Array.isArray(items)) {
-            throw new Error("JSON content must be an array of objects.");
-        }
+        if (!Array.isArray(items)) throw new Error("JSON content must be an array of objects.");
         
         const collectionRef = collection(db, 'blog');
         for (const item of items) {
@@ -139,15 +135,15 @@ export default function BlogAdminPage() {
         }
 
         await createAdminLog(db, {
-            username,
+            username: user.displayName || user.email || 'Unknown Admin',
             action: 'json-batch-import',
             collection: 'blog',
             details: `Added ${items.length} posts via JSON.`
         });
         toast({ title: "Success", description: `${items.length} posts added successfully.` });
     } catch (e: any) {
-        console.error("JSON submit error:", e);
         toast({ variant: "destructive", title: "JSON Error", description: e.message });
+        console.error("JSON submit error:", e);
     } finally {
         setIsSubmitting(false);
     }
@@ -166,10 +162,10 @@ export default function BlogAdminPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}} isActive><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}}><Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}}><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Blog Management" />
@@ -186,13 +182,19 @@ export default function BlogAdminPage() {
             </Card>
 
             <Card>
-                <CardHeader><CardTitle>Manage Posts</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Manage Posts</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardDescription>Edit or delete existing posts.</CardDescription>
+                    <Button onClick={() => { setSelectedPost(null); setIsDialogOpen(true); }}>Add New Post</Button>
+                  </div>
+                </CardHeader>
                 <CardContent>
-                    {loading ? (<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
+                    {loading ? (<div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Author</TableHead><TableHead>Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="hidden md:table-cell">Author</TableHead><TableHead className="hidden lg:table-cell">Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                         <TableBody>
-                            {posts.map((post) => (<TableRow key={post.id}><TableCell className="font-medium">{post.title}</TableCell><TableCell>{post.author}</TableCell><TableCell>{post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(post)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(post)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
+                            {posts.map((post) => (<TableRow key={post.id}><TableCell className="font-medium">{post.title}</TableCell><TableCell className="hidden md:table-cell">{post.author}</TableCell><TableCell className="hidden lg:table-cell">{post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(post)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(post)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
                         </TableBody>
                     </Table>
                     )}

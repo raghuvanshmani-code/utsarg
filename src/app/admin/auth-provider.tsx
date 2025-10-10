@@ -1,34 +1,34 @@
-
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import AdminLoginPage from './login/page';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useUser } from '@/firebase';
+import { AdminLoginForm } from '@/components/admin-login-form';
+import { Loader2 } from 'lucide-react';
 
 interface AdminAuthContextType {
-  isAuthenticated: boolean;
-  username: string | null;
-  login: (username: string) => void;
-  logout: () => void;
+  isAdmin: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
+  const { user, loading, isAdmin } = useUser();
 
-  const login = (user: string) => {
-    setUsername(user);
-    setIsAuthenticated(true);
-  };
-  const logout = () => {
-    setUsername(null);
-    setIsAuthenticated(false);
-  };
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return <AdminLoginForm />;
+  }
 
   return (
-    <AdminAuthContext.Provider value={{ isAuthenticated, username, login, logout }}>
-      {isAuthenticated ? children : <AdminLoginPage />}
+    <AdminAuthContext.Provider value={{ isAdmin }}>
+      {children}
     </AdminAuthContext.Provider>
   );
 }

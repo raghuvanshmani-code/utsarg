@@ -1,16 +1,17 @@
-
 'use client';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, HeartHandshake, ShieldQuestion, Settings } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, HeartHandshake, ShieldQuestion, Settings, Users, UploadCloud } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
-import { useAdminAuth } from "./auth-provider";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { getAuth } from "firebase/auth";
 
 export default function AdminDashboard() {
-  const { logout } = useAdminAuth();
+  
+  const handleLogout = () => {
+    getAuth().signOut();
+  }
 
   return (
     <SidebarProvider>
@@ -59,13 +60,13 @@ export default function AdminDashboard() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip={{children: 'Settings'}}>
-                          <Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link>
+                          <Link href="/admin/settings/users"><Settings /><span>Settings</span></Link>
                       </SidebarMenuButton>
                   </SidebarMenuItem>
               </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                <Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
+                <Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2">
                     <LogOut className="h-5 w-5" /> 
                     <span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span>
                 </Button>
@@ -75,8 +76,8 @@ export default function AdminDashboard() {
             <AdminHeader title="Admin Dashboard" />
             <main className="flex-1 p-6">
                 <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-muted rounded-lg">
-                    <h2 className="text-2xl font-bold">Welcome!</h2>
-                    <p className="text-muted-foreground">Select a category from the sidebar to manage your content.</p>
+                    <h2 className="text-2xl font-bold">Welcome, Admin!</h2>
+                    <p className="text-muted-foreground">Select a category from the sidebar to manage your website content.</p>
                 </div>
             </main>
         </SidebarInset>

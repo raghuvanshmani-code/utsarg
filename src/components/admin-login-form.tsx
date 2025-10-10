@@ -1,11 +1,9 @@
-
 'use client';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/layout/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,9 +26,9 @@ const signInSchema = z.object({
 
 
 export function AdminLoginForm() {
-    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState('signin');
+    const { toast } = useToast();
 
     const signUpForm = useForm<z.infer<typeof signUpSchema>>({
         resolver: zodResolver(signUpSchema),
@@ -50,7 +48,6 @@ export function AdminLoginForm() {
             await signInWithPopup(auth, provider);
             // The auth guard will handle the redirect on successful login
         } catch (error: any) {
-            console.error("Error signing in with Google", error);
             if (error.code !== 'auth/popup-closed-by-user') {
               toast({
                 variant: "destructive",
@@ -71,13 +68,11 @@ export function AdminLoginForm() {
             await updateProfile(userCredential.user, { displayName: values.name });
             toast({
                 title: "Account Created",
-                description: "You can now sign in with your new credentials.",
+                description: "You can now sign in. Admin access will be granted by an existing administrator.",
             });
-            // Switch to sign-in tab after successful sign-up
             setActiveTab('signin');
             signInForm.reset({ email: values.email, password: '' });
         } catch (error: any) {
-            console.error("Error signing up", error);
             let description = error.message;
             if (error.code === 'auth/email-already-in-use') {
                 description = "An account with this email already exists. Please sign in instead.";
@@ -99,10 +94,9 @@ export function AdminLoginForm() {
             await signInWithEmailAndPassword(auth, values.email, values.password);
             // The auth guard will handle redirecting on successful login
         } catch (error: any) {
-            console.error("Error signing in", error);
             let description = "An unknown error occurred.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                description = "Invalid email or password. Please try again or sign up if you don't have an account.";
+                description = "Invalid email or password. Please try again or create an account.";
             } else if (error.code !== 'auth/popup-closed-by-user') {
                 description = error.message;
             }
@@ -126,16 +120,16 @@ export function AdminLoginForm() {
                     <div className="flex justify-center mb-4">
                         <Logo />
                     </div>
-                    <CardTitle className="text-2xl font-bold font-headline">Admin Access</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Admin Panel Access</CardTitle>
                     <CardDescription>
-                        Sign in to access the dashboard.
+                        You must be an authorized admin to continue.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="signin">Sign In</TabsTrigger>
-                            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                            <TabsTrigger value="signup">Create Account</TabsTrigger>
                         </TabsList>
                         <TabsContent value="signin">
                              <Form {...signInForm}>
@@ -165,7 +159,7 @@ export function AdminLoginForm() {
                                 <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4 pt-4">
                                     <FormField control={signUpForm.control} name="name" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Name</FormLabel>
+                                            <FormLabel>Full Name</FormLabel>
                                             <FormControl><Input placeholder="Your Name" {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
