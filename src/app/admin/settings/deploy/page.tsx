@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, CloudUpload, Settings, AlertTriangle } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, CloudUpload, Settings, AlertTriangle, Database, FileUp } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { useAdminAuth } from '../../auth-provider';
@@ -12,6 +12,7 @@ import { useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 export default function DeployRulesPage() {
@@ -78,49 +79,68 @@ export default function DeployRulesPage() {
       <SidebarInset>
         <AdminHeader title="Settings" />
         <main className="flex-1 p-6 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Deploy Firestore Rules</CardTitle>
-                    <CardDescription>
-                        Deploy your local `firestore.rules` file to your live Firebase project. 
-                        This action will overwrite the existing security rules in production.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-start gap-4">
-                        <p>
-                           Your local `firestore.rules` are configured to allow public read and write access. 
-                           Press the button below to apply these rules to your live database on Vercel.
-                        </p>
-                        
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" disabled={isDeploying}>
-                                    {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudUpload className="mr-2 h-4 w-4" />}
-                                    Deploy Rules to Production
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle /> Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will overwrite your production Firestore security rules. The current local file grants
-                                    <strong> open read and write access to everyone</strong>. This is a significant security risk and should
-                                    only be used for initial setup or debugging.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeploy}>
-                                    Yes, deploy the rules
-                                </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+           <Tabs defaultValue="deploy" className="w-full">
+              <TabsList>
+                <TabsTrigger value="deploy">
+                    <CloudUpload className="mr-2 h-4 w-4"/> Deploy Rules
+                </TabsTrigger>
+                <TabsTrigger value="seed" asChild>
+                    <Link href="/admin/settings/seed-data">
+                        <Database className="mr-2 h-4 w-4"/> Seed Data
+                    </Link>
+                </TabsTrigger>
+                 <TabsTrigger value="users" asChild>
+                    <Link href="/admin/settings/users">
+                        <Database className="mr-2 h-4 w-4"/> User Management
+                    </Link>
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="deploy" className="pt-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Deploy Firestore Rules</CardTitle>
+                        <CardDescription>
+                            Deploy your local `firestore.rules` file to your live Firebase project. 
+                            This action will overwrite the existing security rules in production.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col items-start gap-4">
+                            <p>
+                               Your local `firestore.rules` are configured to allow public read and write access. 
+                               Press the button below to apply these rules to your live database on Vercel.
+                            </p>
+                            
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={isDeploying}>
+                                        {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudUpload className="mr-2 h-4 w-4" />}
+                                        Deploy Rules to Production
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle /> Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will overwrite your production Firestore security rules. The current local file grants
+                                        <strong> open read and write access to everyone</strong>. This is a significant security risk and should
+                                        only be used for initial setup or debugging.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeploy}>
+                                        Yes, deploy the rules
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
 
-                    </div>
-                </CardContent>
-            </Card>
+                        </div>
+                    </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
         </main>
       </SidebarInset>
     </SidebarProvider>

@@ -1,15 +1,29 @@
-
-[
+{[
     {
       "id": "swaramya",
       "name": "Swaramya",
+      "type": "music",
       "description": "The official music club of GSVM, dedicated to promoting all forms of music, from classical and contemporary singing to instrumental performances. We organize events, workshops, and jam sessions.",
-      "short_description": "Music club promoting classical and contemporary singing.",
       "logo": "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759773291/swaramy_fwpnqe.jpg",
       "bannerImage": "https://res.cloudinary.com/dsot9i4o6/image/upload/v1759773291/swaramy_banner_q43jlv.jpg",
+      "volunteers": 25,
+      "membersCount": 48,
+      "coreVolunteers": [
+          {"name": "Vaishnavi Singh", "role": "Lead Vocalist"},
+          {"name": "Ishan Srivastava", "role": "Lead Guitarist"},
+          {"name": "Ashutosh Chaubey", "role": "Percussionist"}
+      ],
       "genres": ["Devotional", "Sufi", "Western", "Patriotic", "Ghazals"],
-      "core_volunteers": ["Vaishnavi Singh", "Ishan Srivastava", "Ashutosh Chaubey"],
-      "members_count": 48,
-      "tags": ["music", "singing", "instrumental", "performance"]
+      "activities": ["Live Jamming", "Open Mic", "Karaoke Nights", "Instrumental Workshops"],
+      "performanceOrder": ["Introduction", "Instrumental piece", "Vocal performance", "Group song"],
+      "requirements": ["Sound system", "Microphones", "Stage lighting", "Instruments"],
+      "budgetPerEventINR": 5000,
+      "firstEventSetupBudgetINR": 15000,
+      "refreshments3MonthsINR": 3000,
+      "performanceDurationMinutes": {
+        "short": 15,
+        "standard": 45,
+        "full": 90
+      }
     }
 ]

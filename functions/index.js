@@ -16,10 +16,9 @@ const RETRY_BASE_DELAY_MS = 300;
  * Callable Cloud Function to deploy Firestore security rules.
  */
 exports.deployRules = functions.https.onCall(async (data, context) => {
-  // Authentication check: Ensure the user is authenticated.
-  // For a real app, you'd also check for an admin custom claim.
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'You must be logged in to deploy rules.');
+  // Authentication check: Ensure the user is authenticated and has an admin claim.
+  if (!context.auth || !context.auth.token.admin) {
+    throw new functions.https.HttpsError('permission-denied', 'You must be an admin to deploy rules.');
   }
 
   try {
@@ -32,7 +31,7 @@ exports.deployRules = functions.https.onCall(async (data, context) => {
 
     await admin.securityRules().releaseFirestoreRulesetFromSource(rulesContent);
     
-    functions.logger.info(`Successfully deployed Firestore rules by user: ${context.auth.uid}`);
+    functions.logger.info(`Successfully deployed Firestore rules by admin user: ${context.auth.uid}`);
     return { success: true };
   } catch (error) {
     functions.logger.error('Error deploying Firestore rules:', error);
@@ -48,7 +47,7 @@ exports.deployRules = functions.https.onCall(async (data, context) => {
 exports.setUserRole = functions
   .runWith({ memory: '128MB' })
   .https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check REMOVED. Anyone can call this.
+    // 1. Authentication and Authorization Check - REMOVED, anyone can call this.
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'You must be logged in to manage user roles, but no admin check is performed.');
     }
@@ -184,7 +183,7 @@ exports.importSeedDocuments = functions
     }
 
     // 2. Input Validation
-    const { docsByCollection } = data;
+    const { docsByCollection, isDryRun } = data;
     if (!docsByCollection || typeof docsByCollection !== 'object' || Object.keys(docsByCollection).length === 0) {
       throw new functions.https.HttpsError('invalid-argument', 'The `docsByCollection` payload must be a non-empty object.');
     }
@@ -193,6 +192,7 @@ exports.importSeedDocuments = functions
     const seedId = crypto.randomUUID();
     const report = {
       seedId,
+      isDryRun,
       runByUid: context.auth.uid,
       startedAt: new Date().toISOString(),
       countsPerCollection: {},
@@ -200,6 +200,17 @@ exports.importSeedDocuments = functions
       failedCount: 0,
       errors: [],
     };
+
+    if (isDryRun) {
+        functions.logger.info(`[DRY RUN] Seed ID: ${seedId} by UID: ${context.auth.uid}`);
+        for (const [collectionName, docs] of Object.entries(docsByCollection)) {
+            const docIds = Object.keys(docs);
+            report.countsPerCollection[collectionName] = docIds.length;
+            report.successCount += docIds.length;
+        }
+        report.finishedAt = new Date().toISOString();
+        return { report };
+    }
 
     let batch = db.batch();
     let batchCount = 0;
