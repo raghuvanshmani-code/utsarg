@@ -72,9 +72,9 @@ export default function ClubsAdminPage() {
             details: `Deleted club: ${clubToDelete.name}`
         });
         toast({ title: "Success", description: "Club deleted successfully." });
-    } catch(e) {
+    } catch(e: any) {
         console.error("Delete error:", e);
-        toast({ variant: "destructive", title: "Error", description: "Failed to delete club." });
+        toast({ variant: "destructive", title: "Error", description: e.message || "Failed to delete club." });
     } finally {
         setIsAlertOpen(false);
         setClubToDelete(null);
