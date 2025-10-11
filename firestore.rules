@@ -2,17 +2,72 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+  
     // Helper function to check for admin custom claim
     function isAdmin() {
       return request.auth.token.admin == true;
     }
 
-    // Global rule: Allow public read access to all documents,
-    // but restrict writes to only admins.
+    // Default-deny all access
     match /{document=**} {
-      allow get, list: if true; // Explicitly allow 'get' and 'list' for public read
-      allow write: if isAdmin(); // Allow create, update, delete for admins
+      allow read, write: if false;
+    }
+    
+    // PUBLIC-FACING COLLECTIONS:
+    // Allow anyone to read (get, list).
+    // Allow only admins to write (create, update, delete).
+    match /blog/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /clubs/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /events/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /gallery/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+     match /philanthropy/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /society/{docId=**} {
+       allow get, list: if true;
+       allow write: if isAdmin();
+    }
+
+    // USER PROFILES:
+    // - Admins can read the whole collection.
+    // - Any authenticated user can read their own profile.
+    // - Profiles are created by a Cloud Function, not directly by users.
+    // - Users can update their own profile, Admins can update any profile.
+    match /users/{userId} {
+      allow get: if request.auth.uid == userId || isAdmin();
+      allow list: if isAdmin();
+      allow create: if false; // Profiles are created via a function
+      allow update: if request.auth.uid == userId || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // USER IMAGE UPLOADS:
+    // Users can create and read their own image metadata.
+    match /userImages/{imageId} {
+        allow read, create: if request.auth.uid == request.resource.data.userId;
+        allow update, delete: if request.auth.uid == resource.data.userId;
+    }
+
+    // ADMIN-ONLY COLLECTIONS:
+    // Only admins can read or write these logs and reports.
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    match /seeds/{seedId} {
+        allow read, write: if isAdmin();
     }
   }
 }
