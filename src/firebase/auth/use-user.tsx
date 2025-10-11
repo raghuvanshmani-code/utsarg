@@ -20,7 +20,8 @@ export const useUser = () => {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const idTokenResult = await user.getIdTokenResult();
+        // Force refresh the token to get the latest custom claims.
+        const idTokenResult = await user.getIdTokenResult(true);
         setUser(user);
         setIsAdmin(!!idTokenResult.claims.admin);
         setCustomClaims(idTokenResult.claims);
