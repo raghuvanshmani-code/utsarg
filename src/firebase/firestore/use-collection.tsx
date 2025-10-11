@@ -6,10 +6,6 @@ import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// TEMPORARY WORKAROUND for git push issue.
-// This allows local development to proceed without correct rules deployed.
-const PUBLIC_READ_COLLECTIONS = ['blog', 'clubs', 'events', 'gallery', 'philanthropy', 'society', 'users', 'userImages', 'admin_logs', 'seeds'];
-
 export function useCollection<T>(path: string | null, ...queryConstraints: QueryConstraint[]) {
   const db = useFirestore();
   const [data, setData] = useState<T[]>([]);
@@ -27,12 +23,6 @@ export function useCollection<T>(path: string | null, ...queryConstraints: Query
         setLoading(false);
         return;
     }
-
-    // WORKAROUND START
-    if (process.env.NODE_ENV === 'development' && PUBLIC_READ_COLLECTIONS.includes(path)) {
-       console.warn(`[WORKAROUND] Firestore rules are being bypassed for the '${path}' collection in local development.`);
-    }
-    // WORKAROUND END
 
     setLoading(true);
     
