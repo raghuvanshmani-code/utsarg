@@ -1,11 +1,11 @@
+
 'use client';
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, CloudUpload, Settings, Database, FileUp, FileCheck2, AlertCircle } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, CloudUpload, Settings, Database, FileUp, FileCheck2, AlertCircle, Users } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
-import { useAdminAuth } from '../../auth-provider';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFunctions, useUser } from '@/firebase';
@@ -17,9 +17,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getAuth } from 'firebase/auth';
 
 export default function SeedDataPage() {
-  const { logout } = useAdminAuth();
   const { user, isAdmin } = useUser();
   const functions = useFunctions();
   const { toast } = useToast();
@@ -28,6 +28,8 @@ export default function SeedDataPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isDryRun, setIsDryRun] = useState(true);
   const [seedReport, setSeedReport] = useState<any>(null);
+
+  const handleLogout = () => getAuth().signOut();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -90,16 +92,21 @@ export default function SeedDataPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Settings" />
         <main className="flex-1 p-6 space-y-6">
            <Tabs defaultValue="seed" className="w-full">
                <TabsList>
+                 <TabsTrigger value="users" asChild>
+                    <Link href="/admin/settings/users">
+                        <Users className="mr-2 h-4 w-4"/> User Management
+                    </Link>
+                </TabsTrigger>
                  <TabsTrigger value="deploy" asChild>
                     <Link href="/admin/settings/deploy">
                         <CloudUpload className="mr-2 h-4 w-4"/> Deploy Rules
@@ -107,11 +114,6 @@ export default function SeedDataPage() {
                 </TabsTrigger>
                 <TabsTrigger value="seed">
                     <Database className="mr-2 h-4 w-4"/> Seed Data
-                </TabsTrigger>
-                 <TabsTrigger value="users" asChild>
-                    <Link href="/admin/settings/users">
-                        <Database className="mr-2 h-4 w-4"/> User Management
-                    </Link>
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="seed" className="pt-6">
@@ -186,7 +188,7 @@ export default function SeedDataPage() {
                                         <strong>Collections Processed:</strong>
                                         <ul className="list-disc pl-5">
                                             {Object.entries(seedReport.countsPerCollection).map(([collection, count]) => (
-                                                <li key={collection}>{collection}: {count} documents</li>
+                                                <li key={collection}>{collection as string}: {count as number} documents</li>
                                             ))}
                                         </ul>
                                     </div>

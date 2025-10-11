@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useCollection, useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,7 @@ export default function UsersPage() {
   const { logout } = useAdminAuth();
   const functions = useFunctions();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(''); // Store UID of user being updated
 
   const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
 
@@ -40,7 +41,7 @@ export default function UsersPage() {
       return;
     }
     
-    setIsSubmitting(true);
+    setIsSubmitting(uid);
     const setUserRoleCallable = httpsCallable(functions, 'setUserRole');
     try {
       await setUserRoleCallable({ uid, role });
@@ -48,7 +49,7 @@ export default function UsersPage() {
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
-        setIsSubmitting(false);
+        setIsSubmitting('');
     }
   };
 
@@ -117,8 +118,8 @@ export default function UsersPage() {
                                        <TableRow key={user.uid}>
                                            <TableCell className="font-medium flex items-center gap-2">
                                                <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={user.photoURL} />
-                                                    <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
+                                                    <AvatarImage src={user.photoURL ?? undefined} />
+                                                    <AvatarFallback>{user.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
                                                </Avatar>
                                                {user.displayName}
                                            </TableCell>
@@ -136,13 +137,15 @@ export default function UsersPage() {
                                            <TableCell className="text-right">
                                                <DropdownMenu>
                                                    <DropdownMenuTrigger asChild>
-                                                       <Button size="sm" variant="ghost" disabled={isSubmitting}>Actions</Button>
+                                                       <Button size="sm" variant="ghost" disabled={isSubmitting === user.uid}>
+                                                          {isSubmitting === user.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
+                                                       </Button>
                                                    </DropdownMenuTrigger>
                                                    <DropdownMenuContent>
                                                        {user.customClaims?.admin ? (
-                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'user')}>Remove Admin Role</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'user')} disabled={isSubmitting === user.uid}>Remove Admin Role</DropdownMenuItem>
                                                        ) : (
-                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'admin')}>Make Admin</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'admin')} disabled={isSubmitting === user.uid}>Make Admin</DropdownMenuItem>
                                                        )}
                                                    </DropdownMenuContent>
                                                </DropdownMenu>
