@@ -35,16 +35,17 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
   });
   
   useEffect(() => {
-    if (item) {
-      form.reset(item);
-    } else {
-      form.reset({ caption: '', url: '', tags: [] });
+    if (isOpen) {
+        if (item) {
+            form.reset(item);
+        } else {
+            form.reset({ caption: '', url: '', tags: [] });
+        }
     }
   }, [item, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);
-    if (!item) form.reset();
   });
 
   const dialogTitle = item ? 'Edit Gallery Item' : 'Add New Gallery Item';
@@ -52,12 +53,12 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={handleSave} className="space-y-4">
+      <form className="space-y-4">
         <FormField control={form.control} name="caption" render={({ field }) => (<FormItem><FormLabel>Caption</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="url" render={({ field }) => (<FormItem><FormLabel>Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {item ? 'Update Item' : 'Add Item'}
           </Button>

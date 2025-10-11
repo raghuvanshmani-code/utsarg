@@ -55,7 +55,6 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);
-    if (!activity) form.reset();
   });
 
   if (!isClient) {
@@ -67,14 +66,14 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={handleSave} className="space-y-4">
+      <form className="space-y-4">
         <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Activity Type</FormLabel><FormControl><Input placeholder="e.g., Blood Donation Camp" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="imageUrl" render={({ field }) => (<FormItem><FormLabel>Image (Optional)</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {activity ? 'Update Activity' : 'Add Activity'}
           </Button>

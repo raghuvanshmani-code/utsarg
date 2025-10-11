@@ -22,7 +22,7 @@ import { ImageUploader } from '../image-uploader';
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  location: z.string().min(2, { message: "Location must be at least 2 characters." }),
+  venue: z.string().min(2, { message: "Location must be at least 2 characters." }),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
   clubId: z.string().min(1, { message: "Please select a club." }),
   bannerImage: z.string().optional(),
@@ -43,21 +43,23 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { title: '', description: '', location: '', date: new Date().toISOString(), clubId: '', bannerImage: '' },
+    defaultValues: { title: '', description: '', venue: '', date: new Date().toISOString(), clubId: '', bannerImage: '' },
   });
 
   useEffect(() => {
     setIsClient(true);
-    if (event) {
-      form.reset({ ...event, date: event.date || new Date().toISOString() });
-    } else {
-      form.reset({ title: '', description: '', location: '', date: new Date().toISOString(), clubId: '', bannerImage: '' });
+    if (isOpen) {
+        if (event) {
+            form.reset({ ...event, date: event.date || new Date().toISOString(), venue: event.venue || '' });
+        } else {
+            form.reset({ title: '', description: '', venue: '', date: new Date().toISOString(), clubId: '', bannerImage: '' });
+        }
     }
   }, [event, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
-    onSubmit(data);
-    if (!event) form.reset();
+    const submitData = { ...data, location: data.venue };
+    onSubmit(submitData);
   });
 
   if (!isClient) {
@@ -69,16 +71,16 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={handleSave} className="space-y-4">
+      <form className="space-y-4">
         <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="venue" render={({ field }) => (<FormItem><FormLabel>Location / Venue</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="clubId" render={({ field }) => (<FormItem><FormLabel>Organizing Club</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={clubsLoading}><FormControl><SelectTrigger><SelectValue placeholder="Select a club" /></SelectTrigger></FormControl><SelectContent>{clubs.map(club => (<SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="bannerImage" render={({ field }) => (<FormItem><FormLabel>Banner Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {event ? 'Update Event' : 'Add Event'}
           </Button>

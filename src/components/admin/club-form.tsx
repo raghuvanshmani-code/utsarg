@@ -37,16 +37,17 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting, i
   });
 
   useEffect(() => {
-    if (club) {
-      form.reset(club);
-    } else {
-      form.reset({ name: '', description: '', logo: '', bannerImage: '', achievements: [] });
+    if (isOpen) {
+        if (club) {
+            form.reset(club);
+        } else {
+            form.reset({ name: '', description: '', logo: '', bannerImage: '', achievements: [] });
+        }
     }
   }, [club, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);
-    if (!club) form.reset();
   });
 
   const dialogTitle = club ? 'Edit Club' : 'Add New Club';
@@ -54,14 +55,14 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting, i
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={handleSave} className="space-y-4">
+      <form className="space-y-4">
         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Club Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="logo" render={({ field }) => (<FormItem><FormLabel>Logo Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="bannerImage" render={({ field }) => (<FormItem><FormLabel>Banner Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {club ? 'Update Club' : 'Add Club'}
           </Button>

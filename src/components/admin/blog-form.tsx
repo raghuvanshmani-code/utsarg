@@ -54,27 +54,28 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
 
   useEffect(() => {
     setIsClient(true);
-    if (post) {
-      form.reset({
-        ...post,
-        date: post.date || new Date().toISOString(),
-      });
-    } else {
-      form.reset({
-        title: '',
-        summary: '',
-        author: '',
-        date: new Date().toISOString(),
-        thumbnail: '',
-        bannerImage: '',
-        content: '',
-      });
+    if (isOpen) {
+        if (post) {
+            form.reset({
+                ...post,
+                date: post.date || new Date().toISOString(),
+            });
+        } else {
+            form.reset({
+                title: '',
+                summary: '',
+                author: '',
+                date: new Date().toISOString(),
+                thumbnail: '',
+                bannerImage: '',
+                content: '',
+            });
+        }
     }
   }, [post, isOpen]);
   
   const handleSave = form.handleSubmit((data) => {
     onSubmit(data);
-    if (!post) form.reset();
   });
 
 
@@ -87,7 +88,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
 
   const formContent = (
     <Form {...form}>
-      <form onSubmit={handleSave} className="space-y-4">
+      <form className="space-y-4">
         <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Post Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="summary" render={({ field }) => (<FormItem><FormLabel>Summary</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Author</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -97,7 +98,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
         <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>Content (Markdown supported)</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormMessage /></FormItem>)} />
         
         {!isDialog && (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {post ? 'Update Post' : 'Add Post'}
           </Button>
