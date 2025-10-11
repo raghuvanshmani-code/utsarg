@@ -76,7 +76,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
         });
       }
     }
-  }, [event, isOpen, form]);
+  }, [event, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);
