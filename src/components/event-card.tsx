@@ -41,7 +41,7 @@ export function EventCard({ event }: EventCardProps) {
             </div>
             <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-2" />
-                <span>{event.location}</span>
+                <span>{event.venue}</span>
             </div>
             <div className="flex items-center">
                 <Tag className="h-4 w-4 mr-2" />
