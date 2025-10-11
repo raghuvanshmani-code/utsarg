@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { clubs } from '@/lib/data';
+import { useCollection } from '@/firebase';
+import type { Club } from '@/lib/types';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,12 +28,15 @@ const formSchema = z.object({
 });
 
 export function ContactForm() {
+  const { data: clubs, loading: clubsLoading } = useCollection<Club>('clubs');
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
       message: "",
+      club: undefined,
     },
   });
 
@@ -76,16 +81,20 @@ export function ContactForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Relevant Club (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+               <Select 
+                onValueChange={(value) => field.onChange(value === '--none--' ? undefined : value)} 
+                value={field.value}
+                disabled={clubsLoading}
+               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a club" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="general">General Inquiry</SelectItem>
+                  <SelectItem value="--none--">None / General Inquiry</SelectItem>
                   {clubs.map(club => (
-                    <SelectItem key={club.slug} value={club.slug}>
+                    <SelectItem key={club.id} value={club.id}>
                       {club.name}
                     </SelectItem>
                   ))}
