@@ -74,9 +74,9 @@ function UserTable({ adminUser }: { adminUser: User }) {
         <TableHeader>
             <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead className="hidden md:table-cell">Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
         </TableHeader>
         <TableBody>
@@ -87,9 +87,9 @@ function UserTable({ adminUser }: { adminUser: User }) {
                             <AvatarImage src={userProfile.photoURL ?? undefined} />
                             <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
                         </Avatar>
-                        {userProfile.displayName}
+                        <span className="truncate">{userProfile.displayName}</span>
                     </TableCell>
-                    <TableCell>{userProfile.email}</TableCell>
+                    <TableCell className="hidden md:table-cell">{userProfile.email}</TableCell>
                     <TableCell>
                         {userProfile.customClaims?.admin ? (
                             <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
@@ -148,7 +148,7 @@ export default function UsersPage() {
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Settings" />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
            <Card>
               <CardHeader>
                   <CardTitle>User Management</CardTitle>

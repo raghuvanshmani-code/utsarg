@@ -37,7 +37,7 @@ export default function LogsAdminPage() {
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="System Logs" />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Admin Activity</CardTitle>
@@ -49,22 +49,22 @@ export default function LogsAdminPage() {
                         <Table>
                             <TableHeader className="sticky top-0 bg-muted/40 backdrop-blur-sm">
                                 <TableRow>
-                                    <TableHead>Timestamp</TableHead>
+                                    <TableHead className="hidden lg:table-cell">Timestamp</TableHead>
                                     <TableHead>Username</TableHead>
                                     <TableHead>Action</TableHead>
-                                    <TableHead>Collection</TableHead>
+                                    <TableHead className="hidden md:table-cell">Collection</TableHead>
                                     <TableHead>Details</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {logs.map((log) => (
                                 <TableRow key={log.id}>
-                                    <TableCell className="font-medium whitespace-nowrap">
+                                    <TableCell className="font-medium whitespace-nowrap hidden lg:table-cell">
                                         {log.timestamp ? format(new Date(log.timestamp.seconds * 1000), 'yyyy-MM-dd hh:mm a') : 'N/A'}
                                     </TableCell>
                                     <TableCell>{log.username}</TableCell>
                                     <TableCell className="capitalize">{log.action}</TableCell>
-                                    <TableCell className="capitalize">{log.collection}</TableCell>
+                                    <TableCell className="capitalize hidden md:table-cell">{log.collection}</TableCell>
                                     <TableCell>{log.details}</TableCell>
                                 </TableRow>
                                 ))}

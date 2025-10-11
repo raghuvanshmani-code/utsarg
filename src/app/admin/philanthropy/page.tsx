@@ -168,7 +168,7 @@ export default function PhilanthropyAdminPage() {
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Philanthropy Management" />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Activities</CardTitle><CardDescription>Add a single activity via the form or multiple activities via JSON.</CardDescription></CardHeader>
                 <CardContent>
@@ -191,7 +191,7 @@ export default function PhilanthropyAdminPage() {
                 <CardContent>
                     {loading ? (<div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
                     <Table>
-                        <TableHeader><TableRow><TableHead>Type</TableHead><TableHead className="hidden md:table-cell max-w-sm">Description</TableHead><TableHead className="hidden lg:table-cell">Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Type</TableHead><TableHead className="hidden md:table-cell max-w-sm">Description</TableHead><TableHead className="hidden lg:table-cell">Date</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader>
                         <TableBody>
                             {activities.map((activity) => (<TableRow key={activity.id}><TableCell className="font-medium">{activity.type}</TableCell><TableCell className="hidden md:table-cell max-w-sm truncate">{activity.description}</TableCell><TableCell className="hidden lg:table-cell">{activity.date && !isNaN(new Date(activity.date).getTime()) ? format(new Date(activity.date), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(activity)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(activity)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
                         </TableBody>

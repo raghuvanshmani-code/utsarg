@@ -169,7 +169,7 @@ export default function EventsAdminPage() {
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Events Management" />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Events</CardTitle><CardDescription>Add a single event via the form or multiple events via JSON.</CardDescription></CardHeader>
                 <CardContent>
@@ -192,7 +192,7 @@ export default function EventsAdminPage() {
                 <CardContent>
                     {loading ? (<div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="hidden md:table-cell">Date</TableHead><TableHead className="hidden lg:table-cell">Location</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="hidden md:table-cell">Date</TableHead><TableHead className="hidden lg:table-cell">Location</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader>
                         <TableBody>
                             {events.map((event) => (<TableRow key={event.id}><TableCell className="font-medium">{event.title}</TableCell><TableCell className="hidden md:table-cell">{event.date && !isNaN(new Date(event.date).getTime()) ? format(new Date(event.date), 'PPP') : 'N/A'}</TableCell><TableCell className="hidden lg:table-cell">{event.venue}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(event)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(event)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
                         </TableBody>

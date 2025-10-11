@@ -169,7 +169,7 @@ export default function BlogAdminPage() {
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Blog Management" />
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
             <Card>
                 <CardHeader><CardTitle>Add Posts</CardTitle><CardDescription>Add a single post via the form or multiple posts via JSON.</CardDescription></CardHeader>
                 <CardContent>
@@ -192,7 +192,7 @@ export default function BlogAdminPage() {
                 <CardContent>
                     {loading ? (<div className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>) : (
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="hidden md:table-cell">Author</TableHead><TableHead className="hidden lg:table-cell">Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="hidden md:table-cell">Author</TableHead><TableHead className="hidden lg:table-cell">Date</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader>
                         <TableBody>
                             {posts.map((post) => (<TableRow key={post.id}><TableCell className="font-medium">{post.title}</TableCell><TableCell className="hidden md:table-cell">{post.author}</TableCell><TableCell className="hidden lg:table-cell">{post.date && !isNaN(new Date(post.date).getTime()) ? format(new Date(post.date), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => handleEdit(post)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDelete(post)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}
                         </TableBody>
