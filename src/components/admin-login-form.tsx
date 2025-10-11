@@ -1,5 +1,6 @@
+
 'use client';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -7,17 +8,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/layout/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
-const signUpSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.string().email({ message: "Please enter a valid email." }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-});
 
 const signInSchema = z.object({
     email: z.string().email({ message: "Please enter a valid email." }),
@@ -27,13 +21,7 @@ const signInSchema = z.object({
 
 export function AdminLoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState('signin');
     const { toast } = useToast();
-
-    const signUpForm = useForm<z.infer<typeof signUpSchema>>({
-        resolver: zodResolver(signUpSchema),
-        defaultValues: { name: "", email: "", password: "" },
-    });
 
     const signInForm = useForm<z.infer<typeof signInSchema>>({
         resolver: zodResolver(signInSchema),
@@ -59,33 +47,6 @@ export function AdminLoginForm() {
             setIsSubmitting(false);
         }
     };
-    
-    const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
-        setIsSubmitting(true);
-        const auth = getAuth();
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-            await updateProfile(userCredential.user, { displayName: values.name });
-            toast({
-                title: "Account Created",
-                description: "You can now sign in. Admin access will be granted by an existing administrator.",
-            });
-            setActiveTab('signin');
-            signInForm.reset({ email: values.email, password: '' });
-        } catch (error: any) {
-            let description = error.message;
-            if (error.code === 'auth/email-already-in-use') {
-                description = "An account with this email already exists. Please sign in instead.";
-            }
-            toast({
-                variant: "destructive",
-                title: "Sign-up Failed",
-                description: description,
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
         setIsSubmitting(true);
@@ -96,7 +57,7 @@ export function AdminLoginForm() {
         } catch (error: any) {
             let description = "An unknown error occurred.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                description = "Invalid email or password. Please try again or create an account.";
+                description = "Invalid email or password. Please try again.";
             } else if (error.code !== 'auth/popup-closed-by-user') {
                 description = error.message;
             }
@@ -126,65 +87,27 @@ export function AdminLoginForm() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="signin">Sign In</TabsTrigger>
-                            <TabsTrigger value="signup">Create Account</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="signin">
-                             <Form {...signInForm}>
-                                <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4 pt-4">
-                                    <FormField control={signInForm.control} name="email" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl><Input placeholder="admin@example.com" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <FormField control={signInForm.control} name="password" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password</FormLabel>
-                                            <FormControl><Input type="password" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In
-                                    </Button>
-                                </form>
-                            </Form>
-                        </TabsContent>
-                        <TabsContent value="signup">
-                            <Form {...signUpForm}>
-                                <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4 pt-4">
-                                    <FormField control={signUpForm.control} name="name" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Full Name</FormLabel>
-                                            <FormControl><Input placeholder="Your Name" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <FormField control={signUpForm.control} name="email" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl><Input placeholder="m@example.com" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <FormField control={signUpForm.control} name="password" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password</FormLabel>
-                                            <FormControl><Input type="password" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create Account
-                                    </Button>
-                                </form>
-                            </Form>
-                        </TabsContent>
-                    </Tabs>
+                     <Form {...signInForm}>
+                        <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4 pt-4">
+                            <FormField control={signInForm.control} name="email" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl><Input placeholder="admin@example.com" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={signInForm.control} name="password" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl><Input type="password" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In
+                            </Button>
+                        </form>
+                    </Form>
                     <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t" />
