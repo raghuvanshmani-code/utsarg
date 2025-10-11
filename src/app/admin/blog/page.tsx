@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { Post } from '@/lib/types';
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -81,7 +81,7 @@ export default function BlogAdminPage() {
     }
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = useCallback(async (values: any) => {
       if (!db || !user) return;
       setIsSubmitting(true);
       
@@ -119,7 +119,7 @@ export default function BlogAdminPage() {
       } finally {
         setIsSubmitting(false);
       }
-  };
+  }, [db, user, selectedPost, toast]);
   
   const handleJsonSubmit = async (jsonContent: string) => {
     if (!db || !user) return;
