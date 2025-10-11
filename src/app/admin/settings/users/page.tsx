@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
@@ -16,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import type { User } from 'firebase/auth';
 
 type UserProfile = {
   id: string;
@@ -26,13 +26,12 @@ type UserProfile = {
   customClaims?: { admin?: boolean };
 };
 
-export default function UsersPage() {
-  const { logout, user } = useAdminAuth();
+function UserTable({ adminUser }: { adminUser: User }) {
   const functions = useFunctions();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(''); // Store UID of user being updated
 
-  const { data: users, loading: usersLoading } = useCollection<UserProfile>(user ? 'users' : null);
+  const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
 
   const setUserRole = async (uid: string, role: 'admin' | 'user') => {
     if (!functions) {
@@ -51,6 +50,73 @@ export default function UsersPage() {
         setIsSubmitting('');
     }
   };
+
+  if (usersLoading) {
+    return (
+        <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
+
+  return (
+    <Table>
+        <TableHeader>
+            <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            {users.map(userProfile => (
+                <TableRow key={userProfile.uid}>
+                    <TableCell className="font-medium flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={userProfile.photoURL ?? undefined} />
+                            <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                        </Avatar>
+                        {userProfile.displayName}
+                    </TableCell>
+                    <TableCell>{userProfile.email}</TableCell>
+                    <TableCell>
+                        {userProfile.customClaims?.admin ? (
+                            <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
+                                <ShieldCheck className="mr-1 h-3 w-3" />
+                                Admin
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline">User</Badge>
+                        )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost" disabled={isSubmitting === userProfile.uid || userProfile.uid === adminUser.uid}>
+                                  {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {userProfile.uid === adminUser.uid ? (
+                                     <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
+                                ) : userProfile.customClaims?.admin ? (
+                                     <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'user')} disabled={isSubmitting === userProfile.uid}>Remove Admin Role</DropdownMenuItem>
+                                ) : (
+                                     <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'admin')} disabled={isSubmitting === userProfile.uid}>Make Admin</DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+  );
+}
+
+export default function UsersPage() {
+  const { logout, user } = useAdminAuth();
 
   return (
     <SidebarProvider>
@@ -81,64 +147,7 @@ export default function UsersPage() {
                   </CardDescription>
               </CardHeader>
               <CardContent>
-                 {usersLoading ? (
-                     <div className="flex justify-center items-center h-40">
-                         <Loader2 className="h-8 w-8 animate-spin" />
-                     </div>
-                 ) : (
-                     <Table>
-                         <TableHeader>
-                             <TableRow>
-                                 <TableHead>User</TableHead>
-                                 <TableHead>Email</TableHead>
-                                 <TableHead>Role</TableHead>
-                                 <TableHead className="text-right">Actions</TableHead>
-                             </TableRow>
-                         </TableHeader>
-                         <TableBody>
-                             {users.map(userProfile => (
-                                 <TableRow key={userProfile.uid}>
-                                     <TableCell className="font-medium flex items-center gap-2">
-                                         <Avatar className="h-8 w-8">
-                                              <AvatarImage src={userProfile.photoURL ?? undefined} />
-                                              <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
-                                         </Avatar>
-                                         {userProfile.displayName}
-                                     </TableCell>
-                                     <TableCell>{userProfile.email}</TableCell>
-                                     <TableCell>
-                                          {userProfile.customClaims?.admin ? (
-                                              <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
-                                                  <ShieldCheck className="mr-1 h-3 w-3" />
-                                                  Admin
-                                              </Badge>
-                                          ) : (
-                                              <Badge variant="outline">User</Badge>
-                                          )}
-                                     </TableCell>
-                                     <TableCell className="text-right">
-                                         <DropdownMenu>
-                                             <DropdownMenuTrigger asChild>
-                                                 <Button size="sm" variant="ghost" disabled={isSubmitting === userProfile.uid}>
-                                                    {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
-                                                 </Button>
-                                             </DropdownMenuTrigger>
-                                             <DropdownMenuContent>
-                                                 {userProfile.uid === user?.uid ? (
-                                                      <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
-                                                 ) : userProfile.customClaims?.admin ? (
-                                                      <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'user')} disabled={isSubmitting === userProfile.uid}>Remove Admin Role</DropdownMenuItem>
-                                                 ) : (
-                                                      <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'admin')} disabled={isSubmitting === userProfile.uid}>Make Admin</DropdownMenuItem>
-                                                 )}
-                                             </DropdownMenuContent>
-                                         </DropdownMenu>
-                                     </TableCell>
-                                 </TableRow>
-                             ))}
-                         </TableBody>
-                     </Table>
-                 )}
+                 {user ? <UserTable adminUser={user} /> :  <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>}
               </CardContent>
           </Card>
         </main>
