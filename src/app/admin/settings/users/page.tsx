@@ -59,6 +59,15 @@ function UserTable({ adminUser }: { adminUser: User }) {
         </div>
     );
   }
+  
+  if (!usersLoading && users.length === 0) {
+      return (
+          <div className="text-center py-10">
+              <p className="text-muted-foreground">No users found in the database.</p>
+              <p className="text-sm text-muted-foreground mt-2">New users will appear here after they sign up to the application.</p>
+          </div>
+      );
+  }
 
   return (
     <Table>

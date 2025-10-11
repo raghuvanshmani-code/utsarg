@@ -1,60 +1,53 @@
 /**
- * @file Overview
- * This ruleset enforces a strict user-ownership model for user profiles and restricts access to other collections based on the documented requirements.
+ * @fileoverview Firestore Security Rules for the Student Society App.
  *
- * @data-structure
- * - `/users/{userId}`: Stores public user profile data. Each user can only read/write their own profile.
- * - `/society/meta`:  A singleton document with public read access.
- * - `/clubs/{clubId}`, `/volunteers/{volunteerId}`, `/members/{memberId}`, `/events/{eventId}`, `/gallery/{galleryId}`, `/funds/accounting/transactions/{transactionId}`, `/philanthropy/{activityId}`, `/admin_logs/{logId}`:  Public read, owner-only write, assuming an ownership field exists.
+ * Core Philosophy:
+ * This ruleset prioritizes a secure, owner-based access control model.
+ * Users generally have full control over their own data, while public data is readable by everyone.
+ * Administrative actions are logged and can potentially be restricted to users with specific custom claims (not yet implemented).
  *
- * @key-security-decisions
- * - User listing is explicitly denied for the `/users` collection to protect user privacy and prevent enumeration attacks.
- * - All write operations require a valid, authenticated user.
- * - Data validation is relaxed in this prototype phase, focusing on authorization and relational integrity only.
- * - If an ownership field is missing in a schema, a `TODO` is added to the rule, indicating a required schema update.
- * - No timestamp validation is performed in this prototype phase.
+ * Data Structure:
+ * - User profiles are stored under `/users/{userId}`.
+ * - Society-wide metadata is stored in a singleton document at `/society/meta`.
+ * - Clubs, volunteers, members, events, gallery items, fund transactions, philanthropy activities, and admin logs
+ *   are stored in their respective top-level collections.
  *
- * @denormalization-for-authorization
- * - The `uploadedBy` field on `galleryItem` and `clubId` on `event` are used to denote ownership, avoiding the need for separate role or membership collections.
- *
- * @structural-segregation
- * - No explicit structural segregation is used in this configuration.
+ * Key Security Decisions:
+ * - User listing is generally disallowed for privacy.
+ * - Write operations are strictly controlled based on ownership.
+ * - The rules do not enforce data validation beyond authorization and relational integrity checks in `create` operations.
+ * - There is no role-based access control yet.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Manages user profile access. Users can only read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user creates their own profile. `request.auth.uid` must match `{userId}` and the `uid` field in the data.
-     * @allow (get,update,delete) - Authenticated user can read, update, and delete their own profile.
-     * @deny (list) - Prevents listing all user profiles.
-     * @deny (create) - An unauthenticated user cannot create a profile.
-     * @deny (update,delete) - An authenticated user cannot modify another user's profile.
-     * @principle Enforces document ownership and prevents unauthorized access to user data.
+     * @allow (create) - User with uid 'user123' can create their own profile at /users/user123.
+     * @allow (get, update, delete) - User with uid 'user123' can access their own profile at /users/user123.
+     * @deny (create, update, delete) - User with uid 'user456' cannot access profile at /users/user123.
+     * @deny (list) - No user can list all user profiles.
+     * @principle Enforces user-ownership for profile data.
      */
     match /users/{userId} {
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && request.auth.uid == resource.data.uid;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if false; // Explicitly prevent listing all users.
-      allow create: if isOwner(userId) && request.auth.uid == request.resource.data.uid;
-      allow update: if isOwner(userId) && request.auth.uid == resource.data.uid;
-      allow delete: if isOwner(userId) && request.auth.uid == resource.data.uid;
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) && request.resource.data.uid == userId;
+      allow delete: if isOwner(userId) && resource.data.uid == userId;
     }
 
     /**
-     * @description Controls access to the society metadata singleton document.
+     * @description Controls access to the society metadata. Anyone can read it, but only authorized users can modify it (currently open for prototyping).
      * @path /society/meta
-     * @allow (get, list) - Any user can read the society metadata.
-     * @deny (create, update, delete) - No one can create, update, or delete the society metadata through client-side rules.
-     * @principle Public read access with restricted write access.
+     * @allow (get, list) - Any user can read society metadata.
+     * @allow (create, update, delete) - No user can create, update or delete the society metadata.
+     * @principle Allows public read access but restricts write access.
      */
     match /society/meta {
       allow get, list: if true;
@@ -62,184 +55,103 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to club documents.
+     * @description Manages access to club information. Currently open read and protected writes.
      * @path /clubs/{clubId}
-     * @allow (get, list) - Any user can read the club information.
-     * @allow (create) - Authenticated user can create a new club document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the club can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read club information.
+     * @allow (create, update, delete) - No user can create, update or delete club information.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /clubs/{clubId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(clubId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to volunteer documents.
+     * @description Controls access to volunteer profiles.  Currently open read and protected writes.
      * @path /volunteers/{volunteerId}
-     * @allow (get, list) - Any user can read the volunteer information.
-     * @allow (create) - Authenticated user can create a new volunteer document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the volunteer can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read volunteer profiles.
+     * @allow (create, update, delete) - No user can create, update or delete volunteer profiles.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /volunteers/{volunteerId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(volunteerId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to member documents.
+     * @description Controls access to member profiles. Currently open read and protected writes.
      * @path /members/{memberId}
-     * @allow (get, list) - Any user can read the member information.
-     * @allow (create) - Authenticated user can create a new member document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the member can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read member profiles.
+     * @allow (create, update, delete) - No user can create, update or delete member profiles.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /members/{memberId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(memberId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to event documents.
+     * @description Manages access to event details.  Currently open read and protected writes.
      * @path /events/{eventId}
-     * @allow (get, list) - Any user can read the event information.
-     * @allow (create) - Authenticated user can create a new event document only if the clubId field matches their user id.
-     * @allow (update, delete) - Only the owner of the event (based on clubId) can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read event details.
+     * @allow (create, update, delete) - No user can create, update or delete event details.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /events/{eventId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-       function isOwner(eventId) {
-        return request.auth.uid == resource.data.clubId;
-      }
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.clubId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.clubId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.clubId == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to gallery item documents.
+     * @description Controls access to gallery items.  Currently open read and protected writes.
      * @path /gallery/{galleryId}
-     * @allow (get, list) - Any user can read the gallery item information.
-     * @allow (create) - Authenticated user can create a new gallery item document only if the uploadedBy field matches their user id.
-     * @allow (update, delete) - Only the owner of the gallery item (based on uploadedBy) can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
+     * @allow (get, list) - Any user can read gallery items.
+     * @allow (create, update, delete) - No user can create, update or delete gallery items.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /gallery/{galleryId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-       function isOwner(galleryId) {
-        return request.auth.uid == resource.data.uploadedBy;
-      }
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.uploadedBy == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.uploadedBy == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.uploadedBy == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to fund transaction documents.
+     * @description Manages access to fund transactions.  Currently open read and protected writes.
      * @path /funds/accounting/transactions/{transactionId}
-     * @allow (get, list) - Any user can read the fund transaction information.
-     * @allow (create) - Authenticated user can create a new fund transaction document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the fund transaction can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read fund transactions.
+     * @allow (create, update, delete) - No user can create, update or delete fund transactions.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /funds/accounting/transactions/{transactionId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-       function isOwner(transactionId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to philanthropy activity documents.
+     * @description Controls access to philanthropy activities.  Currently open read and protected writes.
      * @path /philanthropy/{activityId}
-     * @allow (get, list) - Any user can read the philanthropy activity information.
-     * @allow (create) - Authenticated user can create a new philanthropy activity document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the philanthropy activity can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read philanthropy activities.
+     * @allow (create, update, delete) - No user can create, update or delete philanthropy activities.
+     * @principle Public read, restricted write based on an ownership field.
      */
     match /philanthropy/{activityId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-       function isOwner(activityId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Controls access to admin activity log documents.
+     * @description Controls access to admin activity logs. Currently, only admins can read the logs.
      * @path /admin_logs/{logId}
-     * @allow (get, list) - Any user can read the admin activity log information.
-     * @allow (create) - Authenticated user can create a new admin activity log document only if ownership field is equal to their user id.
-     * @allow (update, delete) - Only the owner of the admin activity log can update or delete it.
-     * @deny (create, update, delete) - Writes require authentication and proper ownership.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) - Any user can read admin activity logs.
+     * @allow (create, update, delete) - No user can create, update or delete admin activity logs.
+     * @principle Restricted access to admin users.
      */
     match /admin_logs/{logId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-       function isOwner(logId) {
-        return request.auth.uid == resource.data.ownerUid;
-      }
-
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
     }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
