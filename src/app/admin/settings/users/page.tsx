@@ -107,7 +107,7 @@ function UserTable({ adminUser }: { adminUser: User }) {
                                   {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent>
+                            <DropdownMenuContent align="end">
                                 {userProfile.uid === adminUser.uid ? (
                                      <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
                                 ) : userProfile.customClaims?.admin ? (
