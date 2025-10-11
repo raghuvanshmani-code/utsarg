@@ -1,164 +1,18 @@
-/**
- * @fileOverview Firestore Security Rules for the Student Society App.
- *
- * Core Philosophy:
- * This ruleset allows read access to all users. Admin users can read and write to all data.
- *
- * Data Structure:
- * The Firestore database consists of top-level collections for users, societies, clubs, volunteers, members, events, gallery items, fund transactions, philanthropy activities, and admin logs.
- *
- * Key Security Decisions:
- * - All users can read all data.
- * - Only admin users can write data.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for user profiles.
-     * @path /users/{userId}
-     * @allow (get, list) - Any user can read user profiles.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete user profiles.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete user profiles.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for society metadata.
-     * @path /society/meta
-     * @allow (get, list) - Any user can read society metadata.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete society metadata.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete society metadata.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /society/meta {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for club information.
-     * @path /clubs/{clubId}
-     * @allow (get, list) - Any user can read club information.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete club information.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete club information.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /clubs/{clubId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for volunteer profiles.
-     * @path /volunteers/{volunteerId}
-     * @allow (get, list) - Any user can read volunteer profiles.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete volunteer profiles.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete volunteer profiles.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /volunteers/{volunteerId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for member profiles.
-     * @path /members/{memberId}
-     * @allow (get, list) - Any user can read member profiles.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete member profiles.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete member profiles.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /members/{memberId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for event details.
-     * @path /events/{eventId}
-     * @allow (get, list) - Any user can read event details.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete event details.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete event details.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /events/{eventId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for gallery items.
-     * @path /gallery/{galleryId}
-     * @allow (get, list) - Any user can read gallery items.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete gallery items.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete gallery items.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /gallery/{galleryId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for fund transactions.
-     * @path /funds/accounting/transactions/{transactionId}
-     * @allow (get, list) - Any user can read fund transactions.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete fund transactions.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete fund transactions.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /funds/accounting/transactions/{transactionId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for philanthropy activities.
-     * @path /philanthropy/{activityId}
-     * @allow (get, list) - Any user can read philanthropy activities.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete philanthropy activities.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete philanthropy activities.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /philanthropy/{activityId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants read access to all users and read/write access to admins for admin logs.
-     * @path /admin_logs/{logId}
-     * @allow (get, list) - Any user can read admin logs.
-     * @allow (create, update, delete) - Only admin users can create, update, or delete admin logs.
-     * @deny (create, update, delete) - Non-admin users cannot create, update, or delete admin logs.
-     * @principle Allows public reads and admin-only writes.
-     */
-    match /admin_logs/{logId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the user is an admin.
-     * @return {boolean} True if the user has the 'admin' custom claim, false otherwise.
-     */
+    
+    // Helper function to check for admin custom claim
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return request.auth.token.admin == true;
+    }
+
+    // Global rule: Allow public read access to all documents,
+    // but restrict writes to only admins.
+    match /{document=**} {
+      allow get, list: if true; // Explicitly allow 'get' and 'list' for public read
+      allow write: if isAdmin(); // Allow create, update, delete for admins
     }
   }
 }
