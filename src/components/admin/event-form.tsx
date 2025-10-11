@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,8 +62,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
   }, [event, isOpen, form]);
 
   const handleSave = form.handleSubmit(data => {
-    const submitData = { ...data, location: data.venue };
-    onSubmit(submitData);
+    onSubmit(data);
   });
 
   if (!isClient) {
@@ -86,11 +84,9 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
             <FormLabel>Organizing Club (Optional)</FormLabel>
             <Select 
               onValueChange={(value) => {
-                // If the user selects our special "none" value, set the form value to undefined.
-                // Otherwise, set it to the selected club's ID.
                 field.onChange(value === '--none--' ? undefined : value);
               }} 
-              value={field.value}
+              value={field.value || ''}
               disabled={clubsLoading}>
               <FormControl>
                 <SelectTrigger>
