@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,7 +55,14 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
     setIsClient(true);
     if (isOpen) {
         if (event) {
-            form.reset({ ...event, date: event.date || new Date().toISOString(), venue: event.venue || '' });
+            form.reset({ 
+              ...event, 
+              date: event.date || new Date().toISOString(), 
+              venue: event.venue || '',
+              clubId: event.clubId || '',
+              organizer: event.organizer || '',
+              bannerImage: event.bannerImage || '',
+            });
         } else {
             form.reset({ title: '', description: '', venue: '', date: new Date().toISOString(), clubId: '', organizer: '', bannerImage: '' });
         }
