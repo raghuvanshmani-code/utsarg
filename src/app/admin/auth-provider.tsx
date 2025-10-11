@@ -5,9 +5,11 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useUser } from '@/firebase';
 import { AdminLoginForm } from '@/components/admin-login-form';
 import { Loader2 } from 'lucide-react';
+import type { User } from 'firebase/auth';
 
 interface AdminAuthContextType {
   isAdmin: boolean;
+  user: User | null;
   logout: () => void;
 }
 
@@ -35,7 +37,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AdminAuthContext.Provider value={{ isAdmin, logout: handleLogout }}>
+    <AdminAuthContext.Provider value={{ isAdmin, user, logout: handleLogout }}>
       {children}
     </AdminAuthContext.Provider>
   );

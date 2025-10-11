@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
@@ -7,26 +8,25 @@ import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFunctions, useUser } from '@/firebase';
+import { useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getAuth } from 'firebase/auth';
+import { useAdminAuth } from '../../auth-provider';
 
 export default function DeployRulesPage() {
-  const { user } = useUser();
+  const { isAdmin, logout } = useAdminAuth();
   const functions = useFunctions();
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
-  const handleLogout = () => getAuth().signOut();
 
   const handleDeploy = async () => {
-    if (!functions || !user) {
+    if (!functions || !isAdmin) {
         toast({
             variant: "destructive",
             title: "Error",
-            description: "You must be logged in to perform this action."
+            description: "You must be logged in as an admin to perform this action."
         });
         return;
     }
@@ -74,7 +74,7 @@ export default function DeployRulesPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Settings" />
@@ -112,7 +112,7 @@ export default function DeployRulesPage() {
                             
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" disabled={isDeploying || !user?.customClaims?.admin}>
+                                    <Button variant="destructive" disabled={isDeploying || !isAdmin}>
                                         {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudUpload className="mr-2 h-4 w-4" />}
                                         Deploy Rules to Production
                                     </Button>
@@ -132,7 +132,7 @@ export default function DeployRulesPage() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                             {!user?.customClaims?.admin && (
+                             {!isAdmin && (
                                 <p className="text-sm text-yellow-500 flex items-center gap-2"><AlertTriangle className="h-4 w-4" />You do not have admin permissions to deploy rules.</p>
                             )}
 

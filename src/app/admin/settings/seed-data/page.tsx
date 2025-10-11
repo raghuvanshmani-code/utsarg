@@ -8,7 +8,7 @@ import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFunctions, useUser } from '@/firebase';
+import { useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,10 +17,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getAuth } from 'firebase/auth';
+import { useAdminAuth } from '../../auth-provider';
 
 export default function SeedDataPage() {
-  const { user, isAdmin } = useUser();
+  const { isAdmin, logout } = useAdminAuth();
   const functions = useFunctions();
   const { toast } = useToast();
 
@@ -28,8 +28,6 @@ export default function SeedDataPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isDryRun, setIsDryRun] = useState(true);
   const [seedReport, setSeedReport] = useState<any>(null);
-
-  const handleLogout = () => getAuth().signOut();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -42,7 +40,7 @@ export default function SeedDataPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'Function service or file not available.' });
       return;
     }
-    if (!user || !isAdmin) {
+    if (!isAdmin) {
         toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in as an admin to perform this action.' });
         return;
     }
@@ -95,7 +93,7 @@ export default function SeedDataPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter><Button variant="ghost" onClick={handleLogout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
+        <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <AdminHeader title="Settings" />
@@ -142,14 +140,14 @@ export default function SeedDataPage() {
                             </p>
                             
                             {isDryRun ? (
-                                <Button onClick={handleSeed} disabled={isSeeding || !file} className="w-full">
+                                <Button onClick={handleSeed} disabled={isSeeding || !file || !isAdmin} className="w-full">
                                     {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck2 className="mr-2 h-4 w-4" />}
                                     Perform Dry Run
                                 </Button>
                             ) : (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" disabled={isSeeding || !file} className="w-full">
+                                        <Button variant="destructive" disabled={isSeeding || !file || !isAdmin} className="w-full">
                                             {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
                                             Seed Database
                                         </Button>
@@ -169,7 +167,9 @@ export default function SeedDataPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             )}
-
+                             {!isAdmin && (
+                                <p className="text-sm text-yellow-500 flex items-center gap-2 mt-4"><AlertCircle className="h-4 w-4" />You do not have admin permissions to seed data.</p>
+                            )}
                         </CardContent>
                     </Card>
 

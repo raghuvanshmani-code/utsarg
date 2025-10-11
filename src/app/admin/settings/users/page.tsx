@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useCollection, useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +28,7 @@ type UserProfile = {
 };
 
 export default function UsersPage() {
-  const { logout } = useAdminAuth();
+  const { logout, user } = useAdminAuth();
   const functions = useFunctions();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(''); // Store UID of user being updated
@@ -66,7 +66,7 @@ export default function UsersPage() {
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Gallery'}}><Link href="/admin/gallery"><GalleryHorizontal /><span>Gallery</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Blog'}}><Link href="/admin/blog"><Newspaper /><span>Blog</span></Link></SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'System Logs'}}><Link href="/admin/logs"><ShieldQuestion /><span>System Logs</span></Link></SidebarMenuButton></SidebarMenuItem>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/deploy"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip={{children: 'Settings'}} isActive><Link href="/admin/settings/users"><Settings /><span>Settings</span></Link></SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter><Button variant="ghost" onClick={logout} className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center p-2"><LogOut className="h-5 w-5" /><span className="group-data-[collapsible=icon]:hidden ml-2">Logout</span></Button></SidebarFooter>
@@ -76,6 +76,9 @@ export default function UsersPage() {
         <main className="flex-1 p-6 space-y-6">
            <Tabs defaultValue="users" className="w-full">
               <TabsList>
+                <TabsTrigger value="users">
+                    <UsersIcon className="mr-2 h-4 w-4"/> User Management
+                </TabsTrigger>
                  <TabsTrigger value="deploy" asChild>
                     <Link href="/admin/settings/deploy">
                         <CloudUpload className="mr-2 h-4 w-4"/> Deploy Rules
@@ -85,9 +88,6 @@ export default function UsersPage() {
                     <Link href="/admin/settings/seed-data">
                         <Database className="mr-2 h-4 w-4"/> Seed Data
                     </Link>
-                </TabsTrigger>
-                 <TabsTrigger value="users">
-                    <UsersIcon className="mr-2 h-4 w-4"/> User Management
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="users" className="pt-6">
@@ -114,18 +114,18 @@ export default function UsersPage() {
                                    </TableRow>
                                </TableHeader>
                                <TableBody>
-                                   {users.map(user => (
-                                       <TableRow key={user.uid}>
+                                   {users.map(userProfile => (
+                                       <TableRow key={userProfile.uid}>
                                            <TableCell className="font-medium flex items-center gap-2">
                                                <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={user.photoURL ?? undefined} />
-                                                    <AvatarFallback>{user.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                                                    <AvatarImage src={userProfile.photoURL ?? undefined} />
+                                                    <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
                                                </Avatar>
-                                               {user.displayName}
+                                               {userProfile.displayName}
                                            </TableCell>
-                                           <TableCell>{user.email}</TableCell>
+                                           <TableCell>{userProfile.email}</TableCell>
                                            <TableCell>
-                                                {user.customClaims?.admin ? (
+                                                {userProfile.customClaims?.admin ? (
                                                     <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
                                                         <ShieldCheck className="mr-1 h-3 w-3" />
                                                         Admin
@@ -137,15 +137,17 @@ export default function UsersPage() {
                                            <TableCell className="text-right">
                                                <DropdownMenu>
                                                    <DropdownMenuTrigger asChild>
-                                                       <Button size="sm" variant="ghost" disabled={isSubmitting === user.uid}>
-                                                          {isSubmitting === user.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
+                                                       <Button size="sm" variant="ghost" disabled={isSubmitting === userProfile.uid}>
+                                                          {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
                                                        </Button>
                                                    </DropdownMenuTrigger>
                                                    <DropdownMenuContent>
-                                                       {user.customClaims?.admin ? (
-                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'user')} disabled={isSubmitting === user.uid}>Remove Admin Role</DropdownMenuItem>
+                                                       {userProfile.uid === user?.uid ? (
+                                                            <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
+                                                       ) : userProfile.customClaims?.admin ? (
+                                                            <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'user')} disabled={isSubmitting === userProfile.uid}>Remove Admin Role</DropdownMenuItem>
                                                        ) : (
-                                                            <DropdownMenuItem onClick={() => setUserRole(user.uid, 'admin')} disabled={isSubmitting === user.uid}>Make Admin</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'admin')} disabled={isSubmitting === userProfile.uid}>Make Admin</DropdownMenuItem>
                                                        )}
                                                    </DropdownMenuContent>
                                                </DropdownMenu>
