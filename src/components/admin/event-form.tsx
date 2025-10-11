@@ -81,7 +81,32 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="venue" render={({ field }) => (<FormItem><FormLabel>Location / Venue</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={new Date(field.value)} onSelect={(date) => field.onChange(date?.toISOString())} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="clubId" render={({ field }) => (<FormItem><FormLabel>Organizing Club (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={clubsLoading}><FormControl><SelectTrigger><SelectValue placeholder="Select a club" /></SelectTrigger></FormControl><SelectContent>{clubs.map(club => (<SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="clubId" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Organizing Club (Optional)</FormLabel>
+            <Select 
+              onValueChange={(value) => {
+                // If the user selects our special "none" value, set the form value to undefined.
+                // Otherwise, set it to the selected club's ID.
+                field.onChange(value === '--none--' ? undefined : value);
+              }} 
+              value={field.value}
+              disabled={clubsLoading}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a club" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                 <SelectItem value="--none--">None (use custom organizer)</SelectItem>
+                 {clubs.map(club => (
+                    <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
         <FormField control={form.control} name="organizer" render={({ field }) => (<FormItem><FormLabel>Or Custom Organizer Name</FormLabel><FormControl><Input placeholder="e.g., Alumni Committee" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="bannerImage" render={({ field }) => (<FormItem><FormLabel>Banner Image</FormLabel><FormControl><ImageUploader value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
         
