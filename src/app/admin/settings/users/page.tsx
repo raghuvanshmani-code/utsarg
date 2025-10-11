@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, Settings, Users as UsersIcon, ShieldCheck } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, Settings, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { useAdminAuth } from '../../auth-provider';
@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from 'firebase/auth';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 type UserProfile = {
   id: string;
@@ -149,6 +151,12 @@ export default function UsersPage() {
       <SidebarInset>
         <AdminHeader title="Settings" />
         <main className="flex-1 p-6 space-y-6">
+            <Tabs defaultValue="users">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="users" asChild><Link href="/admin/settings/users">User Management</Link></TabsTrigger>
+                <TabsTrigger value="deploy" asChild><Link href="/admin/settings/deploy">Deploy</Link></TabsTrigger>
+              </TabsList>
+            </Tabs>
            <Card>
               <CardHeader>
                   <CardTitle>User Management</CardTitle>
