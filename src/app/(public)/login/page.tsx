@@ -116,7 +116,7 @@ export default function LoginPage() {
             console.error("Error signing in", error);
             let description = "An unknown error occurred.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                description = "Invalid email or password. Please try again or sign up if you don't have an account.";
+                description = "Invalid email or password. If you originally signed up with Google, please use the Google Sign-In button instead.";
             }
              toast({
                 variant: "destructive",
@@ -156,11 +156,27 @@ export default function LoginPage() {
                            Sign in or create an account to join the hub.
                         </p>
                     </div>
+                    
+                    <Button variant="outline" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 398.8 0 261.8S111.8 11.6 244 11.6C303.1 11.6 354.1 33.4 391.1 66.4l-58.8 58.8C308.1 100.8 277.9 89.9 244 89.9c-88.5 0-160.2 71.7-160.2 160.2s71.7 160.2 160.2 160.2c74.7 0 123.3-46.5 133.3-108.3H244v-75h244.1c1.2 6.9 1.9 14.1 1.9 21.8z"></path></svg>}
+                        Sign in with Google
+                    </Button>
+                    
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                                Or
+                            </span>
+                        </div>
+                    </div>
 
                     <Tabs defaultValue="signin" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="signin">Sign In</TabsTrigger>
-                            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                            <TabsTrigger value="signin">Sign In with Password</TabsTrigger>
+                            <TabsTrigger value="signup">Create Account</TabsTrigger>
                         </TabsList>
                         <TabsContent value="signin">
                             <Card className="border-none shadow-none">
@@ -224,22 +240,6 @@ export default function LoginPage() {
                             </Card>
                         </TabsContent>
                     </Tabs>
-                    
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                                Or continue with
-                            </span>
-                        </div>
-                    </div>
-
-                    <Button variant="outline" onClick={handleGoogleSignIn} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 398.8 0 261.8S111.8 11.6 244 11.6C303.1 11.6 354.1 33.4 391.1 66.4l-58.8 58.8C308.1 100.8 277.9 89.9 244 89.9c-88.5 0-160.2 71.7-160.2 160.2s71.7 160.2 160.2 160.2c74.7 0 123.3-46.5 133.3-108.3H244v-75h244.1c1.2 6.9 1.9 14.1 1.9 21.8z"></path></svg>}
-                        Google
-                    </Button>
                 </div>
             </div>
             <div className="hidden lg:block relative">

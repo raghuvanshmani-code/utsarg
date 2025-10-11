@@ -57,7 +57,7 @@ export function AdminLoginForm() {
         } catch (error: any) {
             let description = "An unknown error occurred.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                description = "Invalid email or password. Please try again.";
+                description = "Invalid email or password. If you originally signed up with Google, please use the Google Sign-In button instead.";
             } else if (error.code !== 'auth/popup-closed-by-user') {
                 description = error.message;
             }
@@ -86,9 +86,23 @@ export function AdminLoginForm() {
                         You must be an authorized admin to continue.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                    <Button variant="outline" onClick={handleGoogleSignIn} disabled={isSubmitting} className='w-full'>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 398.8 0 261.8S111.8 11.6 244 11.6C303.1 11.6 354.1 33.4 391.1 66.4l-58.8 58.8C308.1 100.8 277.9 89.9 244 89.9c-88.5 0-160.2 71.7-160.2 160.2s71.7 160.2 160.2 160.2c74.7 0 123.3-46.5 133.3-108.3H244v-75h244.1c1.2 6.9 1.9 14.1 1.9 21.8z"></path></svg>}
+                        Sign in with Google
+                    </Button>
+                    <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                                Or with password
+                            </span>
+                        </div>
+                    </div>
                      <Form {...signInForm}>
-                        <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4 pt-4">
+                        <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
                             <FormField control={signInForm.control} name="email" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
@@ -108,20 +122,6 @@ export function AdminLoginForm() {
                             </Button>
                         </form>
                     </Form>
-                    <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                                Or
-                            </span>
-                        </div>
-                    </div>
-                    <Button variant="outline" onClick={handleGoogleSignIn} disabled={isSubmitting} className='w-full'>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 398.8 0 261.8S111.8 11.6 244 11.6C303.1 11.6 354.1 33.4 391.1 66.4l-58.8 58.8C308.1 100.8 277.9 89.9 244 89.9c-88.5 0-160.2 71.7-160.2 160.2s71.7 160.2 160.2 160.2c74.7 0 123.3-46.5 133.3-108.3H244v-75h244.1c1.2 6.9 1.9 14.1 1.9 21.8z"></path></svg>}
-                        Sign in with Google
-                    </Button>
                 </CardContent>
             </Card>
         </div>
