@@ -42,7 +42,7 @@ export function ClubForm({ isOpen, onOpenChange, onSubmit, club, isSubmitting, i
     } else {
       form.reset({ name: '', description: '', logo: '', bannerImage: '', achievements: [] });
     }
-  }, [club, form, isOpen]);
+  }, [club, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);

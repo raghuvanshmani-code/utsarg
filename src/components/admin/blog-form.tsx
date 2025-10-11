@@ -70,7 +70,7 @@ export function BlogForm({ isOpen, onOpenChange, onSubmit, post, isSubmitting, i
         content: '',
       });
     }
-  }, [post, form, isOpen]);
+  }, [post, isOpen]);
   
   const handleSave = form.handleSubmit((data) => {
     onSubmit(data);

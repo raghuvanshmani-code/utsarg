@@ -40,7 +40,7 @@ export function GalleryForm({ isOpen, onOpenChange, onSubmit, item, isSubmitting
     } else {
       form.reset({ caption: '', url: '', tags: [] });
     }
-  }, [item, form, isOpen]);
+  }, [item, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);

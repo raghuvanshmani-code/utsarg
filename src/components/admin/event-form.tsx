@@ -53,7 +53,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
     } else {
       form.reset({ title: '', description: '', location: '', date: new Date().toISOString(), clubId: '', bannerImage: '' });
     }
-  }, [event, form, isOpen]);
+  }, [event, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);

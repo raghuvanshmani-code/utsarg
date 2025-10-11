@@ -51,7 +51,7 @@ export function PhilanthropyForm({ isOpen, onOpenChange, onSubmit, activity, isS
         form.reset({ type: '', description: '', date: new Date().toISOString(), imageUrl: '', volunteers: [] });
       }
     }
-  }, [activity, form, isOpen]);
+  }, [activity, isOpen]);
 
   const handleSave = form.handleSubmit(data => {
     onSubmit(data);
