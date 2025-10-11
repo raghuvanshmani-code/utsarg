@@ -54,18 +54,27 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
   useEffect(() => {
     setIsClient(true);
     if (isOpen) {
-        if (event) {
-            form.reset({ 
-              ...event, 
-              date: event.date || new Date().toISOString(), 
-              venue: event.venue || '',
-              clubId: event.clubId || '',
-              organizer: event.organizer || '',
-              bannerImage: event.bannerImage || '',
-            });
-        } else {
-            form.reset({ title: '', description: '', venue: '', date: new Date().toISOString(), clubId: '', organizer: '', bannerImage: '' });
-        }
+      if (event) {
+        form.reset({
+          title: event.title || '',
+          description: event.description || '',
+          venue: event.venue || '',
+          date: event.date || new Date().toISOString(),
+          clubId: event.clubId || '',
+          organizer: event.organizer || '',
+          bannerImage: event.bannerImage || '',
+        });
+      } else {
+        form.reset({
+          title: '',
+          description: '',
+          venue: '',
+          date: new Date().toISOString(),
+          clubId: '',
+          organizer: '',
+          bannerImage: '',
+        });
+      }
     }
   }, [event, isOpen, form]);
 
@@ -92,7 +101,7 @@ export function EventForm({ isOpen, onOpenChange, onSubmit, event, isSubmitting,
             <FormLabel>Organizing Club (Optional)</FormLabel>
             <Select 
               onValueChange={(value) => {
-                field.onChange(value === '--none--' ? undefined : value);
+                field.onChange(value === '--none--' ? '' : value);
               }} 
               value={field.value || ''}
               disabled={clubsLoading}>
