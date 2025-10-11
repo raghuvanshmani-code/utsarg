@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode } from 'react';
@@ -7,12 +8,19 @@ import { Loader2 } from 'lucide-react';
 
 interface AdminAuthContextType {
   isAdmin: boolean;
+  logout: () => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const { user, loading, isAdmin } = useUser();
+  const { user, loading, isAdmin, auth } = useUser();
+
+  const handleLogout = () => {
+    if (auth) {
+      auth.signOut();
+    }
+  };
 
   if (loading) {
     return (
@@ -27,7 +35,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AdminAuthContext.Provider value={{ isAdmin }}>
+    <AdminAuthContext.Provider value={{ isAdmin, logout: handleLogout }}>
       {children}
     </AdminAuthContext.Provider>
   );

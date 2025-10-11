@@ -9,6 +9,8 @@ export const useUser = () => {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [customClaims, setCustomClaims] = useState<any>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -16,14 +18,22 @@ export const useUser = () => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const idTokenResult = await user.getIdTokenResult();
+        setUser(user);
+        setIsAdmin(!!idTokenResult.claims.admin);
+        setCustomClaims(idTokenResult.claims);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+        setCustomClaims(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  // Grant admin access to everyone to match the open Firestore rules.
-  return { user, auth, loading, isAdmin: true };
+  return { user, auth, loading, isAdmin, customClaims };
 };

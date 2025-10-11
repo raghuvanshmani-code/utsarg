@@ -1,3 +1,4 @@
+
 // functions/index.js
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
@@ -47,9 +48,9 @@ exports.deployRules = functions.https.onCall(async (data, context) => {
 exports.setUserRole = functions
   .runWith({ memory: '128MB' })
   .https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check - REMOVED, anyone can call this.
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'You must be logged in to manage user roles, but no admin check is performed.');
+    // 1. Authentication and Authorization Check
+    if (!context.auth || !context.auth.token.admin) {
+      throw new functions.https.HttpsError('permission-denied', 'You must be an admin to manage user roles.');
     }
 
     // 2. Input Validation
@@ -71,7 +72,7 @@ exports.setUserRole = functions
         customClaims: newClaims 
       }, { merge: true });
 
-      functions.logger.info(`Successfully set role '${role}' for user ${uid} by caller ${context.auth.uid}`);
+      functions.logger.info(`Successfully set role '${role}' for user ${uid} by admin ${context.auth.uid}`);
       return { success: true, message: `Role successfully updated to ${role}.` };
     } catch (error) {
       functions.logger.error(`Error setting user role for UID: ${uid}`, { error: error.message });
@@ -177,9 +178,9 @@ async function commitBatchWithRetry(batch, batchDocIds = []) {
 exports.importSeedDocuments = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   .https.onCall(async (data, context) => {
-    // 1. Authentication and Authorization Check - REMOVED, anyone can call this.
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Request must be authenticated to seed data.');
+    // 1. Authentication and Authorization Check
+    if (!context.auth || !context.auth.token.admin) {
+      throw new functions.https.HttpsError('permission-denied', 'You must be an admin to seed data.');
     }
 
     // 2. Input Validation
