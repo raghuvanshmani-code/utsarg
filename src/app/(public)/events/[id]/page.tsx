@@ -22,7 +22,7 @@ export default function EventDetailsPage() {
   // Conditionally fetch the club only when the event data (and thus event.clubId) is available.
   const { data: club, loading: clubLoading } = useDoc<Club>(event?.clubId ? `clubs/${event.clubId}` : null);
 
-  if (eventLoading || (event && !club && !clubLoading)) {
+  if (eventLoading || (event && event.clubId && !club && !clubLoading)) {
     return (
         <div>
             <Skeleton className="h-[40vh] w-full" />
@@ -44,6 +44,8 @@ export default function EventDetailsPage() {
   if (!event) {
     notFound();
   }
+  
+  const organizerName = event.organizer || club?.name || 'UTSARG';
 
   return (
     <div>
@@ -102,9 +104,9 @@ export default function EventDetailsPage() {
                         <strong>Organized by:</strong> 
                         {club ? 
                           <Link href={`/clubs/${club.id}`} className="ml-1">
-                            <Badge variant="secondary" className="hover:bg-primary/20">{club.name}</Badge>
+                            <Badge variant="secondary" className="hover:bg-primary/20">{organizerName}</Badge>
                           </Link>
-                          : <span className="ml-1">{event.clubId}</span>
+                          : <Badge variant="secondary" className="ml-1">{organizerName}</Badge>
                         }
                       </div>
                     </li>

@@ -99,6 +99,7 @@
       "type": "object",
       "properties": {
         "clubId": { "type": "string", "description": "The ID of the club organizing the event." },
+        "organizer": { "type": "string", "description": "Name of the organizer if it's not a club." },
         "title": { "type": "string", "description": "The title of the event." },
         "date": { "type": "string", "format": "date-time", "description": "The date and time of the event." },
         "venue": { "type": "string", "description": "The location where the event will take place." },
@@ -107,7 +108,7 @@
         "status": { "type": "string", "enum": ["planned", "complete"], "description": "The current status of the event." },
         "photos": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "An array of URLs for photos from the event." }
       },
-      "required": ["clubId", "title", "date", "venue", "status"]
+      "required": ["title", "date", "venue", "status"]
     },
     "galleryItem": {
       "title": "Gallery Item",

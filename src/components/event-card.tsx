@@ -13,7 +13,9 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { data: club } = useDoc<Club>(`clubs/${event.clubId}`);
+  const { data: club } = useDoc<Club>(event.clubId ? `clubs/${event.clubId}` : null);
+  const organizerName = event.organizer || club?.name || 'UTSARG';
+
 
   return (
     <Link href={`/events/${event.id}`} className="group block h-full">
@@ -41,12 +43,10 @@ export function EventCard({ event }: EventCardProps) {
                 <MapPin className="h-4 w-4 mr-2" />
                 <span>{event.location}</span>
             </div>
-            {club && (
-                <div className="flex items-center">
-                    <Tag className="h-4 w-4 mr-2" />
-                    <span>{club.name}</span>
-                </div>
-            )}
+            <div className="flex items-center">
+                <Tag className="h-4 w-4 mr-2" />
+                <span>{organizerName}</span>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="p-6 pt-0">

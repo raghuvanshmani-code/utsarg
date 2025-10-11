@@ -30,7 +30,8 @@ export type Club = {
 
 export type Event = {
   id:string;
-  clubId: string;
+  clubId?: string;
+  organizer?: string;
   title: string;
   date: string;
   location: string;
