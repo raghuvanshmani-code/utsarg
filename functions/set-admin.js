@@ -21,7 +21,7 @@
 const admin = require('firebase-admin');
 
 // IMPORTANT: The user's email you want to make an admin.
-const USER_EMAIL_TO_MAKE_ADMIN = 'raghuvanshmani876@gmail.com';
+const USER_EMAIL_TO_MAKE_ADMIN = 'mishrarohan30092003@gmail.com';
 
 try {
   // Path to your service account key file.
