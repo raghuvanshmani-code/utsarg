@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, CloudUpload, Settings, Database, Users as UsersIcon, ShieldCheck } from "lucide-react";
+import { Home, BookOpen, Calendar, GalleryHorizontal, Newspaper, LogOut, Loader2, HeartHandshake, ShieldQuestion, Settings, Users as UsersIcon, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 import { useAdminAuth } from '../../auth-provider';
@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useCollection, useFunctions } from '@/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +32,7 @@ export default function UsersPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(''); // Store UID of user being updated
 
-  const { data: users, loading: usersLoading } = useCollection<UserProfile>('users');
+  const { data: users, loading: usersLoading } = useCollection<UserProfile>(user ? 'users' : null);
 
   const setUserRole = async (uid: string, role: 'admin' | 'user') => {
     if (!functions) {
@@ -74,93 +73,74 @@ export default function UsersPage() {
       <SidebarInset>
         <AdminHeader title="Settings" />
         <main className="flex-1 p-6 space-y-6">
-           <Tabs defaultValue="users" className="w-full">
-              <TabsList>
-                <TabsTrigger value="users">
-                    <UsersIcon className="mr-2 h-4 w-4"/> User Management
-                </TabsTrigger>
-                 <TabsTrigger value="deploy" asChild>
-                    <Link href="/admin/settings/deploy">
-                        <CloudUpload className="mr-2 h-4 w-4"/> Deploy Rules
-                    </Link>
-                </TabsTrigger>
-                <TabsTrigger value="seed" asChild>
-                    <Link href="/admin/settings/seed-data">
-                        <Database className="mr-2 h-4 w-4"/> Seed Data
-                    </Link>
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="users" className="pt-6">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>User Management</CardTitle>
-                        <CardDescription>
-                            View all registered users and manage their roles. The `admin` role grants permission to access this admin panel.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       {usersLoading ? (
-                           <div className="flex justify-center items-center h-40">
-                               <Loader2 className="h-8 w-8 animate-spin" />
-                           </div>
-                       ) : (
-                           <Table>
-                               <TableHeader>
-                                   <TableRow>
-                                       <TableHead>User</TableHead>
-                                       <TableHead>Email</TableHead>
-                                       <TableHead>Role</TableHead>
-                                       <TableHead className="text-right">Actions</TableHead>
-                                   </TableRow>
-                               </TableHeader>
-                               <TableBody>
-                                   {users.map(userProfile => (
-                                       <TableRow key={userProfile.uid}>
-                                           <TableCell className="font-medium flex items-center gap-2">
-                                               <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={userProfile.photoURL ?? undefined} />
-                                                    <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
-                                               </Avatar>
-                                               {userProfile.displayName}
-                                           </TableCell>
-                                           <TableCell>{userProfile.email}</TableCell>
-                                           <TableCell>
-                                                {userProfile.customClaims?.admin ? (
-                                                    <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
-                                                        <ShieldCheck className="mr-1 h-3 w-3" />
-                                                        Admin
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline">User</Badge>
-                                                )}
-                                           </TableCell>
-                                           <TableCell className="text-right">
-                                               <DropdownMenu>
-                                                   <DropdownMenuTrigger asChild>
-                                                       <Button size="sm" variant="ghost" disabled={isSubmitting === userProfile.uid}>
-                                                          {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
-                                                       </Button>
-                                                   </DropdownMenuTrigger>
-                                                   <DropdownMenuContent>
-                                                       {userProfile.uid === user?.uid ? (
-                                                            <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
-                                                       ) : userProfile.customClaims?.admin ? (
-                                                            <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'user')} disabled={isSubmitting === userProfile.uid}>Remove Admin Role</DropdownMenuItem>
-                                                       ) : (
-                                                            <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'admin')} disabled={isSubmitting === userProfile.uid}>Make Admin</DropdownMenuItem>
-                                                       )}
-                                                   </DropdownMenuContent>
-                                               </DropdownMenu>
-                                           </TableCell>
-                                       </TableRow>
-                                   ))}
-                               </TableBody>
-                           </Table>
-                       )}
-                    </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+           <Card>
+              <CardHeader>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>
+                      View all registered users and manage their roles. The `admin` role grants permission to access this admin panel.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                 {usersLoading ? (
+                     <div className="flex justify-center items-center h-40">
+                         <Loader2 className="h-8 w-8 animate-spin" />
+                     </div>
+                 ) : (
+                     <Table>
+                         <TableHeader>
+                             <TableRow>
+                                 <TableHead>User</TableHead>
+                                 <TableHead>Email</TableHead>
+                                 <TableHead>Role</TableHead>
+                                 <TableHead className="text-right">Actions</TableHead>
+                             </TableRow>
+                         </TableHeader>
+                         <TableBody>
+                             {users.map(userProfile => (
+                                 <TableRow key={userProfile.uid}>
+                                     <TableCell className="font-medium flex items-center gap-2">
+                                         <Avatar className="h-8 w-8">
+                                              <AvatarImage src={userProfile.photoURL ?? undefined} />
+                                              <AvatarFallback>{userProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                                         </Avatar>
+                                         {userProfile.displayName}
+                                     </TableCell>
+                                     <TableCell>{userProfile.email}</TableCell>
+                                     <TableCell>
+                                          {userProfile.customClaims?.admin ? (
+                                              <Badge variant="secondary" className="text-green-400 bg-green-900/50 border-green-500/30">
+                                                  <ShieldCheck className="mr-1 h-3 w-3" />
+                                                  Admin
+                                              </Badge>
+                                          ) : (
+                                              <Badge variant="outline">User</Badge>
+                                          )}
+                                     </TableCell>
+                                     <TableCell className="text-right">
+                                         <DropdownMenu>
+                                             <DropdownMenuTrigger asChild>
+                                                 <Button size="sm" variant="ghost" disabled={isSubmitting === userProfile.uid}>
+                                                    {isSubmitting === userProfile.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actions'}
+                                                 </Button>
+                                             </DropdownMenuTrigger>
+                                             <DropdownMenuContent>
+                                                 {userProfile.uid === user?.uid ? (
+                                                      <DropdownMenuItem disabled>Cannot change own role</DropdownMenuItem>
+                                                 ) : userProfile.customClaims?.admin ? (
+                                                      <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'user')} disabled={isSubmitting === userProfile.uid}>Remove Admin Role</DropdownMenuItem>
+                                                 ) : (
+                                                      <DropdownMenuItem onClick={() => setUserRole(userProfile.uid, 'admin')} disabled={isSubmitting === userProfile.uid}>Make Admin</DropdownMenuItem>
+                                                 )}
+                                             </DropdownMenuContent>
+                                         </DropdownMenu>
+                                     </TableCell>
+                                 </TableRow>
+                             ))}
+                         </TableBody>
+                     </Table>
+                 )}
+              </CardContent>
+          </Card>
         </main>
       </SidebarInset>
     </SidebarProvider>
